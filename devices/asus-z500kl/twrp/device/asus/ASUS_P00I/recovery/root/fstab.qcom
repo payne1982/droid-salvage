@@ -1,0 +1,15 @@
+# fs_mgr-format fstab for the stock Nougat vold that TWRP runs to decrypt /data
+# (TW_CRYPTO_USE_SYSTEM_VOLD). vold_decrypt hides TWRP's own fstab, which fs_mgr
+# cannot parse, and points /etc/recovery.fstab at /fstab.${ro.hardware}; here
+# ro.hardware comes from androidboot.hardware=qcom on the cmdline, so vold reads
+# this file. Without it vold answers 406 to `cryptfs checkpw` because it cannot
+# find the /data entry or its crypto footer.
+#
+# Raw mmcblk nodes on purpose: the /dev/block/bootdevice/by-name symlinks are not
+# created under TWRP on this device (proven by payne_2 vs payne_3).
+# 'verify' is dropped from /system so fs_mgr does not try to set up dm-verity.
+#
+# <device>                <mount point>  <type>  <mount flags>                                     <fs_mgr flags>
+/dev/block/mmcblk0p44     /system        ext4    ro,barrier=1,discard                              wait
+/dev/block/mmcblk0p45     /data          ext4    nosuid,nodev,barrier=1,noauto_da_alloc,discard    wait,check,encryptable=footer
+/dev/block/mmcblk0p36     /cache         ext4    noatime,nosuid,nodev,barrier=1,data=ordered       wait,check

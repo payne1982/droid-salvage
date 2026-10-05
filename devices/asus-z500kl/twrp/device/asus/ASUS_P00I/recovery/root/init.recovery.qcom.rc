@@ -1,0 +1,46 @@
+on early-init
+    # Stock Nougat binaries pick their HAL module as keystore.<prop>.so through
+    # hw_get_module_by_class, trying ro.hardware, then ro.product.board, then
+    # ro.board.platform. Those last two normally come from /system/build.prop, which
+    # recovery never loads, so they were empty and vold fell back to the software
+    # keystore.default.so instead of the real keystore.msm8952.so. The software
+    # keymaster cannot reach the key held inside TrustZone, so the password handed to
+    # QSEE did not match and it answered INCORRECT_PSWD (-71) for a correct PIN.
+    setprop ro.product.board msm8952
+    setprop ro.board.platform msm8952
+
+    # adbd on a Pie base drives FunctionFS through AIO, which this 3.10 kernel does
+    # not implement ("aio: got error submitting read: Invalid argument" in a loop, and
+    # the host sees the device as 'offline'). adbd's own comment names this case, so
+    # ask it for the legacy read/write path.
+    setprop sys.usb.ffs.aio_compat true
+
+on fs
+    # qseecomd drops to uid 1000 (setuid(1000) before its fork), so it can only open
+    # these if the ownership matches - a chmod alone is not enough. These two lines
+    # replace the only entries of the stock ueventd.qcom.rc that this recovery actually
+    # needs, which is why that vendor file is not shipped at all.
+    chown system drmrpc /dev/qseecom
+    chmod 0660 /dev/qseecom
+    chown system system /dev/ion
+    chmod 0664 /dev/ion
+    # Rebuild /dev/block/bootdevice: stock Nougat binaries have that path compiled in
+    # (librpmb.so checks it to tell eMMC from UFS, libssd.so opens the ssd partition
+    # under it), and TWRP's ueventd does not create it on this device.
+    start bootdevlinks
+
+on boot
+    # Nothing copies persist.sys.usb.config into sys.usb.config under TWRP, so the USB
+    # gadget was never configured and no device appeared on the bus at all. This fires
+    # TWRP's own "on property:sys.usb.config=..." action, which sets the functions,
+    # enables the gadget and starts adbd.
+    # Plain adb: MTP is disabled in BoardConfig.mk, and the kernel maps the "adb"
+    # name onto ffs through f_ffs/aliases, so this brings up a single ffs instance
+    # that adbd owns.
+    setprop sys.usb.config adb
+    start bootdevlinks
+
+service bootdevlinks /sbin/bootdevice-links.sh
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0

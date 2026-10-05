@@ -1,0 +1,24 @@
+# Copy to local.conf (which .gitignore keeps out of the repository) and edit.
+# Nothing machine-specific belongs anywhere else in this tree.
+
+# --- the device ---------------------------------------------------------------
+# adb serial, if more than one device is attached. Empty means "the only one".
+DEVICE_SERIAL=""
+
+# Optional: the tablet running sshd in Termux, for when it is booted into Android
+# rather than recovery. adb is preferred; this is a fallback.
+DEVICE_SSH_HOST=""
+DEVICE_SSH_PORT="8022"
+
+# Where magiskboot lives on the device. Used to AVB1-sign a built recovery image.
+# With /data decrypted this path is reachable from TWRP too.
+DEVICE_MAGISKBOOT="/data/adb/magisk/magiskboot"
+
+# --- the build host -----------------------------------------------------------
+# The TWRP tree does not build on ARM, so this is usually a separate x86_64 box.
+# Leave BUILD_HOST empty to build on the machine you are sitting at.
+BUILD_HOST=""
+BUILD_DIR="$HOME/droid-salvage-build"
+
+# Where the TWRP minimal manifest is checked out on the build host.
+TWRP_TREE="$BUILD_DIR/twrp"

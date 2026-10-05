@@ -1,0 +1,33 @@
+# Local, machine-specific settings: host names, addresses, paths.
+# Copy local.conf.example to local.conf and edit it.
+local.conf
+
+# Vendor material pulled off a device. Never commit it: it is not ours to
+# redistribute, the kernel blobs are ~29 MB each, and tools/extract-from-device.sh
+# reproduces every one of these from the tablet.
+*/*/twrp/device/*/*/prebuilt/
+*/*/twrp/device/*/*/recovery/root/property_contexts
+*/*/twrp/device/*/*/recovery/root/etc/firmware/
+*/*/twrp/device/*/*/recovery/root/lib/firmware/
+
+# Debug binaries dropped into the ramdisk by hand (strace and friends): build them
+# from the TWRP tree when needed, do not ship them in a release image.
+*/*/twrp/device/*/*/recovery/root/sbin/strace
+
+# Build output and device images
+*.img
+*.img.gz
+*.tmp
+out/
+
+# Partition dumps, footers, logs: device-identifying and in part secret
+backup/
+dumps/
+*.strace
+*_log.txt
+*.log
+
+# Working notes kept out of the repository: they carry addresses, serial numbers and
+# the test PIN. The publishable write-up is devices/<device>/NOTES.md.
+NOTE.md
+NOTES.local.md
