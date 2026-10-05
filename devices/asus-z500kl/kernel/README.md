@@ -84,6 +84,42 @@ configuration, so all 100 DTBs are appended to `Image.gz` and the bootloader pic
 the matching one by `qcom,msm-id`/`qcom,board-id`. For this tablet (MSM8956 **rev
 1.1**) that is `msm8956-v1.1-cdp-Z500KL.dtb`.
 
+### Gotcha on a modern distribution
+
+The host tools (`scripts/dtc`, `scripts/mod`, ...) are compiled with the *system* gcc,
+and a 2015 tree does not survive a 2026 one untouched. Since gcc 10 the default is
+`-fno-common`, while `scripts/dtc` declares `yylloc` in both the lexer and the parser:
+
+```
+/usr/bin/ld: scripts/dtc/dtc-parser.tab.o:(.bss+0x50): multiple definition of `yylloc'
+```
+
+`build-kernel.sh` adds `-fcommon` to `HOSTCFLAGS`, which fixes that whole class of
+breakage without patching anything. Note this is the *host* compiler only; the kernel
+itself is built by gcc 4.9, which predates the change.
+
+## It reproduces ASUS's own output
+
+The compiled kernel cannot be byte-identical to the shipped one — different compiler
+build, different timestamps, and `CONFIG_LOCALVERSION_AUTO` stamps in the git hash.
+The device tree blob, however, can be, and is:
+
+```
+0bc816c660d6572255460a78d00f636f162a7bdd045f6e24d7d90be29f689864  our msm8956-v1.1-cdp-Z500KL.dtb
+0bc816c660d6572255460a78d00f636f162a7bdd045f6e24d7d90be29f689864  DTB #80 pulled out of the stock boot image
+```
+
+Same sha256. That settles three things at once: the published sources really are the
+ones the shipped kernel was built from, `TARGET_PROJECT=Z500KL` is the right value,
+and the DTB this tablet runs is the one we now build.
+
+The kernel image lands in the same place too — `Image` is 20 047 744 bytes against the
+stock 20 048 024, a difference of 280 bytes — and the build appends 100 DTBs, exactly
+as the stock boot image does.
+
+For the record: 7 minutes 21 seconds on two cores of an i5-7200U, 0 errors, 20
+warnings, all of them from the host tools.
+
 ## What the stock configuration lacks for a newer Android
 
 Checked against the running configuration. All five are additive, so a kernel with

@@ -40,17 +40,35 @@ one is proven on the hardware. That discipline is not caution for its own sake: 
 this tablet every unverified change costs a reboot cycle, and two changes at once
 already cost a day once.
 
-### M0 — a kernel we build ourselves, booting the stock ROM
-Build `Image.gz-dtb` from the ASUS sources with `asus_P00I_defconfig`, pack it with
-the **stock** ramdisk, write it to `boot`, and boot Android 7 as before.
+### M0 — a kernel we build ourselves, running on the tablet
+Build `Image.gz-dtb` from the ASUS sources with `asus_P00I_defconfig` — same sources,
+same configuration as the shipped kernel, only compiled by us — and swap it into the
+**TWRP recovery image**, leaving everything else in that image alone.
 
 Nothing about the ROM is in play here. It answers the one question everything else
-rests on: can this tree produce a kernel that runs on this tablet? Verification:
-it boots, `zcat /proc/config.gz` matches what we built, `dmesg` shows no new
-failures, touch works.
+rests on: can this tree produce a kernel that runs on this hardware? If the toolchain
+or the configuration is wrong, this is where it shows, on a change with exactly one
+variable, rather than inside a first ROM boot where a hundred things could be the
+cause.
+
+Recovery rather than `boot`, for two reasons. The recovery image already carries the
+kernel copied out of `boot`, so replacing just the kernel really is a single change.
+And if the kernel does not come up, `boot` is untouched: the tablet still starts the
+stock Android with root, which is a far more comfortable place to recover from than
+the reverse.
+
+Pass criteria: TWRP starts, `adb` comes up, `zcat /proc/config.gz` matches what we
+built, `dmesg` shows no new failures, and touch, mounts and `/data` decryption still
+work exactly as in the released `payne_13`.
+
+One wrinkle: the touchscreen fix currently lives as a 3-byte patch of the *compiled*
+stock kernel. `tools/patch-kernel.py` locates the site by scanning for code rather
+than at a fixed offset, so it should find it in our build too — and whether it does
+is itself a useful test of the tool. If it does not, the fix moves into the driver
+source, which is M1's job anyway.
 
 The foundations are in `kernel/` and the configuration is proven to round-trip; what
-is left is the compile and the boot test.
+is left is the compile and the test on the hardware.
 
 ### M1 — the same kernel, ready for a modern userspace
 Add the five options in `kernel/README.md`, `CONFIG_SECURITY_SELINUX_BOOTPARAM`
