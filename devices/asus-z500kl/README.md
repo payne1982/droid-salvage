@@ -13,6 +13,10 @@
 
 As far as the XDA threads for this tablet go, this is the first working TWRP for it.
 
+- **Discussion and support:** [XDA thread](https://xdaforums.com/t/custom-rom-for-z500kl-p00i-zenpad-3s-10-lte.4184773/)
+- **Ready-to-flash image:** see [Releases](../../releases) — already AVB1-signed, so you
+  can skip the signing step below.
+
 ## What works
 
 - boots and runs, with a working **touchscreen** (a 3-byte kernel patch — see NOTES)
