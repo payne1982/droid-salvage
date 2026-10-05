@@ -1,0 +1,43 @@
+Subject: [PATCH 1/1] kconfig: restore the upstream %_defconfig rule
+
+ASUS replaced the upstream %_defconfig rule with one that concatenates the
+defconfig with a per-project file:
+
+    vendor/asus/bsp/${TARGET_PROJECT}/${TARGET_PROJECT}_diffconfig
+
+That file is not part of the published source drop, and neither is anything
+else under vendor/asus/bsp.  The rule also needs ANDROID_BUILD_TOP and OUT,
+which only exist inside an Android build.  The net effect is that no
+"make <something>_defconfig" works in a plain checkout -- it dies with
+
+    /bin/sh: 1: cannot create /merge_config.tmp: Permission denied
+
+and arch/arm64/configs holds no defconfig for this SoC family anyway, so
+there is nothing to merge the missing diffconfig into.
+
+We do not need it.  asus_P00I_defconfig is a complete configuration,
+recovered from the running kernel's own /proc/config.gz (the kernel is built
+with CONFIG_IKCONFIG=y) and reduced with savedefconfig.  It round-trips back
+to that configuration exactly, so the diffconfig has nothing left to add.
+
+Restoring the upstream rule is therefore the whole fix.
+---
+ scripts/kconfig/Makefile | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git scripts/kconfig/Makefile scripts/kconfig/Makefile
+index cb1b37ad..844bc9da 100644
+--- scripts/kconfig/Makefile
++++ scripts/kconfig/Makefile
+@@ -102,10 +102,7 @@ else
+ endif
+ 
+ %_defconfig: $(obj)/conf
+-	@echo " Make kernel configs with diffconfig ++"
+-	cat $(ANDROID_BUILD_TOP)/kernel/arch/$(SRCARCH)/configs/$@ $(ANDROID_BUILD_TOP)/vendor/asus/bsp/${TARGET_PROJECT}/${TARGET_PROJECT}_diffconfig > $(OUT)/merge_config.tmp
+-	$(Q)$< --defconfig=$(OUT)/merge_config.tmp $(Kconfig)
+-	@echo " Make kernel configs with diffconfig --"
++	$(Q)$< --defconfig=arch/$(SRCARCH)/configs/$@ $(Kconfig)
+ 
+ # Help text used by make help
+ help:

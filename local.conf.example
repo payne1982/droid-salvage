@@ -22,3 +22,14 @@ BUILD_DIR="$HOME/droid-salvage-build"
 
 # Where the TWRP minimal manifest is checked out on the build host.
 TWRP_TREE="$BUILD_DIR/twrp"
+
+# --- the kernel ---------------------------------------------------------------
+# Where the ASUS kernel sources are checked out (tools/setup-kernel.sh clones
+# them here if the directory is empty).
+KERNEL_TREE="$BUILD_DIR/kernel"
+KERNEL_OUT="$BUILD_DIR/kernel/out"
+
+# bin/ of an aarch64-linux-android-4.9 prebuilt. A current gcc cannot compile a
+# 3.10 kernel. The TWRP tree already contains one:
+#   $TWRP_TREE/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin
+KERNEL_TOOLCHAIN=""
