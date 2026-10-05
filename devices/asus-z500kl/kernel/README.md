@@ -35,11 +35,15 @@ into *this tablet's* kernel was kept back.
 
 ## Where the configuration came from instead
 
-The shipped kernel is built with `CONFIG_IKCONFIG=y`, which means it carries its own
-configuration inside it, readable on the running device:
+The shipped kernel is built with `CONFIG_IKCONFIG=y`, which embeds the kernel's own
+configuration into the image as a gzip blob between the markers `IKCFG_ST` and
+`IKCFG_ED`. `CONFIG_IKCONFIG_PROC` is *not* set, so there is no `/proc/config.gz` to
+read on the device — the configuration has to be taken out of the kernel binary, which
+is what the kernel's own script does:
 
 ```sh
-zcat /proc/config.gz > Z500KL_running.config    # 4134 lines, 1307 options
+# the kernel out of the stock boot image, decompressed to arch/arm64/boot/Image form
+scripts/extract-ikconfig Image.stock > Z500KL_running.config   # 4134 lines, 1307 options
 ```
 
 That is the real thing — not a reconstruction, the configuration the shipped kernel
@@ -113,9 +117,37 @@ Same sha256. That settles three things at once: the published sources really are
 ones the shipped kernel was built from, `TARGET_PROJECT=Z500KL` is the right value,
 and the DTB this tablet runs is the one we now build.
 
+The configuration travels inside the image, so it can be compared the same way, and
+it matches as well:
+
+```sh
+scripts/extract-ikconfig <our Image>      # 4134 lines
+scripts/extract-ikconfig <stock Image>    # 4134 lines, identical
+```
+
 The kernel image lands in the same place too — `Image` is 20 047 744 bytes against the
 stock 20 048 024, a difference of 280 bytes — and the build appends 100 DTBs, exactly
 as the stock boot image does.
+
+### Confirmed on the tablet
+
+`payne_14`, a TWRP image identical to the released `payne_13` except for this kernel,
+boots and runs:
+
+```
+Linux version 3.10.84-perf-g68a4f29d-dirty (payne@payne-hp450)
+  (gcc version 4.9.x 20150123 (prerelease) (GCC)) #1 SMP PREEMPT
+```
+
+against the stock kernel's `3.10.84-perf-g3eaf16a77f6-00007-g55252291255
+(android@mec7)`. The `-dirty` comes from the kconfig patch and is a useful marker: it
+tells the two apart at a glance in `/proc/version`. Touch probes and registers, the
+partitions mount, `/data` decrypts, `adb` works, and `dmesg` holds no new failures.
+
+`tools/patch-kernel.py` from the recovery tree found the `mxt_probe` guard in this
+build too, at `0x5b7ee8` where the stock had it at `0x5b7b18` — the same instruction
+at a different address. Locating it by scanning for code rather than at a fixed offset
+turned out to be worth the trouble.
 
 For the record: 7 minutes 21 seconds on two cores of an i5-7200U, 0 errors, 20
 warnings, all of them from the host tools.

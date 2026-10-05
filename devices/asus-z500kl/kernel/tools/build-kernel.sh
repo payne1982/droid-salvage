@@ -90,6 +90,8 @@ if command -v python3 >/dev/null 2>&1; then
     echo "appended DTBs: $(python3 -c 'import sys;d=open(sys.argv[1],"rb").read();print(d.count(b"\xd0\x0d\xfe\xed"))' "$img")"
 fi
 echo
-echo "Sanity check once it is running on the tablet:"
-echo "  zcat /proc/config.gz | diff - $KERNEL_OUT/.config"
-echo "should show nothing but CONFIG_IKCONFIG-related noise."
+echo "Sanity check: the configuration is embedded in the image (CONFIG_IKCONFIG), so"
+echo "it can be read back out of it. CONFIG_IKCONFIG_PROC is not set, so there is no"
+echo "/proc/config.gz on the device -- compare the images instead:"
+echo "  $KERNEL_TREE/scripts/extract-ikconfig $KERNEL_OUT/arch/arm64/boot/Image \\"
+echo "    | diff - <($KERNEL_TREE/scripts/extract-ikconfig <stock Image>)"

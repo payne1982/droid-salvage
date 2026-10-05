@@ -57,9 +57,12 @@ And if the kernel does not come up, `boot` is untouched: the tablet still starts
 stock Android with root, which is a far more comfortable place to recover from than
 the reverse.
 
-Pass criteria: TWRP starts, `adb` comes up, `zcat /proc/config.gz` matches what we
-built, `dmesg` shows no new failures, and touch, mounts and `/data` decryption still
-work exactly as in the released `payne_13`.
+Pass criteria: TWRP starts, `adb` comes up, `/proc/version` names our build, the
+configuration embedded in the image matches what we built, `dmesg` shows no new
+failures, and touch, mounts and `/data` decryption still work exactly as in the
+released `payne_13`.
+
+**Done, 6 October 2026.** See `kernel/README.md`.
 
 One wrinkle: the touchscreen fix currently lives as a 3-byte patch of the *compiled*
 stock kernel. `tools/patch-kernel.py` locates the site by scanning for code rather
