@@ -1,0 +1,54 @@
+Subject: [PATCH 3/3] memcg: drop a duplicate mem_cgroup_allow_attach()
+
+Enabling CONFIG_MEMCG does not compile:
+
+    mm/memcontrol.c:6988:12: error: redefinition of 'mem_cgroup_allow_attach'
+    mm/memcontrol.c:6799:12: note: previous definition was here
+
+mem_cgroup_allow_attach() is defined three times. Twice legitimately, once in
+each arm of the CONFIG_MMU conditional around the move-charge code: the MMU arm
+delegates to subsys_cgroup_allow_attach(), the !MMU arm returns 0. The third sits
+after the #endif, unconditionally, and is an older standalone implementation that
+predates the generic helper -- it was left behind when that refactor landed.
+
+Nobody noticed because every ASUS configuration for this board has MEMCG off, so
+this file was never built.
+
+Keeping the conditional pair and dropping the straggler is both the structurally
+correct choice and the behaviourally intended one. The two implementations are
+near-identical, but the generic helper admits CAP_SYS_NICE while the straggler
+demanded CAP_SYS_ADMIN -- and CAP_SYS_NICE is what system_server holds when it
+moves tasks between cgroups, so the helper is the one Android expects. Every
+other controller already goes through it.
+
+Also silences the "defined but not used" warning on the MMU-arm definition, which
+the straggler had been shadowing at the point of use.
+---
+diff --git mm/memcontrol.c mm/memcontrol.c
+index a19c7213..460218dc 100644
+--- mm/memcontrol.c
++++ mm/memcontrol.c
+@@ -6985,23 +6985,6 @@ static void mem_cgroup_move_task(struct cgroup *cont,
+ }
+ #endif
+ 
+-static int mem_cgroup_allow_attach(struct cgroup *cgrp,
+-				 struct cgroup_taskset *tset)
+-{
+-	const struct cred *cred = current_cred(), *tcred;
+-	struct task_struct *task;
+-
+-	cgroup_taskset_for_each(task, cgrp, tset) {
+-		tcred = __task_cred(task);
+-
+-		if ((current != task) && !capable(CAP_SYS_ADMIN) &&
+-		    cred->euid != tcred->uid && cred->euid != tcred->suid)
+-			return -EACCES;
+-	}
+-
+-	return 0;
+-}
+-
+ /*
+  * Cgroup retains root cgroups across [un]mount cycles making it necessary
+  * to verify sane_behavior flag on each mount attempt.

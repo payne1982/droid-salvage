@@ -152,6 +152,45 @@ turned out to be worth the trouble.
 For the record: 7 minutes 21 seconds on two cores of an i5-7200U, 0 errors, 20
 warnings, all of them from the host tools.
 
+## What changed on top of ASUS's configuration
+
+Three patches and six configuration options. All of it is in `patches/` and
+`asus_P00I_defconfig`, and all of it is confirmed running on the tablet.
+
+`patches/0002` moves the touchscreen fix out of the compiled image and into the driver,
+and makes it narrower while it is there. `patches/0003` fixes a genuine bug in the tree:
+`mm/memcontrol.c` defines `mem_cgroup_allow_attach()` three times, so `CONFIG_MEMCG`
+does not compile at all. Nobody had hit it because no ASUS configuration for this board
+turns MEMCG on, which means that file had never been built.
+
+Verification, with `CONFIG_IKCONFIG_PROC` now in place so the device can be asked
+directly:
+
+```
+$ adb exec-out cat /proc/config.gz | gunzip - | diff - <(scripts/extract-ikconfig out/.../Image)
+(nothing)
+$ adb shell cat /proc/cgroups
+#subsys_name	hierarchy	num_cgroups	enabled
+cpuset	0	1	1
+cpu	0	1	1
+cpuacct	1	9	1
+memory	0	1	1
+freezer	0	1	1
+```
+
+`cpuset` and `memory` were absent before. Touch, mounts, `/data` decryption and `adb`
+all still work, and `dmesg` has nothing new in it.
+
+## A note for anyone building the recovery
+
+With the kernel built from these sources, `tools/patch-kernel.py` in the TWRP device
+tree is no longer needed: the digitiser fix is `patches/0002`. That script stays for the
+other route, where you take the stock kernel off your own tablet and patch the binary.
+
+Building the kernel is the better route, and not only for tidiness: it removes the
+kernel from the list of things you need a working tablet to obtain. What still has to
+come off the device is the vendor firmware and the Nougat `property_contexts`.
+
 ## What the stock configuration lacks for a newer Android
 
 Checked against the running configuration. All five are additive, so a kernel with
@@ -159,11 +198,26 @@ them still boots the stock Android 7:
 
 | option | why |
 |---|---|
-| `CONFIG_SECURITY_SELINUX_BOOTPARAM` | the one that matters most: without it `androidboot.selinux=permissive` is ignored, and bringing up a ROM while enforcing is debugging blindfolded |
 | `CONFIG_CPUSETS` | Android 8+ init mounts `/dev/cpuset` and writes task profiles into it |
 | `CONFIG_MEMCG` | used by `lmkd` from Android 8 on |
-| `CONFIG_FHANDLE` | required from Android 8 on |
+| `CONFIG_FHANDLE` | expected by an Android 8+ userspace |
 | `CONFIG_TMPFS_POSIX_ACL` | expected by a modern userspace |
+| `CONFIG_SECURITY_SELINUX_BOOTPARAM` | adds a `selinux=0` kernel parameter, an escape hatch for bring-up if a policy turns out to be unloadable |
+| `CONFIG_IKCONFIG_PROC` | makes `/proc/config.gz` exist, so the running kernel's configuration can be checked on the device instead of only in the image |
+
+A note on SELinux, because it is easy to get backwards: **permissive mode needs no
+kernel change here.** `CONFIG_SECURITY_SELINUX_DEVELOP=y` is already set in the stock
+configuration, and that is the option that allows permissive mode and toggling through
+`/sys/fs/selinux/enforce`. `androidboot.selinux=permissive` is read by Android's `init`
+in userspace, not by the kernel. `CONFIG_SECURITY_SELINUX_BOOTPARAM` is a different and
+blunter thing — `selinux=0` keeps the LSM from registering at all — which is worth
+having for bring-up but is not what makes permissive possible.
+
+These are enabled because an Android 8+ userspace exercises them, they are additive,
+and they cost little: `MEMCG_KMEM` and `MEMCG_SWAP`, the expensive parts, stay off. The
+honest caveat is that AOSP's `android-base.config` requirements target kernels 4.4 and
+newer, so there is no authoritative list for a 3.10, and the real verification is M3,
+where `init` says out loud what it cannot find.
 
 And two that are not in this kernel at all, which is what sets the ceiling:
 

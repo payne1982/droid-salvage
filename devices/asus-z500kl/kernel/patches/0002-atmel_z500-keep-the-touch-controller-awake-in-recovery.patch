@@ -1,0 +1,52 @@
+Subject: [PATCH 2/2] atmel_z500: keep the touch controller awake in recovery
+
+The tail of mxt_probe() puts the digitiser to sleep whenever the kernel was not
+booted into the main OS:
+
+    if(entry_mode != 1) {
+            msleep(1000);
+            mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
+            touch_ic_status = false;
+            return 0;
+    }
+
+init/main.c documents the values in ASUS' own comment: 1 = MOS, 2 = recovery,
+3 = POS, 4 = COS. With touch_ic_status false the interrupt handler drops every
+event, so the touchscreen is dead in recovery -- which is why the stock recovery
+is driven with the volume keys, and why a custom recovery looks like it has hung.
+
+Keeping the controller asleep is reasonable for charger mode, where the point is
+not to burn battery while the screen is off. It makes no sense in recovery, whose
+entire interface is a touchscreen. So treat recovery like the main OS and leave
+the other two modes alone.
+
+This replaces a 3-byte patch of the compiled image (tools/patch-kernel.py in the
+TWRP device tree), which rewrote the compiler's "b.eq" into an unconditional
+branch and therefore skipped the block in *every* mode, charger included. In the
+source it is both narrower and legible.
+
+entry_mode itself must not be patched globally: the charger, display and sensor
+drivers branch on it too -- mdss_dsi_iris2.c and mdss_dsi_iris2_lightup.c have
+their own "entry_mode == 2" paths for the Pixelworks bridge -- and forcing it
+panics the kernel at boot. Only this one site may be touched.
+---
+diff --git drivers/input/touchscreen/atmel_z500/atmel_mxt_ts_1666t2.c drivers/input/touchscreen/atmel_z500/atmel_mxt_ts_1666t2.c
+index 78bf844e..a441fc3f 100755
+--- drivers/input/touchscreen/atmel_z500/atmel_mxt_ts_1666t2.c
++++ drivers/input/touchscreen/atmel_z500/atmel_mxt_ts_1666t2.c
+@@ -6152,7 +6152,14 @@ static int mxt_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	LDBG(" ++ success touch_ic_status: %d\n",touch_ic_status);
+ 	
+ 	/* Add by Tom Cheng for Check is entry_mode */
+-	if(entry_mode != 1) {
++	/*
++	 * entry_mode: 1 = MOS, 2 = recovery, 3 = POS, 4 = COS (init/main.c).
++	 * Sleeping the controller saves battery in charger mode, but in recovery
++	 * it leaves the digitiser dead -- with touch_ic_status false the IRQ
++	 * handler drops every event -- and recovery is driven by touch. So treat
++	 * recovery like the main OS.
++	 */
++	if(entry_mode != 1 && entry_mode != 2) {
+ 		msleep(1000); //add dely time to fix cos hang by tom (time issue)
+ 		// Add by Tom Cheng for enter suspend mode
+ 		//touch_ic_status = true;

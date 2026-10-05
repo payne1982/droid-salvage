@@ -74,10 +74,34 @@ The foundations are in `kernel/` and the configuration is proven to round-trip; 
 is left is the compile and the test on the hardware.
 
 ### M1 — the same kernel, ready for a modern userspace
-Add the five options in `kernel/README.md`, `CONFIG_SECURITY_SELINUX_BOOTPARAM`
-first, and move the touchscreen fix from a 3-byte patch of the compiled image to
-where it belongs — the `mxt_probe` guard in the driver source. Still has to boot
-Android 7: these are additive, so if it does not, we broke something.
+Add the options in `kernel/README.md` — the cgroup controllers an Android 8+ init
+expects, plus `/proc/config.gz` so the running kernel can be inspected on the device —
+and move the touchscreen fix from a 3-byte patch of the compiled image to where it
+belongs, the `mxt_probe` guard in the driver source. Still has to run: the changes are
+additive, so if anything stops working we broke it.
+
+**Done, 6 October 2026.** Six options, three patches, all confirmed on the tablet —
+`cpuset` and `memory` now appear in `/proc/cgroups`, `/proc/config.gz` reports exactly
+what we built, and touch, mounts, `/data` decryption and `adb` are unaffected. One of
+the patches fixes a bug in ASUS's tree: with `CONFIG_MEMCG` on, `mm/memcontrol.c` does
+not compile. See `kernel/README.md`.
+
+### M1b — three binder devices
+Android 8 split binder into three domains — `/dev/binder`, `/dev/hwbinder`,
+`/dev/vndbinder` — and this kernel registers exactly one. `drivers/android/binder.c`
+has a single `misc_register(&binder_miscdev)` with `.name = "binder"`, and there is no
+`CONFIG_ANDROID_BINDER_DEVICES`: multi-device support arrived in 4.11 and was
+backported into Google's android-3.x branches for devices moving to Oreo. Without it
+`hwservicemanager` has nothing to open, and HIDL is how Android 9 talks to every HAL.
+
+The work is not a configuration switch. The context manager state
+(`binder_context_mgr_node`, `binder_context_mgr_uid`) is file-scope global in this
+version and has to become per-device, which is exactly what the upstream change does —
+so this should start from that patch, or from a 3.10 kernel already running LineageOS
+16, rather than be written from scratch.
+
+It has one pleasant property: it can be verified in recovery, with no ROM involved.
+If `/dev/binder`, `/dev/hwbinder` and `/dev/vndbinder` all appear, it works.
 
 ### M2 — device tree and vendor blobs
 `device/asus/ASUS_P00I` for LineageOS 16.0, and `vendor/asus/ASUS_P00I` extracted
@@ -86,8 +110,9 @@ dump is already in hand and `debugfs` reads an ext4 image without root or mounti
 
 ### M3 — first boot, measured in logs rather than in hope
 The goal of the first boot is not a usable tablet, it is **observability**: `init`
-running, `adbd` up, `logcat` and `dmesg` retrievable. Booting permissive (M1's
-payoff), with `logcat` redirected to a file early in `init`, and `pstore`
+running, `adbd` up, `logcat` and `dmesg` retrievable. Booting permissive — which this
+kernel already allows, `CONFIG_SECURITY_SELINUX_DEVELOP` being set in the stock
+configuration — with `logcat` redirected to a file early in `init`, and `pstore`
 `console-ramoops` as the fallback that survives a warm reboot. A boot that fails
 silently teaches nothing; a boot that fails loudly is progress.
 

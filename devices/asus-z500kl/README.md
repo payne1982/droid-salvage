@@ -21,7 +21,8 @@ As far as the XDA threads for this tablet go, this is the first working TWRP for
 
 ## What works
 
-- boots and runs, with a working **touchscreen** (a 3-byte kernel patch — see NOTES)
+- boots and runs, with a working **touchscreen** (a one-line fix in the touch driver —
+  see [kernel/](kernel/); earlier builds patched 3 bytes of the stock binary instead)
 - mounts every partition: system, cache, data, persist, firmware, microSD, USB-OTG
 - **decrypts `/data`** (Qualcomm hardware FDE, `aes-xts`, PIN, keymaster-wrapped key)
 - backup and restore, including `/data` once decrypted
