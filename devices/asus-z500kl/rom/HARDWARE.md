@@ -23,6 +23,17 @@ can only wire up and hope. The split turned out better than expected.
 | **GPS** | gnss on the modem | `gps.default.so` from `hardware/qcom/gps` | `liblocationservice`, `libloc_ext`, `loc_launcher` |
 | **storage crypto** | FDE in hardware: `aes-xts` through Qualcomm ICE, master key wrapped by keymaster in the TrustZone | `cryptfs_hw` (synced as `vendor/qcom/opensource/cryptfs_hw`) | `keystore.msm8952.so`, `libQSEEComAPI`, `qseecomd`; the keymaster trustlet lives on the `modem` partition, mounted as `/firmware` |
 | **touch** | Atmel maXTouch 1666T2 | kernel driver, with our one-line fix | the controller config `mTX1666T2_cfg.raw` |
+| **microSD** | slot on the side | kernel `mmc`/`sdhci` driver and `vold`, both ours | none |
+| **USB — charging** | hvdcp-capable charger on the PMI8950 | kernel `qpnp-smbcharger`, which is in the sources | `hvdcp_opti` |
+| **USB — file transfer** | legacy `android_usb` gadget, not ConfigFS | MTP is AOSP, and the gadget driver is in the kernel | none |
+| **USB — host / OTG** | OTG on the same port | kernel host mode and the framework | none |
+| **mic / speakers** | on the WCD codec | part of the audio HAL above | the ACDB calibration above |
+
+## Not in the list of things to care about, but present
+
+Worth naming so the choice to skip them is deliberate: **bluetooth** (same WCNSS chip as
+wifi), **GPS**, and the **sensor** stack, which is what gives auto-rotation and the
+ambient light. There is no NFC and no fingerprint reader on this tablet.
 
 ## Two findings that are real work, not wiring
 
