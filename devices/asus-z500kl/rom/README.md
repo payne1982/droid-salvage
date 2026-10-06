@@ -66,4 +66,5 @@ it leaves the manifest and the recorded remotes untouched.
 | `proprietary-files.txt` | 72 files for M3, in four documented blocks |
 | `tools/extract-files.sh` | works, 72 of 72 from the dumps |
 | ASUS' init scripts | extracted, **not yet adapted** — they are written for Nougat's init and Pie's is stricter |
-| first `mka` | not attempted yet |
+| `lunch` | passes: `LINEAGE_VERSION=16.0-…-ASUS_P00I`, arm64 with a 32-bit second arch |
+| `mka bootimage` | the kernel builds inside the tree; the rest is in progress |

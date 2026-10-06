@@ -21,7 +21,10 @@ TARGET_CPU_ABI := arm64-v8a
 TARGET_CPU_VARIANT := cortex-a53
 
 TARGET_2ND_ARCH := arm
-TARGET_2ND_ARCH_VARIANT := armv7-a-neon
+# armv8-a and not armv7-a-neon: the build warns that "cortex-a53 is armv8-a" and
+# overrides it anyway, so saying it here just removes a warning that would otherwise sit
+# at the top of every build and train us to ignore warnings.
+TARGET_2ND_ARCH_VARIANT := armv8-a
 TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_ABI2 := armeabi
 TARGET_2ND_CPU_VARIANT := cortex-a53
@@ -35,6 +38,16 @@ TARGET_USES_64_BIT_BINDER := true
 # hardware/qcom/{audio,display,media}-caf/msm8952 all exist. It also leaves
 # TARGET_USES_QCOM_BSP and the UM-family flags off, the right place for a Nougat-era,
 # pre-Treble platform.
+#
+# BOARD_USES_QCOM_HARDWARE is what switches LineageOS onto the CAF trees at all. The
+# whole variant selection in vendor/lineage/build/core/qcom_target.mk lives inside
+# `ifeq ($(BOARD_USES_QCOM_HARDWARE),true)`; without it the else branch picks the
+# historical hardware/qcom/{display,media}/$(TARGET_BOARD_PLATFORM) instead, and the
+# legacy media tree then falls back to its msm8974 sources -- it only overrides
+# QCOM_MEDIA_ROOT for 8996, 8998 and sdm845 -- so the first build failed with
+# "libOmxVdec missing libqdMetaData" from a directory that has nothing to do with this
+# tablet. One line, and a confusing error.
+BOARD_USES_QCOM_HARDWARE := true
 TARGET_BOARD_PLATFORM := msm8952
 TARGET_BOOTLOADER_BOARD_NAME := msm8952
 TARGET_NO_BOOTLOADER := true
@@ -47,8 +60,15 @@ TARGET_COPY_OUT_VENDOR := system/vendor
 # Kernel, built from ASUS' published sources with the configuration recovered from the
 # stock image. See ../../../../kernel/README.md for the whole story.
 #
-# KERNEL_MAKE_FLAGS is referenced by vendor/lineage/build/tasks/kernel.mk but never
-# defined there: it is a hook for exactly this. Three things have to go through it:
+# The hook is TARGET_KERNEL_ADDITIONAL_FLAGS, and only that one. KERNEL_MAKE_FLAGS looks
+# like a hook -- kernel.mk uses it and never defines it -- but
+# vendor/lineage/config/BoardConfigKernel.mk clears it with `KERNEL_MAKE_FLAGS :=`
+# ("to prevent accidental poisoning from env") and rebuilds it, appending
+# $(TARGET_KERNEL_ADDITIONAL_FLAGS) at the end. Setting KERNEL_MAKE_FLAGS here is
+# silently discarded, which is how the first build failed: the -fcommon below never
+# arrived and scripts/dtc would not link.
+#
+# Three things have to go through it:
 #
 #   TARGET_PROJECT=Z500KL  arch/arm64/boot/dts/qcom/Makefile builds
 #                          msm8956-v1.1-cdp-$(TARGET_PROJECT).dtb. Without it this
@@ -73,9 +93,9 @@ TARGET_KERNEL_CLANG_COMPILE := false
 TARGET_KERNEL_ARCH := arm64
 
 KERNEL_TOOLCHAIN_BIN := prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin
-KERNEL_MAKE_FLAGS := TARGET_PROJECT=Z500KL
-KERNEL_MAKE_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/aarch64-linux-android-gcc-4.9.x)
-KERNEL_MAKE_FLAGS += HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -fcommon"
+TARGET_KERNEL_ADDITIONAL_FLAGS := TARGET_PROJECT=Z500KL
+TARGET_KERNEL_ADDITIONAL_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/aarch64-linux-android-gcc-4.9.x)
+TARGET_KERNEL_ADDITIONAL_FLAGS += HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -fcommon"
 
 # Boot image. Taken from the stock header: version 0, 2048-byte pages, dt_size 0,
 # because the DTBs are appended to Image.gz rather than carried in a QCDT section.
