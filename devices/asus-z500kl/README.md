@@ -19,6 +19,45 @@ As far as the XDA threads for this tablet go, this is the first working TWRP for
 - **Where this is going:** [ROADMAP.md](ROADMAP.md), and the kernel is now buildable
   from ASUS's sources — [kernel/README.md](kernel/README.md).
 
+## Before you start: do not mount /system read-write
+
+When TWRP asks, choose **Keep Read Only**. It remembers the answer, and it is the right
+one to leave. If `/system` is mounted read-write, the stock Android stops booting.
+
+The symptom looks far worse than the cause. The stock ROM mounts `/system` with
+`verify,rebooterr`: dm-verity protected, and the kernel told to reboot on a verification
+error. Verity hashes *blocks*, and merely mounting the filesystem read-write changes
+some — ext4 updates the mount time, the mount counter and the inode access times just by
+being mounted and read. **No file has to change.** Verity then fails and the bootloader
+reboots after five seconds, saying the system is corrupt.
+
+Measured here: **906 bytes out of 3.7 GB** differed, all of it ext4 bookkeeping —
+`s_mtime`, `s_wtime` and `s_mnt_count` in the superblock, the free-block and free-inode
+counts in the group descriptors, and a run of inode atimes. Not one byte of file content.
+
+**Nothing is actually corrupt.** Restoring the first 4 MiB of the system partition from a
+dump puts it back. Unmount first, or the kernel writes its cached superblock back over
+the restore:
+
+```sh
+umount -l /system
+dd if=system-backup.img of=/dev/block/mmcblk0p44 bs=1048576 count=4
+sync
+```
+
+Which is the argument for dumping every partition before starting, and the reason the
+backup advice below is not boilerplate.
+
+Two things that are **not** this problem:
+
+- **Decrypting `/data` is safe.** TWRP marks `/system` read-only and its decryption path
+  respects that; stock Android still boots afterwards. This was tested specifically,
+  after an earlier guess that it was the culprit turned out to be wrong.
+- **The "system is corrupt" screen at boot is a warning, not a failure.** It appears on
+  every boot once you run images signed with the public AOSP test key rather than ASUS',
+  and Android boots straight through it. The real failure announces itself differently:
+  the bootloader reboots after five seconds instead of carrying on.
+
 ## What works
 
 - boots and runs, with a working **touchscreen** (a one-line fix in the touch driver —
