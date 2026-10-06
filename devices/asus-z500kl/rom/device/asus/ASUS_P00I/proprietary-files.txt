@@ -1,0 +1,121 @@
+# Proprietary files for ASUS_P00I (ASUS ZenPad 3S 10 LTE), extracted from the stock
+# Android 7.0 system by extract-files.sh. Paths are as they appear under /system.
+#
+# This is the M3 list, not the complete one: what is needed for init to run, something
+# to appear on screen, and /data to be decrypted. Each later subsystem adds its own
+# block, so that when something breaks there is a short list of recent additions rather
+# than a wall of four hundred files.
+#
+# What is deliberately *not* here, because LineageOS builds it from source on this
+# platform -- see ../../../../HARDWARE.md:
+#   hwcomposer / gralloc / copybit / libqdutils / libmemalloc   display-caf/msm8952
+#   libOmxVdec / libOmxVenc / libOmxCore                        media-caf/msm8952
+#   audio.primary.msm8952                                       audio-caf/msm8952
+#   libcryptfs_hw                                               vendor/qcom/opensource/cryptfs_hw
+#   gps.default                                                 hardware/qcom/gps
+# Taking those as blobs would mean carrying code we could be reading and fixing.
+
+
+# The Adreno userspace. Unavoidable: there is no open driver for this GPU on Android,
+# and without it nothing reaches the screen. The a530 firmware below pairs with it --
+# the 510 in this SoC runs the same microcode as the 530.
+vendor/lib/egl/eglSubDriverAndroid.so
+vendor/lib/egl/libEGL_adreno.so
+vendor/lib/egl/libGLESv1_CM_adreno.so
+vendor/lib/egl/libGLESv2_adreno.so
+vendor/lib/egl/libQTapGLES.so
+vendor/lib/egl/libq3dtools_adreno.so
+vendor/lib/egl/libq3dtools_esx.so
+vendor/lib/libC2D2.so
+vendor/lib/libEGL_adreno.so
+vendor/lib/libOpenCL.so
+vendor/lib/libRSDriver_adreno.so
+vendor/lib/libadreno_utils.so
+vendor/lib/libgsl.so
+vendor/lib/libllvm-glnext.so
+vendor/lib/libllvm-qcom.so
+vendor/lib/libllvm-qgl.so
+vendor/lib/libmmsw_opencl.so
+vendor/lib/librs_adreno.so
+vendor/lib/librs_adreno_sha1.so
+vendor/lib64/egl/eglSubDriverAndroid.so
+vendor/lib64/egl/libEGL_adreno.so
+vendor/lib64/egl/libGLESv1_CM_adreno.so
+vendor/lib64/egl/libGLESv2_adreno.so
+vendor/lib64/egl/libQTapGLES.so
+vendor/lib64/egl/libq3dtools_adreno.so
+vendor/lib64/egl/libq3dtools_esx.so
+vendor/lib64/libC2D2.so
+vendor/lib64/libEGL_adreno.so
+vendor/lib64/libOpenCL.so
+vendor/lib64/libRSDriver_adreno.so
+vendor/lib64/libadreno_utils.so
+vendor/lib64/libgsl.so
+vendor/lib64/libllvm-glnext.so
+vendor/lib64/libllvm-qcom.so
+vendor/lib64/libllvm-qgl.so
+vendor/lib64/libmmsw_opencl.so
+vendor/lib64/librs_adreno.so
+vendor/lib64/librs_adreno_sha1.so
+
+# The Pixelworks iris2 bridge sits between the SoC and the panel. Only these two
+# libraries are closed; the kernel driver (mdss_dsi_iris2*.c) is in the sources we
+# build, and the panel is a boe nt35523 in command mode.
+lib/libirisConfigure.so
+lib/libiris_ioctl_wrapper.so
+lib64/libirisConfigure.so
+lib64/libiris_ioctl_wrapper.so
+
+# The decryption path. qseecomd talks to the TrustZone and loads the keymaster
+# trustlet from /firmware/image; keystore.msm8952.so is the real keymaster backend, and
+# loading the software one instead is what made the TrustZone reject a correct PIN with
+# -71 while bringing up the recovery.
+bin/qseecomd
+vendor/lib/lib-imsSDP.so
+vendor/lib/libQSEEComAPI.so
+vendor/lib/libSecureUILib.so
+vendor/lib/libdrmfs.so
+vendor/lib/libdrmtime.so
+vendor/lib/libsecureui.so
+vendor/lib/libsecureui_svcsock.so
+vendor/lib/libsecureuisvc_jni.so
+vendor/lib/libssd.so
+vendor/lib64/hw/gatekeeper.msm8952.so
+vendor/lib64/hw/keystore.msm8952.so
+vendor/lib64/lib-imsSDP.so
+vendor/lib64/libQSEEComAPI.so
+vendor/lib64/libSecureUILib.so
+vendor/lib64/libdrmfs.so
+vendor/lib64/libdrmtime.so
+vendor/lib64/libsecureui.so
+vendor/lib64/libsecureui_svcsock.so
+vendor/lib64/libsecureuisvc_jni.so
+vendor/lib64/libssd.so
+
+# Firmware the kernel loads at runtime: the Adreno microcode, Venus for the video
+# codecs, and the display calibration data ASUS ships for the iris2 bridge.
+#
+# Only two Adreno files, and the kernel says which: adreno-gpulist.h gives the
+# ADRENO_REV_A510 entry pm4fw_name "a530_pm4.fw" and pfpfw_name "a530_pfp.fw" -- the 510
+# in this SoC runs the 530's microcode -- and unlike the A530 entries it declares no
+# gpmufw_name and no zap_name, so those are not ours to carry.
+#
+# venus-v1 and not venus: the kernel log says which, in as many words --
+# "subsys-restart: __subsystem_get(): Changing subsys fw_name to venus-v1" -- so the
+# seven plain venus.* files are not this tablet's.
+#
+# iris2.fw is the Pixelworks bridge's own firmware, and it is easy to miss: nothing in
+# the file names suggests it belongs to the display. The kernel asks for it by name at
+# boot ("iris_firmware_download: request firmware: name = iris2.fw"), and without it the
+# bridge never comes up.
+etc/firmware/DE.o.msm8952
+etc/firmware/a530_pfp.fw
+etc/firmware/a530_pm4.fw
+etc/firmware/iris2.fw
+etc/firmware/venus-v1.b00
+etc/firmware/venus-v1.b01
+etc/firmware/venus-v1.b02
+etc/firmware/venus-v1.b03
+etc/firmware/venus-v1.b04
+etc/firmware/venus-v1.mbn
+etc/firmware/venus-v1.mdt

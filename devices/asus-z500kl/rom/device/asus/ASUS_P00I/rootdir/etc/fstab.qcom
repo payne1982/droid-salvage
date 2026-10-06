@@ -1,0 +1,39 @@
+# Android fstab for ASUS_P00I (ASUS ZenPad 3S 10 LTE).
+#
+# Rewritten from the stock one, with the partitions the stock init.target.rc mounted by
+# hand moved in here instead: there should be one description of the layout, and fs_mgr
+# handles them perfectly well.
+#
+# Two deliberate differences from stock, both on /system:
+#
+#   * no `verify`. The stock /system is dm-verity protected and carries a hash tree
+#     after the filesystem; ours will not. Leaving it on would fail at once.
+#   * no `rebooterr`. Rebooting the moment a mount goes wrong is exactly what you do not
+#     want while bringing a ROM up: it replaces a readable error with a loop.
+#
+# /data keeps `encryptable=footer`: hardware FDE with the crypto footer in the last
+# 16 KB of the partition, the master key wrapped by keymaster in the TrustZone. Not
+# `forceencrypt` -- an existing encrypted /data is kept as it is, and an unencrypted one
+# is left alone rather than being converted behind the user's back.
+#
+# /firmware is the `modem` partition, vfat, and it has to be mounted for decryption to
+# work at all: qseecomd loads the keymaster trustlet from /firmware/image.
+#
+# The paths are the by-name symlinks, which exist under a normal Android boot. They do
+# *not* exist under TWRP, which is why the recovery in ../../../../twrp/ uses raw
+# mmcblk0pN nodes instead -- that cost real time to find out.
+
+#<src>                                          <mnt_point>        <type>  <mnt_flags and options>                                                                        <fs_mgr_flags>
+/dev/block/bootdevice/by-name/system            /system            ext4    ro,barrier=1,discard                                                                           wait
+/dev/block/bootdevice/by-name/userdata          /data              ext4    nosuid,nodev,barrier=1,noauto_da_alloc,discard                                                 wait,check,encryptable=footer
+/dev/block/bootdevice/by-name/cache             /cache             ext4    nosuid,nodev,barrier=1                                                                         wait,check
+/dev/block/bootdevice/by-name/persist           /persist           ext4    nosuid,nodev,barrier=1                                                                         wait
+/dev/block/bootdevice/by-name/modem             /firmware          vfat    ro,context=u:object_r:firmware_file:s0,shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337    wait
+/dev/block/bootdevice/by-name/dsp               /dsp               ext4    nosuid,nodev,barrier=1                                                                         wait
+/dev/block/bootdevice/by-name/config            /frp               emmc    defaults                                                                                       defaults
+/dev/block/bootdevice/by-name/misc              /misc              emmc    defaults                                                                                       defaults
+
+# Removable storage, handled by vold rather than mounted at boot.
+# noemulatedsd: this tablet has a real microSD slot, so /sdcard is not a fuse view of /data.
+/devices/soc.0/7864900.sdhci/mmc_host*          /storage/sdcard1   vfat    nosuid,nodev                                                                                   wait,voldmanaged=sdcard1:auto,noemulatedsd
+/devices/platform/msm_hsusb*                    /storage/usbotg    vfat    nosuid,nodev                                                                                   wait,voldmanaged=usbotg:auto
