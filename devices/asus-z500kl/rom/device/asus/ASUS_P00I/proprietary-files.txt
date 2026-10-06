@@ -17,7 +17,12 @@
 
 
 # The Adreno userspace. Unavoidable: there is no open driver for this GPU on Android,
-# and without it nothing reaches the screen. The a530 firmware below pairs with it --
+# and without it nothing reaches the screen.
+#
+# vendor/lib{,64}/libEGL_adreno.so are deliberately absent: in the stock system they are
+# symlinks to egl/libEGL_adreno.so, which is in the list. extract-files.sh would have
+# written two empty files in their place -- worse than missing ones, since an empty .so
+# fails at load time with nothing to point at. The EGL loader looks in egl/ anyway. The a530 firmware below pairs with it --
 # the 510 in this SoC runs the same microcode as the 530.
 vendor/lib/egl/eglSubDriverAndroid.so
 vendor/lib/egl/libEGL_adreno.so
@@ -27,7 +32,6 @@ vendor/lib/egl/libQTapGLES.so
 vendor/lib/egl/libq3dtools_adreno.so
 vendor/lib/egl/libq3dtools_esx.so
 vendor/lib/libC2D2.so
-vendor/lib/libEGL_adreno.so
 vendor/lib/libOpenCL.so
 vendor/lib/libRSDriver_adreno.so
 vendor/lib/libadreno_utils.so
@@ -46,7 +50,6 @@ vendor/lib64/egl/libQTapGLES.so
 vendor/lib64/egl/libq3dtools_adreno.so
 vendor/lib64/egl/libq3dtools_esx.so
 vendor/lib64/libC2D2.so
-vendor/lib64/libEGL_adreno.so
 vendor/lib64/libOpenCL.so
 vendor/lib64/libRSDriver_adreno.so
 vendor/lib64/libadreno_utils.so
