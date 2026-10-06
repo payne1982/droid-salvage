@@ -11,14 +11,14 @@ can only wire up and hope. The split turned out better than expected.
 | subsystem | the hardware | built from source | needed as blobs |
 |---|---|---|---|
 | **platform** | MSM8956 (Snapdragon 650), `ro.board.platform=msm8952`, rev 1.1 | — | — |
-| **display** | 2048×1536 dual-MIPI behind a Pixelworks **iris2** bridge; panels tianma r63319 / nt35523, auo nt35523, boe nt35523 | kernel driver (`mdss_dsi_iris2*.c`), `hwcomposer`/`gralloc`/`libqdutils`/`libmemalloc` from `display-caf/msm8952` | `libirisConfigure.so`, `libiris_ioctl_wrapper.so`, and the calibration data `DE.o.msm8952`, `Phone_LUT`, `Phone_Vivid`, `Splendid` |
+| **display** | 2048×1536 dual-MIPI behind a Pixelworks **iris2** bridge. The board DTS carries six candidate panels; the one actually fitted, read off the running kernel, is **`boe nt35523 dualmipi 1536x2048 cmd`** | kernel driver (`mdss_dsi_iris2*.c`), `hwcomposer`/`gralloc`/`libqdutils`/`libmemalloc` from `display-caf/msm8952` | `libirisConfigure.so`, `libiris_ioctl_wrapper.so`, and the calibration data `DE.o.msm8952`, `Phone_LUT`, `Phone_Vivid`, `Splendid` |
 | **GPU** | Adreno 510 | — | the whole Adreno userspace: `libEGL_adreno`, `libGLESv1_CM_adreno`, `libGLESv2_adreno`, `libgsl`, `libadreno_utils`, `libllvm-glnext/qcom/qgl`, `libOpenCL`, `libRSDriver_adreno`, plus `a530_pfp.fw`/`a530_pm4.fw` |
 | **video codecs** | Venus | `libOmxVdec`, `libOmxVenc`, `libOmxCore` from `media-caf/msm8952` | the Venus firmware (`venus.mdt`, `venus.b00`–`b04`) |
-| **audio** | WCD codec on MSM8956 | `audio.primary.msm8952.so` from `audio-caf/msm8952` | `libacdbloader`, `libacdbmapper`, `libacdb-fts`, `libacdbrtac`, `libaudcal`, and `/system/etc/acdbdata/` |
+| **audio** | WCD codec on MSM8956; the card registers as `msm8952-snd-card`, which confirms the audio-caf variant | `audio.primary.msm8952.so` from `audio-caf/msm8952` | `libacdbloader`, `libacdbmapper`, `libacdb-fts`, `libacdbrtac`, `libaudcal`, and `/system/etc/acdbdata/` |
 | **wifi** | WCNSS **Pronto**, integrated | userspace from `wlan-caf` (`wcnss-service`, `cld80211-lib`, `qcwcn` HAL) | `WCNSS_qcom_cfg.ini`, `WCNSS_qcom_wlan_nv.bin`. **The kernel driver is a problem — see below.** |
 | **bluetooth** | WCNSS, same chip | `libbt-vendor` from `bt-caf` | the BT firmware on the firmware partition |
 | **modem** | single-SIM **LTE** (`ro.telephony.default_network=12` = LTE/GSM/WCDMA, `persist.radio.multisim.config=ss`). Not 5G: this is a 2016 device and the MSM8956 carries an X8 LTE modem | — | `libril-qc-qmi-1.so` (the path `rild.libpath` names), `rild`, `netmgrd`, `qmuxd`, `rmt_storage`, `ipacm`, the IMS daemons |
-| **cameras** | two, both declared in the board DTS: rear with an autofocus actuator (eeprom `le2464c`), front (eeprom `sunny_8865`, which points at an OV8865) | the camera HAL is a blob on this generation | 112 `libmmcamera*` and `libchromatix_*` files **— but see the caveat below** |
+| **cameras** | two, both declared in the board DTS: rear with an autofocus actuator (eeprom `le2464c`), front (eeprom `sunny_8865`). The running kernel logs `ov5670 probe succeeded`, so one of them is an **OV5670**; the other only probes when its camera is opened | the camera HAL is a blob on this generation | 112 `libmmcamera*` and `libchromatix_*` files **— but see the caveat below** |
 | **sensors** | on the sensor DSP | — | `sensors.msm8952.so`, `libsensor1`, `libsensor_reg`, the `sensors.qcom` daemon, `/system/etc/sensors/` |
 | **GPS** | gnss on the modem | `gps.default.so` from `hardware/qcom/gps` | `liblocationservice`, `libloc_ext`, `loc_launcher` |
 | **storage crypto** | FDE in hardware: `aes-xts` through Qualcomm ICE, master key wrapped by keymaster in the TrustZone | `cryptfs_hw` (synced as `vendor/qcom/opensource/cryptfs_hw`) | `keystore.msm8952.so`, `libQSEEComAPI`, `qseecomd`; the keymaster trustlet lives on the `modem` partition, mounted as `/firmware` |
@@ -34,6 +34,26 @@ can only wire up and hope. The split turned out better than expected.
 Worth naming so the choice to skip them is deliberate: **bluetooth** (same WCNSS chip as
 wifi), **GPS**, and the **sensor** stack, which is what gives auto-rotation and the
 ambient light. There is no NFC and no fingerprint reader on this tablet.
+
+## The prebuilt kernel modules are all lost on a kernel we build
+
+The stock system loads five modules: `wlan`, `core_ctl`, `texfat`, `tntfs`,
+`qdrbg_module`, `qcrypto_module`. Every one of them carries a vermagic naming the stock
+kernel release:
+
+```
+vermagic: 3.10.84-perf-g3eaf16a77f6-00007-g55252291255 SMP preempt mod_unload modversions aarch64
+```
+
+So none of them load on a kernel we built, and that is not a thing to work around — see
+the wifi note below. Where each one stands:
+
+| module | what it does | where it comes from |
+|---|---|---|
+| `wlan` | the WiFi driver | **not in ASUS' sources.** Open source at CodeAurora; has to be built against our kernel |
+| `qcrypto_module`, `qdrbg_module` | Qualcomm crypto offload | in the tree (`drivers/crypto/msm`); the recovered config even has `CONFIG_CRYPTO_DEV_QCRYPTO=y` |
+| `core_ctl` | CPU core control | in the tree (`drivers/soc/qcom`) |
+| `texfat`, `tntfs` | **Tuxera** exFAT and NTFS | proprietary, no source. A kernel we build loses exFAT and NTFS, which means microSD cards over 32 GB in their factory format will not mount. The tree has the open read-only `fs/ntfs` but nothing for exFAT, so this needs an open driver rather than a copied binary |
 
 ## Two findings that are real work, not wiring
 
