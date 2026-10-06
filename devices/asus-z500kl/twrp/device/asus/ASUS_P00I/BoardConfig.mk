@@ -86,7 +86,7 @@ TW_EXCLUDE_TWRPAPP := true
 TW_EXCLUDE_MTP := true
 TWRP_INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
-TW_DEVICE_VERSION := payne_15
+TW_DEVICE_VERSION := payne_16
 
 # Encryption: FDE with the master key wrapped by QSEE/keymaster
 # (stock has libcryptfs_hw.so, /system/bin/qseecomd, keystore.msm8952.so).

@@ -103,6 +103,12 @@ so this should start from that patch, or from a 3.10 kernel already running Line
 It has one pleasant property: it can be verified in recovery, with no ROM involved.
 If `/dev/binder`, `/dev/hwbinder` and `/dev/vndbinder` all appear, it works.
 
+**Done, 6 October 2026.** All three appear, registered as misc devices 56, 57 and 58.
+The backport came from Google's own `deprecated/android-3.10` branch rather than from
+the upstream 4.11 commit, so it was written for this exact kernel version. Touch,
+mounts, the cgroup controllers from M1 and `/proc/config.gz` all still work, and the
+running configuration matches what was built. See `kernel/README.md`.
+
 ### M2 — device tree and vendor blobs
 `device/asus/ASUS_P00I` for LineageOS 16.0, and `vendor/asus/ASUS_P00I` extracted
 from the stock `/system`. The extraction needs no tablet at all: the full partition
