@@ -1,0 +1,140 @@
+#
+# Copyright (C) 2026 The Android Open Source Project
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ASUS ZenPad 3S 10 LTE (Z500KL / ASUS_P00I) - MSM8956, kernel 3.10, pre-Treble.
+#
+# Everything here that is not self-evident is either measured on the device or
+# explained. The partition map comes from the GPT, the kernel settings from the stock
+# boot image, and the crypto settings from the footer in the last 16 KB of userdata.
+# See ../../../../NOTES.md and ../../../../kernel/README.md.
+#
+
+DEVICE_PATH := device/asus/ASUS_P00I
+
+# Architecture. 64-bit with a 32-bit second arch, because a Nougat vendor ships
+# plenty of 32-bit-only blobs (audio HAL, camera daemon).
+TARGET_ARCH := arm64
+TARGET_ARCH_VARIANT := armv8-a
+TARGET_CPU_ABI := arm64-v8a
+TARGET_CPU_VARIANT := cortex-a53
+
+TARGET_2ND_ARCH := arm
+TARGET_2ND_ARCH_VARIANT := armv7-a-neon
+TARGET_2ND_CPU_ABI := armeabi-v7a
+TARGET_2ND_CPU_ABI2 := armeabi
+TARGET_2ND_CPU_VARIANT := cortex-a53
+
+TARGET_USES_64_BIT_BINDER := true
+
+# Platform. ro.board.platform is msm8952 even though the SoC is an MSM8956, and the
+# HAL modules on the stock system are named *.msm8952.so to match. LineageOS has no
+# family entry for msm8952, so vendor/lineage/config/BoardConfigQcom.mk falls into its
+# final else branch and sets QCOM_HARDWARE_VARIANT := msm8952 -- which is what we want:
+# hardware/qcom/{audio,display,media}-caf/msm8952 all exist. It also leaves
+# TARGET_USES_QCOM_BSP and the UM-family flags off, the right place for a Nougat-era,
+# pre-Treble platform.
+TARGET_BOARD_PLATFORM := msm8952
+TARGET_BOOTLOADER_BOARD_NAME := msm8952
+TARGET_NO_BOOTLOADER := true
+TARGET_OTA_ASSERT_DEVICE := ASUS_P00I,P00I,Z500KL
+
+# Pre-Treble: no vendor partition exists, so /vendor lives inside system, as it does
+# on the stock ROM.
+TARGET_COPY_OUT_VENDOR := system/vendor
+
+# Kernel, built from ASUS' published sources with the configuration recovered from the
+# stock image. See ../../../../kernel/README.md for the whole story.
+#
+# KERNEL_MAKE_FLAGS is referenced by vendor/lineage/build/tasks/kernel.mk but never
+# defined there: it is a hook for exactly this. Three things have to go through it:
+#
+#   TARGET_PROJECT=Z500KL  arch/arm64/boot/dts/qcom/Makefile builds
+#                          msm8956-v1.1-cdp-$(TARGET_PROJECT).dtb. Without it this
+#                          tablet's device tree is never compiled and the kernel has no
+#                          matching board, so it does not boot.
+#   CC=...gcc-4.9.x        the tree routes CC through scripts/gcc-wrapper.py, a Python 2
+#                          script. Pointing CC at the real driver binary skips it; all
+#                          it does is promote some warnings to errors. Note the AOSP
+#                          prebuilt "aarch64-linux-android-gcc" is itself a Python
+#                          wrapper that re-executes a "real-" file which does not exist
+#                          in these prebuilts, so it cannot be used.
+#   HOSTCFLAGS with        the host tools are built by the *system* gcc. Since gcc 10
+#   -fcommon               -fno-common is the default, and scripts/dtc declares yylloc
+#                          in both its lexer and its parser, so it fails to link. The
+#                          other flags are the tree's own defaults, kept as they are.
+#
+# TARGET_KERNEL_CLANG_COMPILE stays false (the default), which leaves KERNEL_CC empty
+# so our CC is the only one in play. A current clang cannot build a 3.10 kernel anyway.
+TARGET_KERNEL_SOURCE := kernel/asus/msm8956
+TARGET_KERNEL_CONFIG := asus_P00I_defconfig
+TARGET_KERNEL_CLANG_COMPILE := false
+TARGET_KERNEL_ARCH := arm64
+
+KERNEL_TOOLCHAIN_BIN := prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin
+KERNEL_MAKE_FLAGS := TARGET_PROJECT=Z500KL
+KERNEL_MAKE_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/aarch64-linux-android-gcc-4.9.x)
+KERNEL_MAKE_FLAGS += HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -fcommon"
+
+# Boot image. Taken from the stock header: version 0, 2048-byte pages, dt_size 0,
+# because the DTBs are appended to Image.gz rather than carried in a QCDT section.
+BOARD_KERNEL_IMAGE_NAME := Image.gz-dtb
+BOARD_KERNEL_BASE := 0x80000000
+BOARD_KERNEL_PAGESIZE := 2048
+BOARD_RAMDISK_OFFSET := 0x01000000
+BOARD_KERNEL_TAGS_OFFSET := 0x00000100
+BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
+BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_KERNEL_TAGS_OFFSET)
+
+# The stock command line, kept as it is. androidboot.bootdevice is what makes the
+# by-name symlink tree appear; losing it cost real time while getting TWRP to work.
+BOARD_KERNEL_CMDLINE := console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0
+BOARD_KERNEL_CMDLINE += androidboot.hardware=qcom msm_rtb.filter=0x237 ehci-hcd.park=3
+BOARD_KERNEL_CMDLINE += androidboot.bootdevice=7824900.sdhci lpm_levels.sleep_disabled=1
+BOARD_KERNEL_CMDLINE += earlyprintk
+
+# Partitions, straight from the GPT (backup/gpt_primary.bin):
+#   p41 boot 64 MiB, p43 recovery 64 MiB, p44 system 3700 MiB,
+#   p36 cache 250 MiB, p45 userdata 112 GiB.
+# system at 3.7 GB is roomy enough that no repartitioning is needed, which matters on
+# a device whose GPT can only be repaired through EDL.
+BOARD_FLASH_BLOCK_SIZE := 131072
+BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864
+BOARD_RECOVERYIMAGE_PARTITION_SIZE := 67108864
+BOARD_SYSTEMIMAGE_PARTITION_SIZE := 3879731200
+BOARD_CACHEIMAGE_PARTITION_SIZE := 262144000
+BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
+BOARD_HAS_LARGE_FILESYSTEM := true
+TARGET_USERIMAGES_USE_EXT4 := true
+TARGET_USERIMAGES_USE_F2FS := true
+
+# Full-disk encryption in hardware: aes-xts through Qualcomm ICE (/dev/icesdcc), the
+# master key wrapped by keymaster in the TrustZone, scrypt+keymaster as the KDF, and
+# the footer in the last 16 KB of userdata. Not FBE: this kernel has no fscrypt.
+TARGET_HW_DISK_ENCRYPTION := true
+TARGET_KEYMASTER_WAIT_FOR_QSEE := true
+
+# SELinux. sepolicy-legacy, not sepolicy: the latter targets the UM platforms, and
+# this is a pre-UM Nougat vendor.
+include device/qcom/sepolicy-legacy/sepolicy.mk
+BOARD_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy
+
+# Recovery: the same fstab the ROM uses, so there is one description of the layout.
+TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
+TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.qcom
+
+# The bootloader refuses an image whose AVB1 signature does not name the partition it
+# is being written to, and fastboot flash is disabled on it, so images go on with dd
+# from a root shell. Nothing here needs a verity key.
+PLATFORM_SECURITY_PATCH := 2099-12-31
+
+# -----------------------------------------------------------------------------------
+# Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
+# value into a first boot where every symptom has a dozen candidate causes:
+#   - graphics:  BOARD_EGL_CFG, TARGET_USES_ION, TARGET_USES_OVERLAY, gralloc bits
+#   - wifi:      BOARD_HAS_QCOM_WLAN, WIFI_DRIVER_*, the firmware path
+#   - audio:     BOARD_USES_ALSA_AUDIO, the mixer paths
+#   - RIL:       BOARD_PROVIDES_LIBRIL, the qcril properties
+#   - camera:    left for last, as always on a legacy port
+# -----------------------------------------------------------------------------------
