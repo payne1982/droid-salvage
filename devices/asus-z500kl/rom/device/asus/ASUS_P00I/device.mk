@@ -32,8 +32,24 @@ PRODUCT_AAPT_PREF_CONFIG := xhdpi
 # extract-files.sh rather than being committed here, the same rule the recovery tree
 # follows. They will need adapting: they are written for Nougat's init, and Pie's is
 # stricter about what it accepts.
+# $(TARGET_COPY_OUT_ROOT) and not $(TARGET_COPY_OUT_RAMDISK): on this tree the latter is
+# *empty* -- it exists for A/B and system-as-root layouts, and this device is neither --
+# so a destination built from it expands to "/fstab.qcom" and the file silently lands
+# nowhere. The first build produced a ramdisk of 59 entries with no fstab in it, and
+# nothing complained.
 PRODUCT_COPY_FILES += \
-    $(DEVICE_PATH)/rootdir/etc/fstab.qcom:$(TARGET_COPY_OUT_RAMDISK)/fstab.qcom
+    $(DEVICE_PATH)/rootdir/etc/fstab.qcom:$(TARGET_COPY_OUT_ROOT)/fstab.qcom
+
+# ASUS' own init scripts are extracted into rootdir/etc by extract-files.sh but are
+# deliberately NOT installed yet. They are 150 KB written for Nougat's init, and a first
+# boot with all of them in would produce a wall of init errors in which nothing can be
+# told apart. The point of M3 is a boot that can be read, so this starts with AOSP's init
+# alone and adds ASUS' scripts one at a time, deliberately, once we can see what init
+# says. When that time comes, note that PRODUCT_COPY_FILES installs 0644 and the .sh
+# scripts will need their execute bit.
+#
+# PRODUCT_COPY_FILES += $(foreach f,$(wildcard $(DEVICE_PATH)/rootdir/etc/init.*.rc), \
+#     $(f):$(TARGET_COPY_OUT_ROOT)/$(notdir $(f)))
 
 # ---------------------------------------------------------------------------------
 # Graphics
