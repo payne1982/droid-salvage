@@ -18,7 +18,7 @@ can only wire up and hope. The split turned out better than expected.
 | **wifi** | WCNSS **Pronto**, integrated | userspace from `wlan-caf` (`wcnss-service`, `cld80211-lib`, `qcwcn` HAL) | `WCNSS_qcom_cfg.ini`, `WCNSS_qcom_wlan_nv.bin`. **The kernel driver is a problem — see below.** |
 | **bluetooth** | WCNSS, same chip | `libbt-vendor` from `bt-caf` | the BT firmware on the firmware partition |
 | **modem** | single-SIM **LTE** (`ro.telephony.default_network=12` = LTE/GSM/WCDMA, `persist.radio.multisim.config=ss`). Not 5G: this is a 2016 device and the MSM8956 carries an X8 LTE modem | — | `libril-qc-qmi-1.so` (the path `rild.libpath` names), `rild`, `netmgrd`, `qmuxd`, `rmt_storage`, `ipacm`, the IMS daemons |
-| **cameras** | two, both declared in the board DTS: rear with an autofocus actuator (eeprom `le2464c`), front (eeprom `sunny_8865`). The running kernel logs `ov5670 probe succeeded`, so one of them is an **OV5670**; the other only probes when its camera is opened | the camera HAL is a blob on this generation | 112 `libmmcamera*` and `libchromatix_*` files **— but see the caveat below** |
+| **cameras** | **rear: Toshiba T4K35** (8 MP, 4-lane MIPI), with an autofocus actuator and the `le2464c` eeprom. **Front: OmniVision OV5670** (5 MP), `sunny_8865` eeprom. Both read from the kernel log, not from a spec sheet | the camera HAL is a blob on this generation | 48 sensor-specific files out of the 486 ASUS shipped, plus the common ISP pipeline | the camera HAL is a blob on this generation | 112 `libmmcamera*` and `libchromatix_*` files **— but see the caveat below** |
 | **sensors** | on the sensor DSP | — | `sensors.msm8952.so`, `libsensor1`, `libsensor_reg`, the `sensors.qcom` daemon, `/system/etc/sensors/` |
 | **GPS** | gnss on the modem | `gps.default.so` from `hardware/qcom/gps` | `liblocationservice`, `libloc_ext`, `loc_launcher` |
 | **storage crypto** | FDE in hardware: `aes-xts` through Qualcomm ICE, master key wrapped by keymaster in the TrustZone | `cryptfs_hw` (synced as `vendor/qcom/opensource/cryptfs_hw`) | `keystore.msm8952.so`, `libQSEEComAPI`, `qseecomd`; the keymaster trustlet lives on the `modem` partition, mounted as `/firmware` |
@@ -79,10 +79,19 @@ imx135, imx214, imx230, imx258, ov13850 (three variants), ov2685, ov4688, ov5645
 ov5670, ov8858, ov8865, s5k3m2xm, s5k3m2xx, t4k35, hm2051. So the presence of a
 `libchromatix_*` file says nothing about what is soldered in.
 
-The sensor identity has to be read off the running device — the kernel log at probe
-time, or the camera sysfs nodes — which means the camera blob list is the one thing
-here that genuinely has to wait for a booting system. Fitting, since the camera is last
-in the plan anyway.
+**Settled by reading the running kernel**, which is why this had to wait for a booting
+system:
+
+```
+t4k35_4lane probe succeeded      <- rear, 8 MP
+ov5670 probe succeeded           <- front, 5 MP
+```
+
+That reduces the camera blobs from the 486 files ASUS shipped to **48** sensor-specific
+ones — the `t4k35_4lane` and `ov5670` chromatix sets and their three `libmmcamera_*`
+drivers — plus the `le2464c` and `sunny_8865` eeprom readers named in the board DTS, and
+the common ISP pipeline (`libmmcamera2_*`, `libmmcamera_isp_*`) which is needed whatever
+the sensors are. Tractable, where the full set was not.
 
 ## What this means for the order of work
 
