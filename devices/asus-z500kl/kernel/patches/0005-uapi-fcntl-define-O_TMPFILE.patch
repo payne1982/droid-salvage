@@ -1,0 +1,43 @@
+Subject: [PATCH 5/5] uapi: fcntl: define O_TMPFILE for Android 9 userspace
+
+Building LineageOS 16.0 against this kernel stops at the display HAL:
+
+    gralloc.msm8952_intermediates/gpu.o
+    bionic/libc/include/bits/fortify/fcntl.h:63:26:
+        error: use of undeclared identifier 'O_TMPFILE'
+
+The Qualcomm HALs compile against the kernel's own exported headers
+(KERNEL_OBJ/usr/include, from headers_install), which take precedence over
+bionic's copies. O_TMPFILE arrived in Linux 3.11, so this 3.10 tree does not
+define it, while Pie's bionic fortify header assumes it exists.
+
+This adds the definition exactly as Linux 3.11 has it in
+include/uapi/asm-generic/fcntl.h, comment included. It is header-only: nothing
+in this kernel references O_TMPFILE, so the kernel's behaviour does not change.
+
+And the definition is designed for exactly this situation. O_TMPFILE is
+__O_TMPFILE | O_DIRECTORY, so on a kernel that does not implement it -- this
+one -- the unknown bit is ignored and the open() is an O_DIRECTORY open with
+write access, which fails with EISDIR. Userspace sees a clean failure and falls
+back, instead of silently getting a regular file. Hence upstream's own comment,
+"a horrid kludge trying to make sure that this will fail on old kernels".
+---
+diff --git include/uapi/asm-generic/fcntl.h include/uapi/asm-generic/fcntl.h
+index a48937d4..d2940bbd 100644
+--- include/uapi/asm-generic/fcntl.h
++++ include/uapi/asm-generic/fcntl.h
+@@ -84,6 +84,14 @@
+ #define O_PATH		010000000
+ #endif
+ 
++#ifndef __O_TMPFILE
++#define __O_TMPFILE	020000000
++#endif
++
++/* a horrid kludge trying to make sure that this will fail on old kernels */
++#define O_TMPFILE (__O_TMPFILE | O_DIRECTORY)
++#define O_TMPFILE_MASK (__O_TMPFILE | O_DIRECTORY | O_CREAT)
++
+ #ifndef O_NDELAY
+ #define O_NDELAY	O_NONBLOCK
+ #endif

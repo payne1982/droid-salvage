@@ -1,0 +1,50 @@
+Subject: [PATCH 6/6] arm64: uapi: key __BITS_PER_LONG on __LP64__
+
+Building LineageOS 16.0 stops in the 32-bit half of the display HAL:
+
+    libhdmi/hdmi.cpp:188:42: error: format specifies type 'ssize_t' (aka 'int')
+        but the argument has type 'ssize_t' (aka 'long') [-Werror,-Wformat]
+
+Two ssize_t in one compile. The cause is in how the kernel headers reach it.
+LineageOS's generated_kernel_includes (vendor/lineage/build/soong/Android.bp)
+runs `headers_install` once, with ARCH=$(KERNEL_ARCH) -- arm64 -- and exports
+usr/include wholesale, asm/ included, as -I. That puts it ahead of bionic's
+-isystem bionic/libc/kernel/uapi/asm-arm, so 32-bit code picks up arm64's
+asm/bitsperlong.h, whose unconditional __BITS_PER_LONG 64 makes
+asm-generic/posix_types.h choose `typedef __kernel_long_t __kernel_ssize_t`.
+
+There is no knob in the LineageOS side to make that export ABI-aware, and a
+change there would be lost on every repo sync. Fixing the header itself is
+smaller and correct for both ABIs: GCC and clang define __LP64__ for LP64
+targets only.
+
+Not a backport: Google's deprecated/android-3.10 and LineageOS's msm8996 kernel
+both still carry the unconditional definition. The kernel's own build is
+unaffected, since it always compiles as LP64.
+
+Found by reading the compile's import_includes file -- part of the include path
+is pulled in from there with $(cat ...), so it does not appear on the command
+line -- after two guesses about the include order turned out wrong.
+---
+diff --git arch/arm64/include/uapi/asm/bitsperlong.h arch/arm64/include/uapi/asm/bitsperlong.h
+index fce9c292..ff5ef467 100644
+--- arch/arm64/include/uapi/asm/bitsperlong.h
++++ arch/arm64/include/uapi/asm/bitsperlong.h
+@@ -16,7 +16,17 @@
+ #ifndef __ASM_BITSPERLONG_H
+ #define __ASM_BITSPERLONG_H
+ 
++/*
++ * These headers are exported once, for arm64, and the Android build hands the same
++ * copy to its 32-bit compiles too. An unconditional 64 then makes ssize_t a long in
++ * 32-bit code. __LP64__ is defined by GCC and clang for LP64 targets only, so key the
++ * width on that and the header is right for both ABIs.
++ */
++#ifdef __LP64__
+ #define __BITS_PER_LONG 64
++#else
++#define __BITS_PER_LONG 32
++#endif
+ 
+ #include <asm-generic/bitsperlong.h>
+ 
