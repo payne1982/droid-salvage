@@ -15,6 +15,13 @@ This does not boot yet. It is the device tree being built up towards M3 in
 repo init -u https://github.com/LineageOS/android.git -b lineage-16.0 --depth=1
 repo sync -c -j4 --no-clone-bundle
 
+# 1b. WebView is stored in Git LFS, and repo leaves only a 134-byte pointer where the
+#     243 MB APK should be. The build gets ~94% of the way and then fails packaging it
+#     with "java.util.zip.ZipException: zip END header not found". Each architecture is
+#     its own project; arm64 carries the 32-bit half too, so it is the only one needed.
+#     --local because repo configured that repository to skip LFS.
+( cd external/chromium-webview/prebuilt/arm64 && git lfs install --local && git lfs pull )
+
 # 2. this device tree
 rsync -a devices/asus-z500kl/rom/device/ <tree>/device/
 
