@@ -19,6 +19,11 @@
 # /firmware is the `modem` partition, vfat, and it has to be mounted for decryption to
 # work at all: qseecomd loads the keymaster trustlet from /firmware/image.
 #
+# /boot and /recovery are listed although nothing mounts them: the OTA tools look them
+# up here to know which partition to write and to check the image fits
+# (common.CheckSize), and without them packaging stops with KeyError: '/boot'.
+# mount_all skips emmc entries.
+#
 # The paths are the by-name symlinks, which exist under a normal Android boot. They do
 # *not* exist under TWRP, which is why the recovery in ../../../../twrp/ uses raw
 # mmcblk0pN nodes instead -- that cost real time to find out.
@@ -30,6 +35,8 @@
 /dev/block/bootdevice/by-name/persist           /persist           ext4    nosuid,nodev,barrier=1                                                                         wait
 /dev/block/bootdevice/by-name/modem             /firmware          vfat    ro,context=u:object_r:firmware_file:s0,shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337    wait
 /dev/block/bootdevice/by-name/dsp               /dsp               ext4    nosuid,nodev,barrier=1                                                                         wait
+/dev/block/bootdevice/by-name/boot              /boot              emmc    defaults                                                                                       defaults
+/dev/block/bootdevice/by-name/recovery          /recovery          emmc    defaults                                                                                       defaults
 /dev/block/bootdevice/by-name/config            /frp               emmc    defaults                                                                                       defaults
 /dev/block/bootdevice/by-name/misc              /misc              emmc    defaults                                                                                       defaults
 
