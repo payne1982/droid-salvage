@@ -33,7 +33,10 @@ cd <tree>/device/asus/ASUS_P00I
 ./tools/extract-files.sh --from-dumps /path/to/system.img /path/to/boot.img
 
 # 5. build
-cd <tree> && source build/envsetup.sh && lunch lineage_ASUS_P00I-userdebug && mka bacon
+# WITH_ADB_INSECURE: during bring-up adb must work without being authorised on the
+# screen, because the screen may well not work yet. LineageOS only allows that on eng
+# builds or with this variable (vendor/lineage/config/common.mk). Drop it for a release.
+cd <tree> && source build/envsetup.sh && lunch lineage_ASUS_P00I-userdebug && WITH_ADB_INSECURE=true mka bacon
 ```
 
 Step 4 takes partition dumps rather than a device on purpose. It needs no root and no

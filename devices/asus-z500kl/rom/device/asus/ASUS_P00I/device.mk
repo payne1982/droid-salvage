@@ -52,6 +52,22 @@ PRODUCT_COPY_FILES += \
 #     $(f):$(TARGET_COPY_OUT_ROOT)/$(notdir $(f)))
 
 # ---------------------------------------------------------------------------------
+# Boot image signature
+# ---------------------------------------------------------------------------------
+# The bootloader refuses a boot image without an AVB1 signature naming the partition
+# -- it is how the recovery had to be signed with magiskboot -- and the first complete
+# build produced boot.img with no signature at all: written as it was, the tablet would
+# not have booted it. boot_signer appends exactly that BootSignature, with target
+# "/boot" (build/make/core/Makefile). The bootloader does not pin a key, so the public
+# AOSP verity test key is the right one, as it was for the recovery.
+#
+# Set directly rather than by inheriting target/product/verity.mk, which would also
+# switch on PRODUCT_SUPPORTS_VERITY: dm-verity on /system is exactly what we removed
+# from the fstab, and what made a read-write mount enough to stop stock Android booting.
+PRODUCT_SUPPORTS_BOOT_SIGNER := true
+PRODUCT_VERITY_SIGNING_KEY := build/target/product/security/verity
+
+# ---------------------------------------------------------------------------------
 # Graphics
 # ---------------------------------------------------------------------------------
 # hwcomposer.msm8952 from display-caf/msm8952 is HWC1 (HWC_DEVICE_API_VERSION_1_5),
