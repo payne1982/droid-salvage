@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     ASUS_P00I framework overlay. Each value is here because the hardware reports
+     something the framework would otherwise not listen to.
+-->
+<resources>
+    <!-- The headset jack is reported as an input device, "msm8952-snd-card Headset
+         Jack", with SW_HEADPHONE_INSERT and SW_MICROPHONE_INSERT. There is no
+         switch/h2w, which is what the framework watches by default, so without this
+         a plugged headset went unnoticed and sound stayed on the speaker. -->
+    <bool name="config_useDevInputEventForAudioJack">true</bool>
+
+    <!-- The magnet in the cover: "lid_input" reports SW_LID. Closing the cover
+         turns the screen off, opening it turns it back on. -->
+    <bool name="config_lidControlsSleep">true</bool>
+</resources>
