@@ -160,13 +160,21 @@ PLATFORM_SECURITY_PATCH := 2099-12-31
 # and time), and an incremental build rewrites vendor/build.prop when its content
 # changes but leaves system/build.prop alone: the two ended up with different
 # fingerprints, and Pie then shows "There's an internal problem with your device" at
-# every boot (Build.isBuildConsistent). Builds are told apart by ro.build.date and
-# ro.lineage.version instead.
+# every boot (Build.isBuildConsistent).
+#
+# The build-number field is ours instead: P00I_RELEASE, "dev" for everyday builds and
+# the release name for published ones (payne_N, the same convention as the recovery).
+# Build a release with tools/release-build.sh, which also clears the property files:
+#   tools/release-build.sh payne_17
+# so every published build has its own fingerprint, and it stays consistent between
+# system and vendor even if the release build is an incremental one. Between
+# development builds, ro.build.date and ro.lineage.version tell them apart.
 #
 # It has to be this make variable, read once in build/make/core/Makefile for all three
 # property files. PRODUCT_BUILD_PROP_OVERRIDES looks like the obvious place and is
 # wrong: it reaches system/build.prop only, which would make the two differ always.
-BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:9/PQ3A.190801.002/payne:userdebug/test-keys
+P00I_RELEASE ?= dev
+BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:9/PQ3A.190801.002/$(P00I_RELEASE):userdebug/test-keys
 
 # The HIDL manifest: every HAL this device provides. See the file for why it matters
 # even on a non-Treble device.
