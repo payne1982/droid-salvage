@@ -32,6 +32,7 @@ vendor/lib/egl/libQTapGLES.so
 vendor/lib/egl/libq3dtools_adreno.so
 vendor/lib/egl/libq3dtools_esx.so
 vendor/lib/libC2D2.so
+vendor/lib/libCB.so
 vendor/lib/libOpenCL.so
 vendor/lib/libRSDriver_adreno.so
 vendor/lib/libadreno_utils.so
@@ -40,6 +41,7 @@ vendor/lib/libllvm-glnext.so
 vendor/lib/libllvm-qcom.so
 vendor/lib/libllvm-qgl.so
 vendor/lib/libmmsw_opencl.so
+vendor/lib/libmmsw_platform.so
 vendor/lib/librs_adreno.so
 vendor/lib/librs_adreno_sha1.so
 vendor/lib64/egl/eglSubDriverAndroid.so
@@ -50,6 +52,7 @@ vendor/lib64/egl/libQTapGLES.so
 vendor/lib64/egl/libq3dtools_adreno.so
 vendor/lib64/egl/libq3dtools_esx.so
 vendor/lib64/libC2D2.so
+vendor/lib64/libCB.so
 vendor/lib64/libOpenCL.so
 vendor/lib64/libRSDriver_adreno.so
 vendor/lib64/libadreno_utils.so
@@ -58,8 +61,14 @@ vendor/lib64/libllvm-glnext.so
 vendor/lib64/libllvm-qcom.so
 vendor/lib64/libllvm-qgl.so
 vendor/lib64/libmmsw_opencl.so
+vendor/lib64/libmmsw_platform.so
 vendor/lib64/librs_adreno.so
 vendor/lib64/librs_adreno_sha1.so
+# libRSDriver_adreno links libLLVM.so, which stock keeps in /system/lib: it is the
+# Nougat platform's LLVM, and Pie has none by that name (it ships libLLVM_android), so
+# there is nothing for it to clash with.
+lib/libLLVM.so
+lib64/libLLVM.so
 
 # The Pixelworks iris2 bridge sits between the SoC and the panel. Only these two
 # libraries are closed; the kernel driver (mdss_dsi_iris2*.c) is in the sources we
@@ -73,7 +82,39 @@ lib64/libiris_ioctl_wrapper.so
 # trustlet from /firmware/image; keystore.msm8952.so is the real keymaster backend, and
 # loading the software one instead is what made the TrustZone reject a correct PIN with
 # -71 while bringing up the recovery.
+#
+# libdiag and libtime_genoff were missed in the first cut, and the first boot that got
+# as far as system_server showed what that costs: libdrmfs links libdiag, qseecomd links
+# libdrmfs, so qseecomd could not even start ("CANNOT LINK EXECUTABLE ... libdiag.so not
+# found"); without it the keymaster never answers, keystore never registers, and
+# system_server dies on a null IKeystoreService. Found with tools/missing-libs.sh run on
+# the build output, which lists every DT_NEEDED that resolves nowhere.
+#
+# lib-imsSDP is IMS (VoLTE) and is left dangling on purpose: its dependencies
+# (lib-imsdpl, lib-rtpcommon, and through them the QMI stack) belong to the RIL block.
+# libsecureui's two missing libraries are added; lib-sec-disp exists only as 64-bit in
+# the stock system, so the 32-bit libsecureui stays unusable, as it was on stock.
 bin/qseecomd
+vendor/lib/libdiag.so
+vendor/lib/libtime_genoff.so
+vendor/lib/libStDrvInt.so
+vendor/lib64/libdiag.so
+vendor/lib64/libtime_genoff.so
+vendor/lib64/libStDrvInt.so
+vendor/lib64/lib-sec-disp.so
+#
+# qseecomd also dlopen()s its listeners, which no DT_NEEDED scan can see: librpmb,
+# libssd, libdrmtime, libsecureui, libGPreqcancel, libqisl (the names are plain
+# strings in the binary). Without librpmb it logs "RPMB_INIT failed, shall not start
+# listener services" and the keymaster still never answers.
+vendor/lib/libGPreqcancel.so
+vendor/lib/libGPreqcancel_svc.so
+vendor/lib/libqisl.so
+vendor/lib/librpmb.so
+vendor/lib64/libGPreqcancel.so
+vendor/lib64/libGPreqcancel_svc.so
+vendor/lib64/libqisl.so
+vendor/lib64/librpmb.so
 vendor/lib/lib-imsSDP.so
 vendor/lib/libQSEEComAPI.so
 vendor/lib/libSecureUILib.so
@@ -111,6 +152,13 @@ vendor/lib64/libssd.so
 # the file names suggests it belongs to the display. The kernel asks for it by name at
 # boot ("iris_firmware_download: request firmware: name = iris2.fw"), and without it the
 # bridge never comes up.
+#
+# mTX1666T2_cfg.raw is the Atmel touch controller's configuration. About 15 s after
+# boot the atmel_z500 driver re-checks the chip's config against it, and when the file
+# is missing it soft-resets the controller five times looking for it (the TWRP tree
+# ships the same file for the same reason). Missed in the first cut; the first M3 boots
+# logged "could not find firmware for mTX1666T2_cfg.raw" over and over.
+etc/firmware/mTX1666T2_cfg.raw
 etc/firmware/DE.o.msm8952
 etc/firmware/a530_pfp.fw
 etc/firmware/a530_pm4.fw

@@ -26,7 +26,7 @@ PRODUCT_AAPT_PREF_CONFIG := xhdpi
 # ---------------------------------------------------------------------------------
 # rootdir
 # ---------------------------------------------------------------------------------
-# Only the fstab for now: it is ours, rewritten from the stock one (see the file for
+# The fstab is ours, rewritten from the stock one (see the file for
 # the two deliberate differences). The stock init.qcom.rc, init.target.rc,
 # init.qcom.usb.rc and ueventd.qcom.rc are ASUS' own and come off the device with
 # extract-files.sh rather than being committed here, the same rule the recovery tree
@@ -41,15 +41,25 @@ PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/rootdir/etc/fstab.qcom:$(TARGET_COPY_OUT_ROOT)/fstab.qcom
 
 # ASUS' own init scripts are extracted into rootdir/etc by extract-files.sh but are
-# deliberately NOT installed yet. They are 150 KB written for Nougat's init, and a first
+# deliberately NOT installed. They are 150 KB written for Nougat's init, and a first
 # boot with all of them in would produce a wall of init errors in which nothing can be
-# told apart. The point of M3 is a boot that can be read, so this starts with AOSP's init
-# alone and adds ASUS' scripts one at a time, deliberately, once we can see what init
-# says. When that time comes, note that PRODUCT_COPY_FILES installs 0644 and the .sh
-# scripts will need their execute bit.
+# told apart.
 #
-# PRODUCT_COPY_FILES += $(foreach f,$(wildcard $(DEVICE_PATH)/rootdir/etc/init.*.rc), \
-#     $(f):$(TARGET_COPY_OUT_ROOT)/$(notdir $(f)))
+# The device init is ours instead, in rootdir/init, and grows a subsystem at a time.
+# "AOSP's init alone" was the first plan and it does not boot: the core init.rc leaves
+# mount_all to init.${ro.hardware}.rc, so without one nothing is mounted and the tablet
+# sits on the bootloader logo (first M3 attempt, see init.qcom.rc).
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/rootdir/init/init.qcom.rc:$(TARGET_COPY_OUT_ROOT)/init.qcom.rc \
+    $(DEVICE_PATH)/rootdir/init/init.qcom.usb.rc:$(TARGET_COPY_OUT_ROOT)/init.qcom.usb.rc
+
+# ueventd.qcom.rc is the one ASUS file installed as it is: a plain table of device node
+# owners and modes (kgsl, camera, video, audio, sensors...), no commands, nothing that
+# depends on the init version. Without it every Qualcomm node is root-only and the
+# HALs, which run as system/media/camera, cannot open their hardware. It comes from
+# extract-files.sh; the wildcard keeps a tree that has not run it buildable.
+PRODUCT_COPY_FILES += $(foreach f,$(wildcard $(DEVICE_PATH)/rootdir/etc/ueventd.qcom.rc), \
+    $(f):$(TARGET_COPY_OUT_ROOT)/ueventd.qcom.rc)
 
 # ---------------------------------------------------------------------------------
 # Boot image signature
@@ -132,6 +142,55 @@ PRODUCT_PACKAGES += \
     lights.msm8952
 
 # ---------------------------------------------------------------------------------
+# Platform features
+# ---------------------------------------------------------------------------------
+# Only what something already backs. A feature declared here tells apps and the
+# framework the hardware is there, so camera, sensors, location, telephony and
+# bluetooth come with their own blocks rather than ahead of them.
+#
+# wifi is the exception, and on purpose: SystemServer starts the wifi service only when
+# android.hardware.wifi is declared, and com.android.phone, which is persistent, calls
+# WifiManager.createWifiLock() at startup without a null check. Without it the phone
+# process crash-looped on the first boot that reached the launcher. With the feature
+# and no driver yet, wifi simply fails to switch on.
+#
+# tablet_core_hardware.xml is our copy, with bluetooth, compass and accelerometer taken
+# out until their HALs exist; the file says why.
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/permissions/tablet_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/tablet_core_hardware.xml \
+    frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
+    frameworks/native/data/etc/android.hardware.usb.accessory.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.usb.accessory.xml \
+    frameworks/native/data/etc/android.hardware.usb.host.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.usb.host.xml \
+    frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml
+
+# ---------------------------------------------------------------------------------
+# Audio -- a stub, so that the boot can finish
+# ---------------------------------------------------------------------------------
+# Not real audio: AOSP's audio.primary.default accepts every stream and discards it.
+# It is here because Pie cannot boot without *some* audio HAL. With none, audioserver
+# dereferences a null DevicesFactoryHal in AudioFlinger::loadHwModule_l() and crashes,
+# system_server waits for media.audio_policy at StartAudioService forever, and the boot
+# animation never ends (fourth M3 attempt: 43 audioserver crashes in three minutes).
+# The real HAL (audio-caf/msm8952 with ASUS' mixer paths and the ACDB blobs) is M4,
+# and replaces this section whole. Same set as AOSP's own emulator uses.
+PRODUCT_PACKAGES += \
+    android.hardware.audio@2.0-service \
+    android.hardware.audio@4.0-impl \
+    android.hardware.audio.effect@4.0-impl \
+    audio.primary.default \
+    audio.r_submix.default \
+    audio.usb.default
+
+AUDIO_POLICY_CONFIG_DIR := frameworks/av/services/audiopolicy/config
+PRODUCT_COPY_FILES += \
+    $(AUDIO_POLICY_CONFIG_DIR)/audio_policy_configuration_generic.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
+    $(AUDIO_POLICY_CONFIG_DIR)/primary_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/primary_audio_policy_configuration.xml \
+    $(AUDIO_POLICY_CONFIG_DIR)/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
+    $(AUDIO_POLICY_CONFIG_DIR)/usb_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_policy_configuration.xml \
+    $(AUDIO_POLICY_CONFIG_DIR)/audio_policy_volumes.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_volumes.xml \
+    $(AUDIO_POLICY_CONFIG_DIR)/default_volume_tables.xml:$(TARGET_COPY_OUT_VENDOR)/etc/default_volume_tables.xml
+
+# ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
 # ---------------------------------------------------------------------------------
 # A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
@@ -146,7 +205,7 @@ PRODUCT_PROPERTY_OVERRIDES += \
 #
 #   wifi      needs the WLAN driver built from CodeAurora sources first -- the stock
 #             wlan.ko will not load on a kernel we built, see ../../../../HARDWARE.md
-#   audio     audio-caf/msm8952, plus the ACDB calibration blobs
+#   audio     audio-caf/msm8952, plus the ACDB calibration blobs (only a stub above)
 #   RIL       libril-qc-qmi-1.so and the qcril properties
 #   sensors   sensors.msm8952.so and the sensor daemon
 #   camera    T4K35 and OV5670, last as always on a legacy port

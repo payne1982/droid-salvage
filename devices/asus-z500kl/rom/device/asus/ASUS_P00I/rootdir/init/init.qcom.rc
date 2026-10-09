@@ -1,0 +1,54 @@
+# Device init for ASUS_P00I (ASUS ZenPad 3S 10 LTE) on Pie.
+#
+# Ours, not ASUS'. The stock init.qcom.rc + init.target.rc are 1600 lines written for
+# Nougat's init and pull in half a dozen more files; this starts from what Pie cannot
+# boot without and grows one subsystem at a time, so that every line in here is one we
+# have seen work.
+#
+# What Pie cannot boot without, learnt the hard way on the first M3 attempt: the core
+# init.rc does not mount anything. Its `on fs` / `on late-fs` stages exist so that the
+# device's init.${ro.hardware}.rc runs mount_all there, and with no such file /system
+# and /data simply stay unmounted -- no adbd, no servicemanager, no surfaceflinger, the
+# bootloader's ASUS logo forever, and nothing on USB to say why.
+#
+# ro.hardware is "qcom" (androidboot.hardware=qcom on the stock command line), which is
+# why the file has this name.
+
+import /init.qcom.usb.rc
+
+on early-init
+    # Mount points for the partitions fstab.qcom adds beyond AOSP's. The root
+    # filesystem is still writable here; it is remounted read-only in post-fs.
+    mkdir /firmware 0771 system system
+    mkdir /persist 0771 system system
+    mkdir /dsp 0771 media media
+
+on init
+    # Every path in fstab.qcom goes through /dev/block/bootdevice. Nougat's init made
+    # that link itself from androidboot.bootdevice (7824900.sdhci on the stock command
+    # line); Pie's ueventd does not -- it only makes /dev/block/by-name for the devices
+    # in androidboot.boot_devices, which this bootloader does not pass. Without this line
+    # mount_all waits 20 s for each partition and skips them all (second M3 attempt).
+    symlink /dev/block/platform/soc.0/${ro.boot.bootdevice} /dev/block/bootdevice
+
+on fs
+    wait /dev/block/bootdevice
+    mount_all /fstab.qcom
+
+    restorecon_recursive /persist
+    mkdir /persist/data 0700 system system
+
+on post-fs-data
+    mkdir /data/tombstones 0771 system system
+    mkdir /data/vendor/tombstones 0771 system system
+
+# The TrustZone listener daemon. The keymaster (keystore.msm8952.so) and with it
+# keystore, gatekeeper and disk encryption all go through it: without it keystore never
+# registers and system_server dies on a null IKeystoreService in TrustManagerService
+# (fifth M3 attempt). Same definition as the stock init.target.rc. It needs /firmware
+# (the keymaster trustlet), /persist and /dev/block/bootdevice (librpmb), all of which
+# are in place by the time class core starts.
+service qseecomd /system/bin/qseecomd
+    class core
+    user root
+    group root

@@ -1,0 +1,32 @@
+# USB gadget for ASUS_P00I on Pie: adb only, for now.
+#
+# The 3.10 kernel has the legacy android_usb gadget, not configfs, so the platform's
+# init.usb.rc does the switching (sys.usb.configfs=0 branch: functions, idVendor 18d1,
+# start adbd). What it does not do is the functionfs side: Pie's adbd only speaks
+# FunctionFS, and the android_usb "adb" function has to be told it is the ffs instance
+# called adb. Without these lines USB enumerates nothing and the host log fills with
+# connect/disconnect events -- enough of them to push the whole boot out of the 256 KB
+# pstore console on the first M3 attempt.
+#
+# Same lines as the stock init.qcom.usb.rc; the rest of that file (diag, serial, rmnet,
+# QXDM compositions, the init.qcom.usb.sh service) is left for when MTP and tethering
+# are on the table.
+
+on init
+    write /sys/class/android_usb/android0/iSerial ${ro.serialno}
+
+    # Pie's adbd drives FunctionFS through AIO, which this 3.10 kernel does not
+    # implement: it loops on "aio: got error submitting read: Invalid argument" and the
+    # host sees the device as 'offline'. The same switch the TWRP tree needed (see its
+    # init.recovery.qcom.rc) asks adbd for plain read/write instead.
+    setprop sys.usb.ffs.aio_compat true
+
+on fs
+    mkdir /dev/usb-ffs 0770 shell shell
+    mkdir /dev/usb-ffs/adb 0770 shell shell
+    mount functionfs adb /dev/usb-ffs/adb uid=2000,gid=2000
+    write /sys/class/android_usb/android0/f_ffs/aliases adb
+
+on boot
+    write /sys/class/android_usb/android0/iManufacturer ${ro.product.manufacturer}
+    write /sys/class/android_usb/android0/iProduct ${ro.product.model}
