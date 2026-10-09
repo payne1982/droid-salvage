@@ -126,6 +126,7 @@ service wcnss-service /system/bin/wcnss_service
     class main
     user system
     group system wifi radio
+    disabled
     oneshot
 
 # The supplicant, also serving the HIDL supplicant interface the framework uses. One
@@ -147,8 +148,8 @@ service vendor.hciattach /system/bin/sh /system/vendor/bin/init.bt.sh
     disabled
     oneshot
 
-# WiFi and Bluetooth addresses from /persist, before either is switched on. See the
-# script.
+# WiFi and Bluetooth addresses, from /persist or failing that from the serial number,
+# before either is switched on; it also starts wcnss_service. See the script.
 service vendor.macaddr /system/bin/sh /system/vendor/bin/init.macaddr.sh
     class main
     user root

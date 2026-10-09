@@ -259,7 +259,8 @@ PRODUCT_COPY_FILES += \
 # address is the one ASUS wrote at the factory: hci_qcomm_init reads it from the NV
 # file in /persist through libbtnv, and configs/init.macaddr.sh writes it where the
 # HAL looks (ro.bt.bdaddr_path) -- the HAL aborts without one. The same script gives
-# WiFi its factory MAC.
+# WiFi its factory MAC; when /persist has lost either, it derives a stable one from the
+# serial number (the modem's NV does not hold them on this tablet).
 #
 # ro.qualcomm.bt.hci_transport tells hci_qcomm_init the core is on SMD; without it it
 # assumes a UART and waits for a /dev/ttyHS0 this tablet does not have.
