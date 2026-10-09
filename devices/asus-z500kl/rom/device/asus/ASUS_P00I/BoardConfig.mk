@@ -222,9 +222,22 @@ BOARD_HAVE_BLUETOOTH_QCOM := true
 TARGET_RIL_VARIANT := caf
 TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
 
+# Video: the Venus codecs from media-caf/msm8952 (device.mk). TARGET_USES_ION is the
+# one switch they need, and nothing else in this tree reads it: it adds -DUSE_ION,
+# without which the decoder does not even include <linux/msm_ion.h> and stops on its
+# cache-maintenance ioctls. The encoder also needs kernel/patches/0011.
+TARGET_USES_ION := true
+
+# The decoder asks for its output buffers with GRALLOC_USAGE_PRIVATE_UNCACHED
+# (0x02000000, display-caf's gralloc_priv.h), and Pie's libui rejects usage bits it
+# does not know: "buffer descriptor contains invalid usage bits 0x2000000", no buffer,
+# and videos played with sound and a black picture. This is LineageOS' switch for
+# declaring them; vendor/lineage/config/BoardConfigQcom.mk adds its own bit to it.
+TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS := 0x02000000U
+
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
 # value into a first boot where every symptom has a dozen candidate causes:
-#   - graphics:  BOARD_EGL_CFG, TARGET_USES_ION, TARGET_USES_OVERLAY, gralloc bits
+#   - graphics:  BOARD_EGL_CFG, TARGET_USES_OVERLAY, gralloc bits
 #   - camera:    left for last, as always on a legacy port
 # -----------------------------------------------------------------------------------

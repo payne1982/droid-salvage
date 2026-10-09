@@ -316,3 +316,21 @@ vendor/lib64/libsensor_reg.so
 vendor/lib64/sensors.ssc.so
 etc/sensors/hals.conf
 etc/sensors/sensor_def_qcomdev.conf
+
+# Video. The codecs themselves are built from source (media-caf/msm8952) and Venus
+# runs the venus-v1 firmware above; what comes from stock is what has no source.
+#
+# libc2d30-a5xx and libc2d30_bltlib are the Adreno 5xx backend of libC2D2 (listed with
+# the graphics blobs): libC2D2 does not link them, it dlopens them by name, so
+# missing-libs.sh cannot see them. libc2dcolorconvert goes through libC2D2 when a
+# client wants the decoder's output as plain YUV.
+#
+# media_codecs_performance.xml carries the frame rates stock measured on this chip for
+# each codec; the framework uses them to tell apps what a codec can sustain. It is the
+# file stock picked for this Venus revision (see configs/media/media_codecs.xml), and
+# it names exactly the codecs declared there.
+vendor/lib/libc2d30-a5xx.so
+vendor/lib/libc2d30_bltlib.so
+vendor/lib64/libc2d30-a5xx.so
+vendor/lib64/libc2d30_bltlib.so
+etc/media_codecs_performance_8956_v1.xml:vendor/etc/media_codecs_performance.xml

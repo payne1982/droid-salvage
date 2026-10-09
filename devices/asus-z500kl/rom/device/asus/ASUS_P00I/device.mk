@@ -195,8 +195,36 @@ PRODUCT_COPY_FILES += \
 # ---------------------------------------------------------------------------------
 # Media codecs
 # ---------------------------------------------------------------------------------
-# Software codecs only for now (configs/media/media_codecs.xml says why there has to
-# be a list at all); the Venus hardware codecs are their own block.
+# The Venus hardware video codecs, from hardware/qcom/media-caf/msm8952: the OMX core
+# and its registry, the decoder and encoder components, and the stagefright plugin
+# that makes them visible to the framework. libc2dcolorconvert converts the decoder's
+# tiled output for clients that ask for plain YUV (thumbnails, for one) through the
+# Adreno C2D blobs. The kernel side is msm_vidc (CONFIG_MSM_VIDC_V4L2), which loads
+# the venus-v1 firmware on first use.
+#
+# media.msm8956hw tells the components they are on the 8956 Venus rather than the
+# 8952's: higher H.264 levels, the downscaler, the encoder's 8956 restrictions. Stock
+# set it from init.qcom.early_boot.sh by soc_id; this tablet is always an 8956.
+#
+# configs/media/media_codecs.xml lists what is declared and why; the measured frame
+# rates (media_codecs_performance.xml) are stock's for this chip, see
+# proprietary-files.txt.
+PRODUCT_PACKAGES += \
+    libc2dcolorconvert \
+    libOmxCore \
+    libOmxVdec \
+    libOmxVenc \
+    libstagefrighthw
+
+PRODUCT_PROPERTY_OVERRIDES += \
+    media.msm8956hw=1
+
+# media.codec runs under a seccomp filter, and the components make a syscall Pie's
+# policy does not allow: the first one to start killed the service, and every codec
+# went with it, the Google ones included. The file says which and why.
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/seccomp/mediacodec.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediacodec.policy
+
 PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/configs/media/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
     frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_audio.xml \
@@ -338,7 +366,8 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # ---------------------------------------------------------------------------------
 # Not here yet. Listed, not guessed:
 #
-#   camera    T4K35 and OV5670, last as always on a legacy port
+#   camera    T4K35 and OV5670, last as always on a legacy port (media_profiles
+#             comes with it: it describes what the camcorder records)
 #   GPS       hardware/qcom/gps
 #   exFAT     texfat and tntfs are Tuxera's with no source; an open driver is needed
 # ---------------------------------------------------------------------------------

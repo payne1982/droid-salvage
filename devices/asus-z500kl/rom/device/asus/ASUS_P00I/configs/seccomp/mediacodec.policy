@@ -1,0 +1,12 @@
+# ASUS_P00I: syscalls the Venus OMX components make beyond Pie's own mediacodec policy
+# (frameworks/av/services/mediacodec/seccomp_policy/mediacodec-arm.policy). minijail
+# reads this file on top of that one; media.codec is a 32-bit process, so these are
+# arm syscall names.
+#
+# Each line is here because the process was seen dying on it: minijail logs
+# "blocked syscall: <name>" and aborts, init restarts the service, and the framework
+# loses every codec it was building its list from.
+
+# select() in the decoder's and the encoder's message threads (libOmxVdec, libOmxVenc),
+# which wait on the driver's event pipe.
+pselect6: 1

@@ -1,0 +1,214 @@
+Subject: [PATCH 11/11] msm: vidc: allow clients to suggest I-frame sizes (from LineageOS kenzo)
+
+The Venus encoder in hardware/qcom/media-caf/msm8952 (libOmxVenc) does not
+build against the ASUS kernel headers: it implements Qualcomm's I-frame size
+hint by setting V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_TYPE, which this kernel
+neither defines nor handles. The hint is only sent when a client asks for it
+through a Qualcomm OMX extension; the Android framework never does.
+
+Rather than defining the control in the header alone, which would let the
+encoder build and then fail the ioctl, this is the CAF commit that adds both
+the control and its handling in msm_vidc (5ffb66e3e50, Deepak Kushwah, "msm:
+vidc: Allow clients to suggest I-frame sizes"), as LineageOS carries it in the
+kenzo kernel, same SoC and same CAF 3.10 base. It applies to the ASUS files
+with no conflicts; with it, the msm_vidc driver differs from kenzo's only by
+CAF fixes to its debugfs code.
+---
+diff --git drivers/media/platform/msm/vidc/hfi_packetization.c drivers/media/platform/msm/vidc/hfi_packetization.c
+index 990bb745395..0ab2559e8b9 100644
+--- drivers/media/platform/msm/vidc/hfi_packetization.c
++++ drivers/media/platform/msm/vidc/hfi_packetization.c
+@@ -2066,6 +2066,33 @@ int create_pkt_cmd_session_set_property(
+ 		pkt->size += sizeof(u32) + sizeof(struct hfi_enable);
+ 		break;
+ 	}
++	case HAL_PARAM_VENC_IFRAMESIZE_TYPE:
++	{
++		enum hal_iframesize_type hal =
++			*(enum hal_iframesize_type *)pdata;
++		struct hfi_iframe_size *hfi = (struct hfi_iframe_size *)
++			&pkt->rg_property_data[1];
++
++		switch (hal) {
++		case HAL_IFRAMESIZE_TYPE_DEFAULT:
++			hfi->type = HFI_IFRAME_SIZE_DEFAULT;
++			break;
++		case HAL_IFRAMESIZE_TYPE_MEDIUM:
++			hfi->type = HFI_IFRAME_SIZE_MEDIUM;
++			break;
++		case HAL_IFRAMESIZE_TYPE_HUGE:
++			hfi->type = HFI_IFRAME_SIZE_HIGH;
++			break;
++		case HAL_IFRAMESIZE_TYPE_UNLIMITED:
++			hfi->type = HFI_IFRAME_SIZE_UNLIMITED;
++			break;
++		default:
++			return -ENOTSUPP;
++		}
++		pkt->rg_property_data[0] = HFI_PROPERTY_PARAM_VENC_IFRAMESIZE;
++		pkt->size += sizeof(u32) + sizeof(struct hfi_iframe_size);
++		break;
++	}
+ 	/* FOLLOWING PROPERTIES ARE NOT IMPLEMENTED IN CORE YET */
+ 	case HAL_CONFIG_BUFFER_REQUIREMENTS:
+ 	case HAL_CONFIG_PRIORITY:
+diff --git drivers/media/platform/msm/vidc/msm_venc.c drivers/media/platform/msm/vidc/msm_venc.c
+index 9861e82bd7b..e6a6d0fddc6 100644
+--- drivers/media/platform/msm/vidc/msm_venc.c
++++ drivers/media/platform/msm/vidc/msm_venc.c
+@@ -179,6 +179,13 @@ static const char *const timestamp_mode[] = {
+ 	"Ignore",
+ };
+ 
++static const char *const iframe_sizes[] = {
++	"Default",
++	"Medium",
++	"Huge",
++	"Unlimited"
++};
++
+ static struct msm_vidc_ctrl msm_venc_ctrls[] = {
+ 	{
+ 		.id = V4L2_CID_MPEG_VIDC_VIDEO_IDR_PERIOD,
+@@ -1169,9 +1176,23 @@ static struct msm_vidc_ctrl msm_venc_ctrls[] = {
+ 		.default_value = V4L2_CID_MPEG_VIDC_VIDEO_VPE_CSC_DISABLE,
+ 		.step = 1,
+ 	},
+-
++	{
++		.id = V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_TYPE,
++		.name = "Bounds of I-frame size",
++		.type = V4L2_CTRL_TYPE_MENU,
++		.minimum = V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_DEFAULT,
++		.maximum = V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_UNLIMITED,
++		.default_value = V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_DEFAULT,
++		.menu_skip_mask = ~(
++			(1 << V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_DEFAULT) |
++			(1 << V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_MEDIUM) |
++			(1 << V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_HUGE) |
++			(1 << V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_UNLIMITED)),
++		.qmenu = iframe_sizes,
++	},
+ };
+ 
++
+ #define NUM_CTRLS ARRAY_SIZE(msm_venc_ctrls)
+ 
+ static u32 get_frame_size_nv12(int plane, u32 height, u32 width)
+@@ -1936,6 +1957,19 @@ static inline int venc_v4l2_to_hal(int id, int value)
+ 		default:
+ 			goto unknown_value;
+ 		}
++	case V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_TYPE:
++		switch (value) {
++		case V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_DEFAULT:
++			return HAL_IFRAMESIZE_TYPE_DEFAULT;
++		case V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_MEDIUM:
++			return HAL_IFRAMESIZE_TYPE_MEDIUM;
++		case V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_HUGE:
++			return HAL_IFRAMESIZE_TYPE_HUGE;
++		case V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_UNLIMITED:
++			return HAL_IFRAMESIZE_TYPE_UNLIMITED;
++		default:
++			goto unknown_value;
++		}
+ 	}
+ 
+ unknown_value:
+@@ -1975,6 +2009,7 @@ static int try_set_ctrl(struct msm_vidc_inst *inst, struct v4l2_ctrl *ctrl)
+ 	struct hal_venc_perf_mode venc_mode;
+ 	int max_hierp_layers;
+ 	struct hal_video_signal_info signal_info = {0};
++	enum hal_iframesize_type iframesize_type = HAL_IFRAMESIZE_TYPE_DEFAULT;
+ 
+ 	if (!inst || !inst->core || !inst->core->device) {
+ 		dprintk(VIDC_ERR, "%s invalid parameters\n", __func__);
+@@ -2986,6 +3021,13 @@ static int try_set_ctrl(struct msm_vidc_inst *inst, struct v4l2_ctrl *ctrl)
+ 				dprintk(VIDC_ERR, "fail to set csc: %d\n", rc);
+ 		}
+ 		break;
++	case V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_TYPE:
++		property_id = HAL_PARAM_VENC_IFRAMESIZE_TYPE;
++		iframesize_type = venc_v4l2_to_hal(
++				V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_TYPE,
++				ctrl->val);
++		pdata = &iframesize_type;
++		break;
+ 	default:
+ 		dprintk(VIDC_ERR, "Unsupported index: %x\n", ctrl->id);
+ 		rc = -ENOTSUPP;
+diff --git drivers/media/platform/msm/vidc/vidc_hfi_api.h drivers/media/platform/msm/vidc/vidc_hfi_api.h
+index 5d1e3c8af4c..47de8b27014 100644
+--- drivers/media/platform/msm/vidc/vidc_hfi_api.h
++++ drivers/media/platform/msm/vidc/vidc_hfi_api.h
+@@ -226,6 +226,7 @@ enum hal_property {
+ 	HAL_PARAM_VENC_BITRATE_TYPE,
+ 	HAL_PARAM_VENC_VIDEO_SIGNAL_INFO,
+ 	HAL_PARAM_VENC_CONSTRAINED_INTRA_PRED,
++	HAL_PARAM_VENC_IFRAMESIZE_TYPE,
+ };
+ 
+ enum hal_domain {
+@@ -972,6 +973,13 @@ struct hal_video_signal_info {
+ 	bool full_range;
+ };
+ 
++enum hal_iframesize_type {
++	HAL_IFRAMESIZE_TYPE_DEFAULT,
++	HAL_IFRAMESIZE_TYPE_MEDIUM,
++	HAL_IFRAMESIZE_TYPE_HUGE,
++	HAL_IFRAMESIZE_TYPE_UNLIMITED,
++};
++
+ enum vidc_resource_id {
+ 	VIDC_RESOURCE_OCMEM = 0x00000001,
+ 	VIDC_UNUSED_RESORUCE = 0x10000000,
+diff --git drivers/media/platform/msm/vidc/vidc_hfi_helper.h drivers/media/platform/msm/vidc/vidc_hfi_helper.h
+index 6a7f3dc7630..687e3b05632 100644
+--- drivers/media/platform/msm/vidc/vidc_hfi_helper.h
++++ drivers/media/platform/msm/vidc/vidc_hfi_helper.h
+@@ -369,6 +369,8 @@ struct hfi_buffer_info {
+ 	(HFI_PROPERTY_PARAM_VENC_COMMON_START + 0x02F)
+ #define  HFI_PROPERTY_PARAM_VENC_BITRATE_TYPE		\
+ 	(HFI_PROPERTY_PARAM_VENC_COMMON_START + 0x031)
++#define  HFI_PROPERTY_PARAM_VENC_IFRAMESIZE			\
++	(HFI_PROPERTY_PARAM_VENC_COMMON_START + 0x034)
+ 
+ #define HFI_PROPERTY_CONFIG_VENC_COMMON_START				\
+ 	(HFI_DOMAIN_BASE_VENC + HFI_ARCH_COMMON_OFFSET + 0x6000)
+@@ -817,6 +819,15 @@ struct hfi_aspect_ratio {
+ 	u32 aspect_width;
+ 	u32 aspect_height;
+ };
++
++#define HFI_IFRAME_SIZE_DEFAULT			(HFI_COMMON_BASE + 0x1)
++#define HFI_IFRAME_SIZE_MEDIUM			(HFI_COMMON_BASE + 0x2)
++#define HFI_IFRAME_SIZE_HIGH			(HFI_COMMON_BASE + 0x3)
++#define HFI_IFRAME_SIZE_UNLIMITED		(HFI_COMMON_BASE + 0x4)
++struct hfi_iframe_size {
++	u32 type;
++};
++
+ #define HFI_MVC_BUFFER_LAYOUT_TOP_BOTTOM  (0)
+ #define HFI_MVC_BUFFER_LAYOUT_SIDEBYSIDE  (1)
+ #define HFI_MVC_BUFFER_LAYOUT_SEQ         (2)
+diff --git include/uapi/linux/v4l2-controls.h include/uapi/linux/v4l2-controls.h
+index 6c5d37de9b2..5d3cf02f88f 100644
+--- include/uapi/linux/v4l2-controls.h
++++ include/uapi/linux/v4l2-controls.h
+@@ -1071,6 +1071,15 @@ enum v4l2_cid_mpeg_vidc_video_vpe_csc_type_enable {
+ 	V4L2_CID_MPEG_VIDC_VIDEO_VPE_CSC_ENABLE   = 1
+ };
+ 
++#define V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_TYPE \
++		(V4L2_CID_MPEG_MSM_VIDC_BASE + 100)
++enum v4l2_mpeg_vidc_video_venc_iframesize_type {
++	V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_DEFAULT,
++	V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_MEDIUM,
++	V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_HUGE,
++	V4L2_CID_MPEG_VIDC_VIDEO_IFRAME_SIZE_UNLIMITED,
++};
++
+ /*  Camera class control IDs */
+ 
+ #define V4L2_CID_CAMERA_CLASS_BASE 	(V4L2_CTRL_CLASS_CAMERA | 0x900)

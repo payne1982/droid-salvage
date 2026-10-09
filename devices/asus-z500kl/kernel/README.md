@@ -232,6 +232,12 @@ init grants a service its declared capabilities that way; without them it starts
 service with none. The WiFi HAL needs `NET_ADMIN` to bring `wlan0` up, so WiFi could
 not be switched on although the driver and the radio worked.
 
+`patches/0011` is a CAF commit to the video driver (`msm_vidc`) that kenzo carries:
+the I-frame size hint, a V4L2 control the Venus encoder in `media-caf/msm8952` sets
+and the ASUS headers do not define, so the encoder did not compile. It brings the
+control and its handling in the driver together, rather than a definition the
+driver would then reject.
+
 ## A note for anyone building the recovery
 
 With the kernel built from these sources, `tools/patch-kernel.py` in the TWRP device
