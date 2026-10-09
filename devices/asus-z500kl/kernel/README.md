@@ -203,6 +203,21 @@ freezer	0	1	1
 `cpuset` and `memory` were absent before. Touch, mounts, `/data` decryption and `adb`
 all still work, and `dmesg` has nothing new in it.
 
+`patches/0005` and `patches/0006` are build fixes for LineageOS (`O_TMPFILE` in the uapi
+headers; `__BITS_PER_LONG` keyed on `__LP64__`, because the arm64 kernel headers reach
+32-bit HALs too). Their headers explain both.
+
+`patches/0007` adds sdcardfs, with the VFS hooks it needs (`d_canonical_path`, private
+mount data, `permission2`/`setattr2`/`truncate2`, remount propagation). Pie's `sdcard`
+daemon has no FUSE path left: without sdcardfs it aborts, and apps get no `/sdcard` at
+all. Same source as 0004, LineageOS' kenzo kernel, where sdcardfs begins with "port to
+3.10"; 89 commits replayed with no conflicts, and the result matches kenzo's in
+`fs/sdcardfs/`, `magic.h`, `mount.h` and `pnode.[ch]`. The defconfig sets
+`CONFIG_SDCARD_FS=y`. `patches/0008` is ours: it fixes a double free in the private mount data
+that kenzo's port carries and Pie's sdcard daemon triggers (its first mount attempts fail
+by design); without it the first sdcardfs boot crash-looped. The patch header has the
+whole trail, from the oops to the two numbers in it that were the mount options.
+
 ## A note for anyone building the recovery
 
 With the kernel built from these sources, `tools/patch-kernel.py` in the TWRP device
