@@ -32,6 +32,9 @@ devices/asus-z500kl/kernel/tools/setup-kernel.sh      # KERNEL_TREE=<tree>/kerne
 cd <tree>/device/asus/ASUS_P00I
 ./tools/extract-files.sh --from-dumps /path/to/system.img /path/to/boot.img
 
+# 4b. the GPS HAL source, fetched at a pinned commit (the script says why)
+./tools/setup-gps.sh
+
 # 5. build
 # WITH_ADB_INSECURE: during bring-up adb must work without being authorised on the
 # screen, because the screen may well not work yet. LineageOS only allows that on eng

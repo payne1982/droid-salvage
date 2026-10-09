@@ -69,4 +69,25 @@
     <integer name="config_screenBrightnessSettingMinimum">4</integer>
     <integer name="config_screenBrightnessSettingDefault">60</integer>
     <integer name="config_screenBrightnessDim">10</integer>
+
+    <!-- GPS parameters. The framework reads these, not the HAL's /etc/gps.conf, and
+         pushes them down to the HAL at start, overriding what gps.conf says; so they
+         are ASUS' gps.conf values, not AOSP's defaults (which differ in SUPL_MODE and
+         the GLONASS protocol). The XTRA servers are also how the framework knows where
+         to download the satellite orbit predictions the modem asks for; without them
+         it logged "No XTRA servers were specified" and every start was a cold one.
+         https rather than gps.conf's http: the same files, checked on all three. -->
+    <string-array translatable="false" name="config_gpsParameters">
+        <item>XTRA_SERVER_1=https://xtrapath1.izatcloud.net/xtra3grc.bin</item>
+        <item>XTRA_SERVER_2=https://xtrapath2.izatcloud.net/xtra3grc.bin</item>
+        <item>XTRA_SERVER_3=https://xtrapath3.izatcloud.net/xtra3grc.bin</item>
+        <item>NTP_SERVER=time.izatcloud.net</item>
+        <item>SUPL_HOST=supl.google.com</item>
+        <item>SUPL_PORT=7275</item>
+        <item>SUPL_VER=0x20000</item>
+        <item>SUPL_ES=1</item>
+        <item>USE_EMERGENCY_PDN_FOR_EMERGENCY_SUPL=1</item>
+        <item>LPP_PROFILE=0</item>
+        <item>A_GLONASS_POS_PROTOCOL_SELECT=0x6</item>
+    </string-array>
 </resources>

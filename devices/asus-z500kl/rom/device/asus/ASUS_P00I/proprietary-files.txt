@@ -334,3 +334,15 @@ vendor/lib/libc2d30_bltlib.so
 vendor/lib64/libc2d30-a5xx.so
 vendor/lib64/libc2d30_bltlib.so
 etc/media_codecs_performance_8956_v1.xml:vendor/etc/media_codecs_performance.xml
+
+# GPS. The HAL is built from source (gps/, see tools/setup-gps.sh); these are the two
+# closed pieces under it. libloc_api_v02 is the loc_api that speaks QMI LOC to the
+# modem's GNSS engine -- libloc_core dlopens it by name; libloc_ds_api, which it links,
+# brings up the data call for assisted GPS. Both are 64-bit only on purpose: the
+# gnss@1.0 service is 64-bit. Stock kept them in /system/lib64; they go to vendor,
+# with the rest of the closed userspace.
+#
+# gps.conf is read by the HAL at /etc/gps.conf, a path it has compiled in.
+lib64/libloc_api_v02.so:vendor/lib64/libloc_api_v02.so
+lib64/libloc_ds_api.so:vendor/lib64/libloc_ds_api.so
+etc/gps.conf

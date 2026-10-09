@@ -190,7 +190,8 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
     frameworks/native/data/etc/android.hardware.usb.accessory.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.usb.accessory.xml \
     frameworks/native/data/etc/android.hardware.usb.host.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.usb.host.xml \
-    frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml
+    frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml \
+    frameworks/native/data/etc/android.hardware.location.gps.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.location.gps.xml
 
 # ---------------------------------------------------------------------------------
 # Media codecs
@@ -354,6 +355,25 @@ PRODUCT_PACKAGES += \
     android.hardware.sensors@1.0-service
 
 # ---------------------------------------------------------------------------------
+# GPS
+# ---------------------------------------------------------------------------------
+# The GNSS engine is in the modem; the HAL talks to it over QMI. gps.msm8952 and its
+# libraries are built from gps/ (tools/setup-gps.sh), AOSP's gnss@1.0 wraps the legacy
+# HAL for the framework, and libloc_api_v02/libloc_ds_api, the QMI side, are blobs
+# (proprietary-files.txt). gps.conf is ASUS' (XTRA servers, SUPL host).
+#
+# Not here: Qualcomm's IZat stack (network location from WiFi and cell towers,
+# geofencing, FLP batching): a dozen blobs, two daemons and a privileged app, none of
+# which a GPS fix needs.
+PRODUCT_PACKAGES += \
+    android.hardware.gnss@1.0-impl \
+    android.hardware.gnss@1.0-service \
+    gps.msm8952 \
+    libgps.utils \
+    libloc_core \
+    libloc_eng
+
+# ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
 # ---------------------------------------------------------------------------------
 # A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
@@ -368,6 +388,5 @@ PRODUCT_PROPERTY_OVERRIDES += \
 #
 #   camera    T4K35 and OV5670, last as always on a legacy port (media_profiles
 #             comes with it: it describes what the camcorder records)
-#   GPS       hardware/qcom/gps
 #   exFAT     texfat and tntfs are Tuxera's with no source; an open driver is needed
 # ---------------------------------------------------------------------------------

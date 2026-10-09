@@ -235,6 +235,13 @@ TARGET_USES_ION := true
 # declaring them; vendor/lineage/config/BoardConfigQcom.mk adds its own bit to it.
 TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS := 0x02000000U
 
+# GPS: Qualcomm's legacy loc_api HAL at LA.BR.1.3.6, fetched into gps/ by
+# tools/setup-gps.sh (which says why not hardware/qcom/gps). USE_DEVICE_SPECIFIC_GPS
+# points LineageOS' qcom-gps project path there, which also switches hardware/qcom/gps
+# off. TARGET_NO_RPC: the modem speaks QMI; the RPC loc_api is for pre-QMI chips.
+USE_DEVICE_SPECIFIC_GPS := true
+TARGET_NO_RPC := true
+
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
 # value into a first boot where every symptom has a dozen candidate causes:

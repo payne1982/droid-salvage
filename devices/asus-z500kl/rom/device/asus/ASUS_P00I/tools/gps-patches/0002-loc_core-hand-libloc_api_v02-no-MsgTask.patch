@@ -1,0 +1,38 @@
+Subject: [PATCH] loc_core: create ASUS' LocApiV02 the way it expects
+
+ASUS' libloc_api_v02.so refuses to create its LocApi when it is given a
+MsgTask: createLocApiV02() returns NULL ("msgTask can not be NULL", logged when
+the pointer is *not* NULL) and only builds the object, with a NULL MsgTask, when
+it gets none. On stock that call never comes from libloc_core: liblbs_core.so,
+the IZat proxy ContextBase asks first, creates the LocApi itself. Without the
+IZat stack ContextBase fell through to a dummy LocApiBase and the GPS never
+reached the modem.
+
+So hand the getter NULL, and let LocApiBase take its context's MsgTask when it
+is given none, which is what a LocApi built by an older blob ended up with. The
+class layout is unchanged (checked against stock's libloc_core: same field
+offsets), so the blob's inlined sendMsg() reads the right pointer.
+---
+--- a/core/ContextBase.cpp
++++ b/core/ContextBase.cpp
+@@ -94,7 +94,7 @@
+                 getLocApi_t* getter = (getLocApi_t*)dlsym(handle, "getLocApi");
+                 if(getter != NULL) {
+                     LOC_LOGD("%s:%d]: getter is not NULL for LocApiV02", __func__, __LINE__);
+-                    locApi = (*getter)(mMsgTask, exMask, this);
++                    locApi = (*getter)(NULL, exMask, this);
+                 }
+             }
+             // only RPC is the option now
+--- a/core/LocApiBase.cpp
++++ b/core/LocApiBase.cpp
+@@ -128,7 +128,8 @@
+ LocApiBase::LocApiBase(const MsgTask* msgTask,
+                        LOC_API_ADAPTER_EVENT_MASK_T excludedMask,
+                        ContextBase* context) :
+-    mExcludedMask(excludedMask), mMsgTask(msgTask),
++    mExcludedMask(excludedMask),
++    mMsgTask(msgTask != NULL || context == NULL ? msgTask : context->getMsgTask()),
+     mMask(0), mSupportedMsg(0), mContext(context)
+ {
+     memset(mLocAdapters, 0, sizeof(mLocAdapters));

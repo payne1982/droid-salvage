@@ -88,6 +88,12 @@ on post-fs-data
     chmod 0660 /data/misc/radio/db_check_done
     mkdir /data/misc/netmgr 0770 radio radio
 
+on post-fs-data
+    # The GPS HAL's working directory, as stock made it: it keeps XTRA's state in
+    # xtra/, which it creates itself and could not without this ("make XTRA_FOLDER
+    # failed"). The HAL runs as gps.
+    mkdir /data/misc/location 0770 gps gps
+
 on boot
     # The QMI multiplexer's sockets and netmgrd's, created as stock did.
     mkdir /dev/socket/qmux_radio 0770 radio radio
