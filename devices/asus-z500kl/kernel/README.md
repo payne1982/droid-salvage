@@ -154,7 +154,7 @@ warnings, all of them from the host tools.
 
 ## What changed on top of ASUS's configuration
 
-Three patches and six configuration options. All of it is in `patches/` and
+The patches and six configuration options below. All of it is in `patches/` and
 `asus_P00I_defconfig`, and all of it is confirmed running on the tablet.
 
 `patches/0002` moves the touchscreen fix out of the compiled image and into the driver,
@@ -163,12 +163,18 @@ and makes it narrower while it is there. `patches/0003` fixes a genuine bug in t
 does not compile at all. Nobody had hit it because no ASUS configuration for this board
 turns MEMCG on, which means that file had never been built.
 
-`patches/0004` gives the kernel three binder devices instead of one, which Android 8 and
-later require. It is Google's own backport, lifted from the `deprecated/android-3.10`
-branch of `kernel/common` — the same kernel version this tablet runs, which is a better
-source than the upstream 4.11 commit. Thirty of its thirty-one hunks applied as they
-came; the one that did not is explained in the patch header, and its substance was
-applied by hand. Confirmed on the device:
+`patches/0004` gives the kernel what Android 8 and later need from binder: three
+devices instead of one, and the scatter-gather and file-descriptor-array transactions
+that HIDL sends over `/dev/hwbinder`. It is LineageOS' own backport for the Xiaomi
+Redmi Note 3 Pro (kenzo), which has the same SoC and the same Qualcomm CAF 3.10 base:
+fourteen commits replayed in order on the ASUS files, with no conflicts, giving kenzo's
+files exactly. The patch header lists them and explains why this source and not
+Google's `deprecated/android-3.10` branch.
+
+The first version of this patch stopped at the three devices, and that looked like
+enough until LineageOS actually booted: every HIDL service failed to register, healthd
+crashed four times and init sent the tablet to the bootloader. Having `/dev/hwbinder`
+is not the same as speaking its protocol. The devices part, confirmed on the tablet:
 
 ```
 $ ls /dev/*binder*

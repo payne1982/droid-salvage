@@ -109,6 +109,13 @@ the upstream 4.11 commit, so it was written for this exact kernel version. Touch
 mounts, the cgroup controllers from M1 and `/proc/config.gz` all still work, and the
 running configuration matches what was built. See `kernel/README.md`.
 
+**Not done after all, 9 October 2026.** Three devices are necessary and not sufficient:
+HIDL's transactions are scatter-gather ones, which that backport did not include, and
+the first LineageOS boot failed on exactly that (every HAL failed to register, healthd
+crashed, init went to the bootloader). So the "verifiable in recovery" property above
+was a trap: it checks the devices, not the protocol. Redone from LineageOS' kenzo
+kernel (same SoC, same CAF base), which has the whole series; see `kernel/README.md`.
+
 ### M2 — device tree and vendor blobs
 `device/asus/ASUS_P00I` for LineageOS 16.0, and `vendor/asus/ASUS_P00I` extracted
 from the stock `/system`. The extraction needs no tablet at all: the full partition
