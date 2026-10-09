@@ -155,6 +155,19 @@ TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.qcom
 # from a root shell. Nothing here needs a verity key.
 PLATFORM_SECURITY_PATCH := 2099-12-31
 
+# A fixed build fingerprint, the same in system, vendor and the boot image whatever an
+# incremental build regenerates. The default one carries the build number (user, date
+# and time), and an incremental build rewrites vendor/build.prop when its content
+# changes but leaves system/build.prop alone: the two ended up with different
+# fingerprints, and Pie then shows "There's an internal problem with your device" at
+# every boot (Build.isBuildConsistent). Builds are told apart by ro.build.date and
+# ro.lineage.version instead.
+#
+# It has to be this make variable, read once in build/make/core/Makefile for all three
+# property files. PRODUCT_BUILD_PROP_OVERRIDES looks like the obvious place and is
+# wrong: it reaches system/build.prop only, which would make the two differ always.
+BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:9/PQ3A.190801.002/payne:userdebug/test-keys
+
 # The HIDL manifest: every HAL this device provides. See the file for why it matters
 # even on a non-Treble device.
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
