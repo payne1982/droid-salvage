@@ -69,9 +69,17 @@ Forcing the vermagic to match would be the wrong fix twice over: the string is n
 only thing that has to agree, and a module built against a differently-configured kernel
 can load and then misbehave, which is the worst failure mode to debug.
 
-The right route is that the driver is **open source** — the `prima`/`qcacld` trees were
-released by CodeAurora — so it gets added as an out-of-tree module built against our
-kernel, from the branch matching this SoC and vintage. Until then: no wifi.
+**Solved, 9 October 2026.** The driver is **open source** -- Qualcomm's prima -- and
+LineageOS carries it in-tree in the kernel for the Xiaomi kenzo, the same SoC on the
+same CAF base. It is built into our kernel now (`kernel/patches/0009` and the fetch in
+`setup-kernel.sh`), and WiFi works, 5 GHz included. The rest of the path, for whoever
+meets it next: `wcnss_service` has to open `/dev/wcnss_wlan` to power the core up
+before prima will start; prima starts when the HAL writes the mode to
+`/sys/module/wlan/parameters/fwpath`, which has to be the wifi user's; and the HAL
+needs `NET_ADMIN`, which Pie's init can only grant through ambient capabilities
+(`kernel/patches/0010`). Still open: the MAC address is the placeholder from
+`WCNSS_qcom_cfg.ini` until `wcnss_service` is built with QMI, which needs the RIL's
+libraries.
 
 ### The camera blob list cannot be derived from what is present
 ASUS shipped the tuning for their whole sensor portfolio, not for this tablet: imx132,

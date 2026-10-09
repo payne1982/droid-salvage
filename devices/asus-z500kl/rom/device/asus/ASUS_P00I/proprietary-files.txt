@@ -225,3 +225,12 @@ etc/acdbdata/QRD/QRD_Speaker_cal.acdb
 # /vendor/etc, stock kept them in /system/etc.
 etc/mixer_paths.xml:vendor/etc/mixer_paths.xml
 etc/audio_platform_info.xml:vendor/etc/audio_platform_info.xml
+
+# WiFi: what prima asks the kernel for at start (request_firmware "wlan/prima/..."),
+# installed where it looks. Stock reached two of them through symlinks: the .ini into
+# /data/misc/wifi (so it could be edited at run time) and the NV calibration into
+# /system/etc/wifi. WCNSS_wlan_dictionary.dat pointed into /persist and only decodes
+# firmware log messages, so it is left out.
+etc/wifi/WCNSS_qcom_cfg.ini:etc/firmware/wlan/prima/WCNSS_qcom_cfg.ini
+etc/wifi/WCNSS_qcom_wlan_nv.bin:etc/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin
+etc/firmware/wlan/prima/WCNSS_cfg.dat

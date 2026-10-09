@@ -225,6 +225,31 @@ PRODUCT_COPY_FILES += \
     frameworks/av/media/libeffects/data/audio_effects.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_effects.xml
 
 # ---------------------------------------------------------------------------------
+# WiFi
+# ---------------------------------------------------------------------------------
+# prima in the kernel, the rest from source: the WiFi HAL, wpa_supplicant, hostapd,
+# and wcnss_service, which opens /dev/wcnss_wlan at boot so the WCNSS core is up
+# before the HAL starts the driver. Built without QMI for now, so the MAC address is
+# the placeholder in WCNSS_qcom_cfg.ini; reading the real one from the modem's NV
+# needs the QMI libraries, which come with the RIL.
+#
+# The three files prima asks the kernel for (wlan/prima/...) come from the stock
+# system, see proprietary-files.txt. They go straight where request_firmware looks,
+# rather than through the symlinks into /data and /persist that stock used.
+PRODUCT_PACKAGES += \
+    android.hardware.wifi@1.0-service \
+    hostapd \
+    libwpa_client \
+    wcnss_service \
+    wificond \
+    wpa_supplicant \
+    wpa_supplicant.conf
+
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/wifi/wpa_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/wpa_supplicant_overlay.conf \
+    $(DEVICE_PATH)/configs/wifi/p2p_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/p2p_supplicant_overlay.conf
+
+# ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
 # ---------------------------------------------------------------------------------
 # A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
@@ -237,8 +262,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # ---------------------------------------------------------------------------------
 # Not here yet. Listed, not guessed:
 #
-#   wifi      needs the WLAN driver built from CodeAurora sources first -- the stock
-#             wlan.ko will not load on a kernel we built, see ../../../../HARDWARE.md
 #   RIL       libril-qc-qmi-1.so and the qcril properties
 #   sensors   sensors.msm8952.so and the sensor daemon
 #   camera    T4K35 and OV5670, last as always on a legacy port

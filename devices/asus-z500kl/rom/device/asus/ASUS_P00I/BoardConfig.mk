@@ -196,11 +196,26 @@ AUDIO_FEATURE_ENABLED_MULTI_VOICE_SESSIONS := true
 AUDIO_FEATURE_ENABLED_SND_MONITOR := true
 AUDIO_FEATURE_ENABLED_PROXY_DEVICE := true
 
+# WiFi: the WCNSS Pronto core with Qualcomm's prima driver, built into the kernel (see
+# kernel/patches/0009). prima starts when something writes a mode to its fwpath
+# parameter, which is what the WiFi HAL does with the three paths below; it needs
+# the WCNSS core up first, which is wcnss_service's job (init.qcom.rc).
+BOARD_HAS_QCOM_WLAN := true
+BOARD_WLAN_DEVICE := qcwcn
+WPA_SUPPLICANT_VERSION := VER_0_8_X
+BOARD_WPA_SUPPLICANT_DRIVER := NL80211
+BOARD_WPA_SUPPLICANT_PRIVATE_LIB := lib_driver_cmd_$(BOARD_WLAN_DEVICE)
+BOARD_HOSTAPD_DRIVER := NL80211
+BOARD_HOSTAPD_PRIVATE_LIB := lib_driver_cmd_$(BOARD_WLAN_DEVICE)
+WIFI_DRIVER_FW_PATH_PARAM := "/sys/module/wlan/parameters/fwpath"
+WIFI_DRIVER_FW_PATH_STA := "sta"
+WIFI_DRIVER_FW_PATH_AP := "ap"
+WIFI_DRIVER_FW_PATH_P2P := "p2p"
+
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
 # value into a first boot where every symptom has a dozen candidate causes:
 #   - graphics:  BOARD_EGL_CFG, TARGET_USES_ION, TARGET_USES_OVERLAY, gralloc bits
-#   - wifi:      BOARD_HAS_QCOM_WLAN, WIFI_DRIVER_*, the firmware path
 #   - RIL:       BOARD_PROVIDES_LIBRIL, the qcril properties
 #   - camera:    left for last, as always on a legacy port
 # -----------------------------------------------------------------------------------
