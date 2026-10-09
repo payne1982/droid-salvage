@@ -22,9 +22,10 @@
      Personal Media Players (PMPs), small tablets (7" or less), and similar
      devices.
 -->
-<!-- ASUS_P00I: AOSP's tablet_core_hardware.xml with three features taken out until their
-     HALs exist: android.hardware.bluetooth, android.hardware.sensor.compass and
-     android.hardware.sensor.accelerometer. A declared feature is a promise to apps and
+<!-- ASUS_P00I: AOSP's tablet_core_hardware.xml with two features taken out until their
+     HALs exist: android.hardware.sensor.compass and
+     android.hardware.sensor.accelerometer. (android.hardware.bluetooth was out too,
+     and is back since the Bluetooth HAL is.) A declared feature is a promise to apps and
      to SystemServer. With bluetooth declared and no IBluetoothHci, the Bluetooth stack
      aborted in hci_thread dozens of times a boot and re-enabled itself every time.
      Each comes back, by going back to the stock file, with its own block in device.mk. -->
@@ -35,6 +36,7 @@
     <feature name="android.hardware.audio.output" />
     <feature name="android.hardware.location" />
     <feature name="android.hardware.location.network" />
+    <feature name="android.hardware.bluetooth" />
     <feature name="android.hardware.touchscreen" />
     <feature name="android.hardware.touchscreen.multitouch" />
     <feature name="android.hardware.touchscreen.multitouch.distinct" />

@@ -229,9 +229,10 @@ PRODUCT_COPY_FILES += \
 # ---------------------------------------------------------------------------------
 # prima in the kernel, the rest from source: the WiFi HAL, wpa_supplicant, hostapd,
 # and wcnss_service, which opens /dev/wcnss_wlan at boot so the WCNSS core is up
-# before the HAL starts the driver. Built without QMI for now, so the MAC address is
-# the placeholder in WCNSS_qcom_cfg.ini; reading the real one from the modem's NV
-# needs the QMI libraries, which come with the RIL.
+# before the HAL starts the driver. Built without QMI: the MAC address is the one
+# ASUS wrote to /persist/wifi_mac.txt at the factory, handed to the WCNSS driver by
+# configs/init.macaddr.sh (see the Bluetooth section). Without it prima would use the
+# placeholder in WCNSS_qcom_cfg.ini, the same on every tablet.
 #
 # The three files prima asks the kernel for (wlan/prima/...) come from the stock
 # system, see proprietary-files.txt. They go straight where request_firmware looks,
@@ -250,6 +251,33 @@ PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/configs/wifi/p2p_supplicant_overlay.conf:$(TARGET_COPY_OUT_VENDOR)/etc/wifi/p2p_supplicant_overlay.conf
 
 # ---------------------------------------------------------------------------------
+# Bluetooth
+# ---------------------------------------------------------------------------------
+# The Bluetooth core is part of the WCNSS and talks over SMD. The HAL and libbt-vendor
+# come from source; hci_qcomm_init, which configures the core, is a blob, and
+# configs/bluetooth/init.bt.sh runs it when libbt-vendor asks (init.qcom.rc). The BD
+# address is the one ASUS wrote at the factory: hci_qcomm_init reads it from the NV
+# file in /persist through libbtnv, and configs/init.macaddr.sh writes it where the
+# HAL looks (ro.bt.bdaddr_path) -- the HAL aborts without one. The same script gives
+# WiFi its factory MAC.
+#
+# ro.qualcomm.bt.hci_transport tells hci_qcomm_init the core is on SMD; without it it
+# assumes a UART and waits for a /dev/ttyHS0 this tablet does not have.
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.qualcomm.bt.hci_transport=smd \
+    ro.bt.bdaddr_path=/data/vendor/bluetooth/bdaddr
+
+PRODUCT_PACKAGES += \
+    android.hardware.bluetooth@1.0-impl \
+    android.hardware.bluetooth@1.0-service \
+    libbt-vendor
+
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/bluetooth/init.bt.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.bt.sh \
+    $(DEVICE_PATH)/configs/init.macaddr.sh:$(TARGET_COPY_OUT_VENDOR)/bin/init.macaddr.sh \
+    frameworks/native/data/etc/android.hardware.bluetooth_le.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.bluetooth_le.xml
+
+# ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
 # ---------------------------------------------------------------------------------
 # A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
@@ -265,7 +293,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 #   RIL       libril-qc-qmi-1.so and the qcril properties
 #   sensors   sensors.msm8952.so and the sensor daemon
 #   camera    T4K35 and OV5670, last as always on a legacy port
-#   bluetooth bt-caf, same chip as the wifi
 #   GPS       hardware/qcom/gps
 #   exFAT     texfat and tntfs are Tuxera's with no source; an open driver is needed
 # ---------------------------------------------------------------------------------

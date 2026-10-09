@@ -234,3 +234,9 @@ etc/audio_platform_info.xml:vendor/etc/audio_platform_info.xml
 etc/wifi/WCNSS_qcom_cfg.ini:etc/firmware/wlan/prima/WCNSS_qcom_cfg.ini
 etc/wifi/WCNSS_qcom_wlan_nv.bin:etc/firmware/wlan/prima/WCNSS_qcom_wlan_nv.bin
 etc/firmware/wlan/prima/WCNSS_cfg.dat
+
+# Bluetooth: hci_qcomm_init configures the WCNSS Bluetooth core over /dev/smd3 when
+# Bluetooth is switched on (configs/bluetooth/init.bt.sh runs it). Both 64-bit: the
+# 32-bit libbtnv the first cut listed left it with "libbtnv.so not found".
+bin/hci_qcomm_init
+vendor/lib64/libbtnv.so
