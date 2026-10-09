@@ -74,8 +74,16 @@ esac
 # 1. the blobs
 # ---------------------------------------------------------------------------------
 [ -f "$list" ] || die "missing $list"
-files=$(grep -vE '^\s*(#|$)' "$list")
-count=$(printf '%s\n' "$files" | grep -c .)
+# An entry is a path under the stock /system, optionally followed by ":destination"
+# when the file has to land somewhere else in our system (the LineageOS convention):
+#   etc/mixer_paths.xml:vendor/etc/mixer_paths.xml
+# The stock file is read from the first path; everything after that -- where it is
+# kept under proprietary/, where it is installed -- uses the destination.
+entries=$(grep -vE '^\s*(#|$)' "$list")
+src_of() { printf '%s' "${1%%:*}"; }
+dst_of() { case $1 in *:*) printf '%s' "${1#*:}" ;; *) printf '%s' "$1" ;; esac; }
+files=$(printf '%s\n' $entries | while read -r e; do [ -n "$e" ] && dst_of "$e" && echo; done)
+count=$(printf '%s\n' "$entries" | grep -c .)
 say "extracting $count proprietary files into vendor/asus/$device/proprietary"
 
 rm -rf "$vendor_dir/proprietary"
@@ -89,16 +97,16 @@ done
 
 if [ "$mode" = dumps ]; then
     cmds=$(mktemp)
-    printf '%s\n' $files | while read -r f; do
-        [ -n "$f" ] || continue
-        printf 'dump -p /%s %s\n' "$f" "$vendor_dir/proprietary/$f"
+    printf '%s\n' $entries | while read -r e; do
+        [ -n "$e" ] || continue
+        printf 'dump -p /%s %s\n' "$(src_of "$e")" "$vendor_dir/proprietary/$(dst_of "$e")"
     done > "$cmds"
     debugfs -f "$cmds" "$sys_img" >/dev/null 2>&1 || true
     rm -f "$cmds"
 else
-    printf '%s\n' $files | while read -r f; do
-        [ -n "$f" ] || continue
-        adb pull "/system/$f" "$vendor_dir/proprietary/$f" >/dev/null 2>&1 || true
+    printf '%s\n' $entries | while read -r e; do
+        [ -n "$e" ] || continue
+        adb pull "/system/$(src_of "$e")" "$vendor_dir/proprietary/$(dst_of "$e")" >/dev/null 2>&1 || true
     done
 fi
 

@@ -38,6 +38,14 @@ on fs
     restorecon_recursive /persist
     mkdir /persist/data 0700 system system
 
+on early-boot
+    # Start the audio DSP, as the stock init.qcom.rc did here. Nothing else does: with
+    # no write the ADSP never boots and no sound card registers (/proc/asound/cards
+    # empty). The firmware it loads is ASUS' copy in /system/etc/firmware, see
+    # proprietary-files.txt. The sensors on this tablet go through the ADSP as well.
+    write /sys/kernel/boot_adsp/boot 1
+    chown root audio /sys/kernel/boot_adsp/boot
+
 on post-fs-data
     mkdir /data/tombstones 0771 system system
     mkdir /data/vendor/tombstones 0771 system system

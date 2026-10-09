@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+     ASUS_P00I: software codecs only, for now.
+
+     With no media_codecs.xml at all, MediaCodecList is empty and nothing plays: not
+     even an uncompressed WAV, because NuPlayer still goes through OMX.google.raw.decoder
+     ("Failed to create audio/raw decoder"). These are AOSP's Google codecs, built into
+     the system. The Venus hardware codecs (OMX.qcom.*) come with their own block, when
+     media-caf is built and the video firmware is in place.
+-->
+<MediaCodecs>
+    <Include href="media_codecs_google_audio.xml" />
+    <Include href="media_codecs_google_telephony.xml" />
+    <Include href="media_codecs_google_video.xml" />
+</MediaCodecs>

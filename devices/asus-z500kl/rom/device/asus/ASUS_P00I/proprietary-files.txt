@@ -170,3 +170,58 @@ etc/firmware/venus-v1.b03
 etc/firmware/venus-v1.b04
 etc/firmware/venus-v1.mbn
 etc/firmware/venus-v1.mdt
+
+# Audio.
+#
+# The ADSP firmware ASUS ships in /system, not the copy in the modem partition. The
+# ASUS kernel loads the metadata from system/etc/firmware ("[Sensor] adsp image
+# direct-loading firmware system/etc/firmware/adsp.mdt"), and with only the modem
+# partition's set -- which is a different build, b00..b14 -- the TrustZone rejects it
+# ("adsp: Invalid firmware metadata"). No ADSP means no sound card at all
+# (/proc/asound/cards empty), and on this tablet the sensors go through the ADSP too.
+etc/firmware/adsp.mdt
+etc/firmware/adsp.b00
+etc/firmware/adsp.b01
+etc/firmware/adsp.b02
+etc/firmware/adsp.b03
+etc/firmware/adsp.b04
+etc/firmware/adsp.b05
+etc/firmware/adsp.b06
+etc/firmware/adsp.b07
+etc/firmware/adsp.b08
+etc/firmware/adsp.b09
+etc/firmware/adsp.b10
+etc/firmware/adsp.b11
+etc/firmware/adsp.b12
+#
+# ACDB: the calibration loader and its data. The HAL is built from audio-caf; this is
+# the part with no source. The loader reads /etc/acdbdata/ and picks MTP or QRD by
+# board type, so both sets; the subdirectories belong to other sound cards. 32-bit only,
+# like the audio HAL service.
+vendor/lib/libacdb-fts.so
+vendor/lib/libacdbloader.so
+vendor/lib/libacdbmapper.so
+vendor/lib/libacdbrtac.so
+vendor/lib/libadiertac.so
+vendor/lib/libaudcal.so
+vendor/lib/libaudioalsa.so
+etc/acdbdata/MTP/MTP_Bluetooth_cal.acdb
+etc/acdbdata/MTP/MTP_General_cal.acdb
+etc/acdbdata/MTP/MTP_Global_cal.acdb
+etc/acdbdata/MTP/MTP_Handset_cal.acdb
+etc/acdbdata/MTP/MTP_Hdmi_cal.acdb
+etc/acdbdata/MTP/MTP_Headset_cal.acdb
+etc/acdbdata/MTP/MTP_Speaker_cal.acdb
+etc/acdbdata/QRD/QRD_Bluetooth_cal.acdb
+etc/acdbdata/QRD/QRD_General_cal.acdb
+etc/acdbdata/QRD/QRD_Global_cal.acdb
+etc/acdbdata/QRD/QRD_Handset_cal.acdb
+etc/acdbdata/QRD/QRD_Hdmi_cal.acdb
+etc/acdbdata/QRD/QRD_Headset_cal.acdb
+etc/acdbdata/QRD/QRD_Speaker_cal.acdb
+#
+# ASUS' routing for this board. The card registers as msm8952-snd-card, which the CAF
+# HAL routes through the generic mixer_paths.xml; the HAL reads both files from
+# /vendor/etc, stock kept them in /system/etc.
+etc/mixer_paths.xml:vendor/etc/mixer_paths.xml
+etc/audio_platform_info.xml:vendor/etc/audio_platform_info.xml

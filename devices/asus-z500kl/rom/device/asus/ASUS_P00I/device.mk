@@ -164,6 +164,17 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml
 
 # ---------------------------------------------------------------------------------
+# Media codecs
+# ---------------------------------------------------------------------------------
+# Software codecs only for now (configs/media/media_codecs.xml says why there has to
+# be a list at all); the Venus hardware codecs are their own block.
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/media/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
+    frameworks/av/media/libstagefright/data/media_codecs_google_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_audio.xml \
+    frameworks/av/media/libstagefright/data/media_codecs_google_telephony.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_telephony.xml \
+    frameworks/av/media/libstagefright/data/media_codecs_google_video.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_video.xml
+
+# ---------------------------------------------------------------------------------
 # Key layouts
 # ---------------------------------------------------------------------------------
 # Ours, two lines each; the files say why. Without gpio-keys.kl the home key did
@@ -173,31 +184,42 @@ PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/configs/keylayout/atmel_mxt_ts.kl:$(TARGET_COPY_OUT_VENDOR)/usr/keylayout/atmel_mxt_ts.kl
 
 # ---------------------------------------------------------------------------------
-# Audio -- a stub, so that the boot can finish
+# Audio
 # ---------------------------------------------------------------------------------
-# Not real audio: AOSP's audio.primary.default accepts every stream and discards it.
-# It is here because Pie cannot boot without *some* audio HAL. With none, audioserver
-# dereferences a null DevicesFactoryHal in AudioFlinger::loadHwModule_l() and crashes,
-# system_server waits for media.audio_policy at StartAudioService forever, and the boot
-# animation never ends (fourth M3 attempt: 43 audioserver crashes in three minutes).
-# The real HAL (audio-caf/msm8952 with ASUS' mixer paths and the ACDB blobs) is M4,
-# and replaces this section whole. Same set as AOSP's own emulator uses.
+# The HAL is audio-caf/msm8952 built from source, not ASUS' Nougat blob. From the
+# stock system come only the parts with no source: ASUS' mixer paths and platform
+# info, the ACDB calibration loader and its data, and the ADSP firmware (see
+# proprietary-files.txt). No optional HAL features yet (offload, fluence, speaker
+# protection...): BoardConfig.mk turns them on one at a time once the base plays.
+#
+# This replaced a stub (audio.primary.default) that was there only so Pie could boot:
+# with no audio HAL, audioserver dies on a null DevicesFactoryHal and system_server
+# waits for media.audio_policy forever.
 PRODUCT_PACKAGES += \
     android.hardware.audio@2.0-service \
     android.hardware.audio@4.0-impl \
     android.hardware.audio.effect@4.0-impl \
-    audio.primary.default \
+    audio.primary.msm8952 \
     audio.r_submix.default \
-    audio.usb.default
+    audio.usb.default \
+    libaudio-resampler \
+    libqcompostprocbundle \
+    libqcomvisualizer \
+    libqcomvoiceprocessing \
+    tinymix
 
+# The policy is the CAF tree's, which describes the outputs this HAL implements;
+# ASUS' describes their own HAL. The effects are AOSP's: ASUS' audio_effects.conf
+# loads Dolby and MaxxAudio libraries that are not here.
 AUDIO_POLICY_CONFIG_DIR := frameworks/av/services/audiopolicy/config
 PRODUCT_COPY_FILES += \
-    $(AUDIO_POLICY_CONFIG_DIR)/audio_policy_configuration_generic.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
-    $(AUDIO_POLICY_CONFIG_DIR)/primary_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/primary_audio_policy_configuration.xml \
+    hardware/qcom/audio-caf/msm8952/configs/common/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
+    $(AUDIO_POLICY_CONFIG_DIR)/a2dp_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/a2dp_audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/usb_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/audio_policy_volumes.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_volumes.xml \
-    $(AUDIO_POLICY_CONFIG_DIR)/default_volume_tables.xml:$(TARGET_COPY_OUT_VENDOR)/etc/default_volume_tables.xml
+    $(AUDIO_POLICY_CONFIG_DIR)/default_volume_tables.xml:$(TARGET_COPY_OUT_VENDOR)/etc/default_volume_tables.xml \
+    frameworks/av/media/libeffects/data/audio_effects.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_effects.xml
 
 # ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
@@ -214,7 +236,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 #
 #   wifi      needs the WLAN driver built from CodeAurora sources first -- the stock
 #             wlan.ko will not load on a kernel we built, see ../../../../HARDWARE.md
-#   audio     audio-caf/msm8952, plus the ACDB calibration blobs (only a stub above)
 #   RIL       libril-qc-qmi-1.so and the qcril properties
 #   sensors   sensors.msm8952.so and the sensor daemon
 #   camera    T4K35 and OV5670, last as always on a legacy port

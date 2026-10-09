@@ -155,12 +155,31 @@ TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.qcom
 # from a root shell. Nothing here needs a verity key.
 PLATFORM_SECURITY_PATCH := 2099-12-31
 
+# The HIDL manifest: every HAL this device provides. See the file for why it matters
+# even on a non-Treble device.
+DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
+
+# Audio: audio-caf/msm8952 from source. The optional AUDIO_FEATURE_ENABLED_* switches
+# (offload, fluence, speaker protection, HFP...) stay off until the base path plays,
+# and come in one at a time.
+#
+# Three are on because the HAL does not compile without them: with them off, what it
+# falls back on are unused static functions and variables, which -Werror stops on.
+# MULTI_VOICE_SESSIONS is the voice-call path; SND_MONITOR watches the sound card
+# across an ADSP restart; PROXY_DEVICE is the AFE proxy used for Wi-Fi Display and USB
+# audio, the only user of audio_extn.c's state with every other extension off. Kenzo
+# has all three on.
+BOARD_USES_ALSA_AUDIO := true
+USE_XML_AUDIO_POLICY_CONF := 1
+AUDIO_FEATURE_ENABLED_MULTI_VOICE_SESSIONS := true
+AUDIO_FEATURE_ENABLED_SND_MONITOR := true
+AUDIO_FEATURE_ENABLED_PROXY_DEVICE := true
+
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
 # value into a first boot where every symptom has a dozen candidate causes:
 #   - graphics:  BOARD_EGL_CFG, TARGET_USES_ION, TARGET_USES_OVERLAY, gralloc bits
 #   - wifi:      BOARD_HAS_QCOM_WLAN, WIFI_DRIVER_*, the firmware path
-#   - audio:     BOARD_USES_ALSA_AUDIO, the mixer paths
 #   - RIL:       BOARD_PROVIDES_LIBRIL, the qcril properties
 #   - camera:    left for last, as always on a legacy port
 # -----------------------------------------------------------------------------------
