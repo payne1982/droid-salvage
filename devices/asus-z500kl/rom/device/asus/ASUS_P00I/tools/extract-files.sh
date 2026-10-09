@@ -153,6 +153,68 @@ pb_fix vendor/lib64/libprotobuf-cpp-fl26.so libprotobuf-cpp-full.so libprotobuf-
 pb_fix vendor/lib64/libcneapiclient.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
 pb_fix vendor/lib64/libprotobuf-cpp-lt26.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
 
+# Stock's camcorder profiles carry two qualities that only Qualcomm's framework
+# knew, "vga" and "timelapsevga". Pie's MediaProfiles does not, and meeting an
+# unknown quality it does not skip the entry but fails a CHECK: zygote parses this
+# file while preloading (CamcorderProfile), so it aborted at every start and the
+# tablet never finished booting. Those EncoderProfile blocks are dropped; every
+# other profile (qcif, qvga, 480p, 720p, 1080p and their timelapse twins) stays.
+# The camera daemon's ISP module destroys two mutexes twice when a session stops:
+# the teardown block in module_isp (0x6f8c-0x6ffc) runs once for each of two
+# hardware streams (r4 = 0, then 1), and while the buffers it frees are indexed by
+# the stream, the two mutexes (+0x2dc, +0x2e0) and the condition variable are the
+# session's own, the same both times. Nougat's bionic let the second destroy pass;
+# Pie's aborts ("FORTIFY: pthread_mutex_destroy called on a destroyed mutex") and
+# the daemon died every time the camera was closed or switched. Both calls become
+# a Thumb-2 nop.w: in bionic a destroy only marks the mutex unusable, and the
+# memory holding them is freed with the session. Patched only on the exact stock
+# file, recognised by its hash, and only where the two original blx are found.
+isp=vendor/lib/libmmcamera2_isp_modules.so
+isp_sha=f811b169a1b8067d42d841243224983ad97f0ed224cc133b53b65288a95578d8
+if [ -f "$vendor_dir/proprietary/$isp" ] &&
+   [ "$(sha256sum "$vendor_dir/proprietary/$isp" | cut -d' ' -f1)" = "$isp_sha" ]; then
+    for at in 0x6fd4:fef7aaeb 0x6fe2:fef7a4eb; do
+        off=$((${at%%:*}))
+        [ "$(od -An -tx1 -j "$off" -N4 "$vendor_dir/proprietary/$isp" | tr -d ' \n')" = "${at#*:}" ] ||
+            { printf 'error: unexpected bytes in %s at %s\n' "$isp" "${at%%:*}" >&2; exit 1; }
+        printf '\257\363\000\200' |
+            dd of="$vendor_dir/proprietary/$isp" bs=1 seek="$off" conv=notrunc 2>/dev/null
+    done
+    printf '    %s: no double pthread_mutex_destroy at session stop\n' "$isp"
+fi
+
+# The camera HAL runs in HAL3 mode (persist.camera.HAL3.enabled, device.mk), the
+# only one that works here: in HAL1 mode the HAL hands get_memory its own memory
+# object as the cookie, which Nougat's framework ignored and Pie's camera.device@1.0
+# takes for its CameraDevice ("camera HAL request memory while camera is not
+# opened!"), and preview crashed. But for a HAL3 device whose module has an
+# open_legacy, Pie's provider opens it once in HAL1 mode at start to see whether it
+# could, and ASUS' HAL1 constructor (ASUSDITInterface) crashed there, so the provider
+# never came up. QCamera2Factory::open_legacy is made to answer -ENOSYS straight
+# away (mvn.w r0, #37; bx lr), which the provider takes as "no HAL1" -- true of the
+# HAL as it is used. Same safeguards as above.
+hal=lib/hw/camera.msm8952.so
+hal_sha=5ba00a95a4c311bff1af104f63a85bbed716ba4dc8487af46af44a03bc308cf4
+if [ -f "$vendor_dir/proprietary/$hal" ] &&
+   [ "$(sha256sum "$vendor_dir/proprietary/$hal" | cut -d' ' -f1)" = "$hal_sha" ]; then
+    off=$((0x385b4 - 0x1000))   # the text segment is mapped at 0x1000, from offset 0
+    [ "$(od -An -tx1 -j "$off" -N6 "$vendor_dir/proprietary/$hal" | tr -d ' \n')" = 2de9f3410646 ] ||
+        { printf 'error: unexpected bytes in %s at 0x385b4\n' "$hal" >&2; exit 1; }
+    printf '\157\360\045\000\160\107' |
+        dd of="$vendor_dir/proprietary/$hal" bs=1 seek="$off" conv=notrunc 2>/dev/null
+    printf '    %s: open_legacy returns -ENOSYS\n' "$hal"
+fi
+
+mp=vendor/etc/media_profiles_V1_0.xml
+if [ -f "$vendor_dir/proprietary/$mp" ] && grep -q 'quality="\(timelapse\)\{0,1\}vga"' "$vendor_dir/proprietary/$mp"; then
+    awk '/<EncoderProfile quality="(timelapse)?vga"/ { skip = 1 }
+         !skip { print }
+         skip && /<\/EncoderProfile>/ { skip = 0 }' \
+        "$vendor_dir/proprietary/$mp" > "$vendor_dir/proprietary/$mp.tmp"
+    mv "$vendor_dir/proprietary/$mp.tmp" "$vendor_dir/proprietary/$mp"
+    printf '    %s: dropped the vga and timelapsevga profiles\n' "$mp"
+fi
+
 got=$(find "$vendor_dir/proprietary" -type f -size +0 | wc -l)
 say "got $got of $count"
 if [ "$got" -ne "$count" ]; then

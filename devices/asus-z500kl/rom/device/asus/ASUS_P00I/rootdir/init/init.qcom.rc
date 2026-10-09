@@ -228,3 +228,16 @@ service sensors /system/bin/sensors.qcom
     class late_start
     user root
     group root 3011
+
+# The camera daemon: ASUS' mm-qcamera-daemon, which owns the sensors, the ISP and the
+# post-processing pipeline and serves the HAL. Same definition as the stock
+# init.target.rc. It probes the sensors itself when it starts (sensor_init), so the
+# kernel log only shows "probe succeeded" once it has run.
+service qcamerasvr /system/bin/mm-qcamera-daemon
+    class late_start
+    user camera
+    group camera system inet input graphics
+
+on post-fs-data
+    mkdir /data/misc/camera 0770 camera camera
+    mkdir /data/camera 0770 media camera

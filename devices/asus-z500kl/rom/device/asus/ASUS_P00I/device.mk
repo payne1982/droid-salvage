@@ -374,6 +374,43 @@ PRODUCT_PACKAGES += \
     libloc_eng
 
 # ---------------------------------------------------------------------------------
+# Camera
+# ---------------------------------------------------------------------------------
+# Rear Toshiba T4K35 (8 MP, dw9714 autofocus, le2464c eeprom), front OmniVision
+# OV5670 (5 MP). The whole stack is ASUS' Nougat one, HAL included, because ASUS
+# changed both ends of it: the HAL carries their DIT framework (ASUSDITInterface,
+# arcsoft and face-beautify libraries) and the daemon's stats module links the same
+# libxditk_ditBSP. The HAL and the daemon share Qualcomm's cam_intf structures, so a
+# HAL from source (as kenzo builds QCamera2) would have to match ASUS' versions of
+# them, and nothing says it does. The stack loads on Pie with one missing symbol,
+# which shims/camera provides.
+#
+# AOSP's camera provider wraps the legacy HAL module for cameraserver. The HAL runs
+# in HAL3 mode (persist.camera.HAL3.enabled; it defaults to HAL1, which does not work
+# on Pie -- tools/extract-files.sh says why, and what the HAL is patched for). Both
+# cameras report FULL with manual controls and RAW, and no flash, which is what the
+# features say; stock declared flash-autofocus, which this tablet does not have. The
+# other properties are stock's: the preview size limits the HAL applies, and
+# monotonic timestamps for video.
+PRODUCT_PACKAGES += \
+    android.hardware.camera.provider@2.4-impl \
+    android.hardware.camera.provider@2.4-service \
+    libshim_camera
+
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.camera.HAL3.enabled=1 \
+    camera.display.umax=1920x1080 \
+    camera.display.lmax=1280x720 \
+    camera.lowpower.record.enable=1 \
+    media.camera.ts.monotonic=1
+
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.camera.autofocus.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.autofocus.xml \
+    frameworks/native/data/etc/android.hardware.camera.full.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.full.xml \
+    frameworks/native/data/etc/android.hardware.camera.raw.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.raw.xml \
+    frameworks/native/data/etc/android.hardware.camera.front.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.front.xml
+
+# ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
 # ---------------------------------------------------------------------------------
 # A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
@@ -386,7 +423,5 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # ---------------------------------------------------------------------------------
 # Not here yet. Listed, not guessed:
 #
-#   camera    T4K35 and OV5670, last as always on a legacy port (media_profiles
-#             comes with it: it describes what the camcorder records)
 #   exFAT     texfat and tntfs are Tuxera's with no source; an open driver is needed
 # ---------------------------------------------------------------------------------

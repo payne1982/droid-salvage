@@ -1,0 +1,8 @@
+// Symbols ASUS' Nougat camera HAL (camera.msm8952.so) needs and Pie no longer
+// exports. Loaded into the HAL's process through TARGET_LD_SHIM_LIBS (BoardConfig.mk).
+cc_library_shared {
+    name: "libshim_camera",
+    srcs: ["fence.cpp"],
+    shared_libs: ["libui", "libutils", "libbase"],
+    compile_multilib: "32",
+}

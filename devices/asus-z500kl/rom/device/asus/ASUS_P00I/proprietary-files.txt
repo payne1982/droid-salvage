@@ -346,3 +346,177 @@ etc/media_codecs_performance_8956_v1.xml:vendor/etc/media_codecs_performance.xml
 lib64/libloc_api_v02.so:vendor/lib64/libloc_api_v02.so
 lib64/libloc_ds_api.so:vendor/lib64/libloc_ds_api.so
 etc/gps.conf
+
+# Camera: ASUS' whole Nougat stack (device.mk says why not a HAL from source), cut
+# down from the 531 files they shipped for a dozen sensors to what this tablet's two
+# need. Found by resolving the NEEDED closure of mm-qcamera-daemon and the HAL
+# against Pie's own libraries, then adding the modules the daemon dlopens by name and
+# watching its log on the tablet:
+#   - sensors: t4k35_4lane (rear) and ov5670 (front) -- the daemon probes them as
+#     "probe succeeded"; their chromatix tuning; the dw9714 actuator the T4K35's
+#     library names; the le2464c and sunny_8865 eeprom readers from the board DTS.
+#     ov5670_polaris is another board's tuning of the same sensor and not ours;
+#   - the common pipeline: libmmcamera2_* modules, the ISP sub-modules, imglib, JPEG;
+#   - ASUS' DIT framework (libxditk_*, arcsoft, libmpbase, face beautify), which both
+#     the HAL and the daemon's stats module link.
+# Left out: libmmcamera_llvd, which needs a libllvd_smore ASUS never shipped, and the
+# ASUS camera app's own libraries (libcameraap, libcamera_pano, ...). The other
+# missing modules the daemon asks for (cac, stillmore, trueportrait, sw_tnr) were not
+# shipped either; it runs without them, as stock did.
+#
+# Kept at stock's paths: the daemon builds some of them itself
+# ("/system/vendor/lib/libmmcamera_%s.so").
+#
+# lib/DataSet is ASUS' DIT framework's data, which it looks for under /system/lib:
+# its route table (arch/DIT_List.cfg) and its databases. Without them opening a camera
+# crashed in libxditk_ditArchLIB ("addRoute NO /arch/DIT_List.cfg").
+#
+# Two of the blobs are patched by extract-files.sh, each for a reason given there:
+# libmmcamera2_isp_modules (a double mutex destroy Pie aborts on) and the HAL
+# (open_legacy answers -ENOSYS).
+#
+# cpp_firmware_v1_5_0.fw is the one CPP microcode this kernel asks for (the post-
+# processor that scales and rotates frames; "Fail to loc blob" without it).
+# media_profiles is stock's for this chip, at the path Pie reads.
+bin/mm-qcamera-daemon
+lib/hw/camera.msm8952.so
+lib/libarcsoft_beautyshot.so
+lib/libarcsoft_face_tracking.so
+lib/libarcsoft_hdr.so
+lib/libarcsoft_nighthawk.so
+lib/libarcsoft_night_shot.so
+lib/libarcsoft_piczoom.so
+lib/libarcsoft_videostabilizer.so
+lib/libAsusRGBSensorHAL.so
+lib/libmmcamera_interface.so
+lib/libmmjpeg_interface.so
+lib/libmm-qcamera.so
+lib/libmpbase.so
+lib/libqomx_core.so
+lib/libxditk_arch.so
+lib/libxditk_ditArchLIB.so
+lib/libxditk_ditBSP.so
+lib/libxditk_DIT_Manager.so
+lib/libxditk_DIT_MSM8937.so
+lib/libxditk_DIT_MSM8953.so
+lib/libxditk_DIT_MSM8956.so
+lib/libxditk_DIT_MSM8996.so
+lib/libxditk_ISP.so
+vendor/lib/libactuator_dw9714.so
+vendor/lib/libadsprpc.so
+vendor/lib/libchromaflash.so
+vendor/lib/libchromatix_ov5670_3A_default.so
+vendor/lib/libchromatix_ov5670_common_default.so
+vendor/lib/libchromatix_ov5670_cpp_binning.so
+vendor/lib/libchromatix_ov5670_cpp_binning_video.so
+vendor/lib/libchromatix_ov5670_cpp_default.so
+vendor/lib/libchromatix_ov5670_cpp_default_video.so
+vendor/lib/libchromatix_ov5670_isp_binning.so
+vendor/lib/libchromatix_ov5670_isp_default.so
+vendor/lib/libchromatix_ov5670_postproc_default.so
+vendor/lib/libchromatix_t4k35_4lane_3A_default.so
+vendor/lib/libchromatix_t4k35_4lane_common_default.so
+vendor/lib/libchromatix_t4k35_4lane_cpp_binning.so
+vendor/lib/libchromatix_t4k35_4lane_cpp_binning_video.so
+vendor/lib/libchromatix_t4k35_4lane_cpp_default.so
+vendor/lib/libchromatix_t4k35_4lane_cpp_default_video.so
+vendor/lib/libchromatix_t4k35_4lane_isp_binning.so
+vendor/lib/libchromatix_t4k35_4lane_isp_default.so
+vendor/lib/libchromatix_t4k35_4lane_postproc_default.so
+vendor/lib/libfastcvopt.so
+vendor/lib/libjpegdhw.so
+vendor/lib/libjpegdmahw.so
+vendor/lib/libjpegehw.so
+vendor/lib/libmmcamera2_c2d_module.so
+vendor/lib/libmmcamera2_cpp_module.so
+vendor/lib/libmmcamera2_dcrf.so
+vendor/lib/libmmcamera2_frame_algorithm.so
+vendor/lib/libmmcamera2_iface_modules.so
+vendor/lib/libmmcamera2_imglib_modules.so
+vendor/lib/libmmcamera2_isp_modules.so
+vendor/lib/libmmcamera2_is.so
+vendor/lib/libmmcamera2_mct.so
+vendor/lib/libmmcamera2_pp_buf_mgr.so
+vendor/lib/libmmcamera2_pproc_modules.so
+vendor/lib/libmmcamera2_q3a_core.so
+vendor/lib/libmmcamera2_sensor_debug.so
+vendor/lib/libmmcamera2_sensor_modules.so
+vendor/lib/libmmcamera2_stats_algorithm.so
+vendor/lib/libmmcamera2_stats_modules.so
+vendor/lib/libmmcamera2_vpe_module.so
+vendor/lib/libmmcamera2_wnr_module.so
+vendor/lib/libmmcamera_chromaflash_lib.so
+vendor/lib/libmmcamera_csidtg.so
+vendor/lib/libmmcamera_dcrf_lib.so
+vendor/lib/libmmcamera_eeprom_util.so
+vendor/lib/libmmcamera_eztune_module.so
+vendor/lib/libmmcamera_faceproc.so
+vendor/lib/libmmcamera_hdr_gb_lib.so
+vendor/lib/libmmcamera_imglib.so
+vendor/lib/libmmcamera_isp_abcc44.so
+vendor/lib/libmmcamera_isp_abf40.so
+vendor/lib/libmmcamera_isp_bcc40.so
+vendor/lib/libmmcamera_isp_be_stats44.so
+vendor/lib/libmmcamera_isp_bf_stats47.so
+vendor/lib/libmmcamera_isp_bg_stats44.so
+vendor/lib/libmmcamera_isp_bhist_stats44.so
+vendor/lib/libmmcamera_isp_bpc40.so
+vendor/lib/libmmcamera_isp_chroma_enhan40.so
+vendor/lib/libmmcamera_isp_chroma_suppress40.so
+vendor/lib/libmmcamera_isp_clamp_encoder40.so
+vendor/lib/libmmcamera_isp_clamp_video40.so
+vendor/lib/libmmcamera_isp_clamp_viewfinder40.so
+vendor/lib/libmmcamera_isp_color_correct40.so
+vendor/lib/libmmcamera_isp_color_xform_encoder40.so
+vendor/lib/libmmcamera_isp_color_xform_viewfinder40.so
+vendor/lib/libmmcamera_isp_cs_stats44.so
+vendor/lib/libmmcamera_isp_demosaic40.so
+vendor/lib/libmmcamera_isp_demux40.so
+vendor/lib/libmmcamera_isp_fovcrop_encoder40.so
+vendor/lib/libmmcamera_isp_fovcrop_viewfinder40.so
+vendor/lib/libmmcamera_isp_gamma40.so
+vendor/lib/libmmcamera_isp_ihist_stats44.so
+vendor/lib/libmmcamera_isp_linearization40.so
+vendor/lib/libmmcamera_isp_ltm44.so
+vendor/lib/libmmcamera_isp_luma_adaptation40.so
+vendor/lib/libmmcamera_isp_mce40.so
+vendor/lib/libmmcamera_isp_mesh_rolloff40.so
+vendor/lib/libmmcamera_isp_rs_stats44.so
+vendor/lib/libmmcamera_isp_scaler_encoder44.so
+vendor/lib/libmmcamera_isp_scaler_viewfinder44.so
+vendor/lib/libmmcamera_isp_sce40.so
+vendor/lib/libmmcamera_isp_sub_module.so
+vendor/lib/libmmcamera_isp_wb40.so
+vendor/lib/libmmcamera_le2464c_eeprom.so
+vendor/lib/libmmcamera_le2464c_master_eeprom.so
+vendor/lib/libmmcamera_optizoom_lib.so
+vendor/lib/libmmcamera_ov5670.so
+vendor/lib/libmmcamera_pdafcamif.so
+vendor/lib/libmmcamera_pdaf.so
+vendor/lib/libmmcamera_ppbase_module.so
+vendor/lib/libmmcamera_sunny_8865_eeprom.so
+vendor/lib/libmmcamera_t4k35_4lane.so
+vendor/lib/libmmcamera_thread_services.so
+vendor/lib/libmmcamera_tintless_algo.so
+vendor/lib/libmmcamera_tintless_bg_pca_algo.so
+vendor/lib/libmmcamera_tuning_lookup.so
+vendor/lib/libmmcamera_tuning.so
+vendor/lib/libmmcamera_ubifocus_lib.so
+vendor/lib/libmmcamera_vpu_module.so
+vendor/lib/libmmjpeg.so
+vendor/lib/libmmqjpeg_codec.so
+vendor/lib/libmmqjpegdma.so
+vendor/lib/liboptizoom.so
+vendor/lib/libqmi_encdec.so
+vendor/lib/libqomx_jpegdec.so
+vendor/lib/libqomx_jpegenc_pipe.so
+vendor/lib/libqomx_jpegenc.so
+vendor/lib/libsensor1.so
+vendor/lib/libts_detected_face_hal.so
+vendor/lib/libts_face_beautify_hal.so
+vendor/lib/libubifocus.so
+etc/firmware/cpp_firmware_v1_5_0.fw
+lib/DataSet/arch/DIT_List.cfg
+lib/DataSet/ditSCidGen/msgchk.db
+lib/DataSet/ispDB/ParameterDB.db
+etc/media_profiles_8956.xml:vendor/etc/media_profiles_V1_0.xml

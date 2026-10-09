@@ -242,9 +242,13 @@ TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS := 0x02000000U
 USE_DEVICE_SPECIFIC_GPS := true
 TARGET_NO_RPC := true
 
+# Camera: ASUS' Nougat camera stack, HAL included, as blobs (device.mk says why).
+# The HAL needs one symbol Pie's libui no longer exports; the shim provides it, loaded
+# into whatever process loads the HAL.
+TARGET_LD_SHIM_LIBS := /system/lib/hw/camera.msm8952.so|libshim_camera.so
+
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
 # value into a first boot where every symptom has a dozen candidate causes:
 #   - graphics:  BOARD_EGL_CFG, TARGET_USES_OVERLAY, gralloc bits
-#   - camera:    left for last, as always on a legacy port
 # -----------------------------------------------------------------------------------
