@@ -129,6 +129,21 @@ configuration — with `logcat` redirected to a file early in `init`, and `pstor
 `console-ramoops` as the fallback that survives a warm reboot. A boot that fails
 silently teaches nothing; a boot that fails loudly is progress.
 
+**Done, 9 October 2026.** LineageOS 16 boots to the launcher from the installed zip, by
+itself, in under a minute, with `/sdcard` mounted and nothing crashing. It took six
+boots, each stopped by one missing thing and each found in the logs: no device init to
+run `mount_all`; no `/dev/block/bootdevice` link; binder without scatter-gather (the
+M1b patch was not enough, see above); no audio HAL, which hangs system_server; no
+`qseecomd`, and with it no keystore; no sdcardfs, which Pie's sdcard daemon cannot do
+without. The kernel side came from LineageOS' kernel for the Xiaomi kenzo, same SoC
+and same CAF base, plus one fix of ours for a double free that kenzo's Android 8 never
+reached. Display and GPU, which this roadmap expected to be the hardest part, worked
+from the first boot that got that far.
+
+Still open, carried into M4: real audio, Wi-Fi, Bluetooth, sensors, RIL, camera, GPS;
+SELinux is permissive; `adb` is open without authorisation; the boot image inside the
+OTA zip is unsigned, so installing still needs the signed image written by hand.
+
 ### M4 — the HALs, one at a time
 Expected order of difficulty: display first and hardest (a Pixelworks **iris2**
 bridge sits between the SoC and the panel, and the hwcomposer blob is Nougat), then
