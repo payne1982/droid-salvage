@@ -278,6 +278,17 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.bluetooth_le.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.bluetooth_le.xml
 
 # ---------------------------------------------------------------------------------
+# RIL and the modem
+# ---------------------------------------------------------------------------------
+# rild and libril from hardware/ril-caf; qcril and the modem daemons are blobs (see
+# proprietary-files.txt), started from init.qcom.rc. The properties are stock's and
+# live in system.prop, since rild.libargs has a space in it.
+PRODUCT_PACKAGES += \
+    libril \
+    librilutils \
+    rild
+
+# ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
 # ---------------------------------------------------------------------------------
 # A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
@@ -290,7 +301,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # ---------------------------------------------------------------------------------
 # Not here yet. Listed, not guessed:
 #
-#   RIL       libril-qc-qmi-1.so and the qcril properties
 #   sensors   sensors.msm8952.so and the sensor daemon
 #   camera    T4K35 and OV5670, last as always on a legacy port
 #   GPS       hardware/qcom/gps

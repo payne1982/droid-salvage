@@ -1,0 +1,19 @@
+# System properties that cannot go through PRODUCT_PROPERTY_OVERRIDES: that is a make
+# list, split on whitespace, and some values here contain spaces (rild.libargs). Read
+# through TARGET_SYSTEM_PROP in BoardConfig.mk.
+
+# RIL: rild loads qcril from here and passes it the SMD port, as stock did. Both the
+# legacy and the vendor.-prefixed names, since ril-caf's rild reads one or the other
+# depending on PRODUCT_COMPATIBLE_PROPERTY.
+rild.libpath=/vendor/lib64/libril-qc-qmi-1.so
+vendor.rild.libpath=/vendor/lib64/libril-qc-qmi-1.so
+rild.libargs=-d /dev/smd0
+vendor.rild.libargs=-d /dev/smd0
+
+# Single SIM, LTE/GSM/WCDMA by default, mobile data through netmgrd: stock's values.
+persist.radio.multisim.config=ss
+ro.telephony.default_network=12
+telephony.lteOnCdmaDevice=0
+ro.use_data_netmgrd=true
+persist.data.netmgrd.qos.enable=true
+persist.data.mode=concurrent

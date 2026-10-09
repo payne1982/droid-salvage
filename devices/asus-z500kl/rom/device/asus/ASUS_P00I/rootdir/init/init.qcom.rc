@@ -64,6 +64,34 @@ on post-fs-data
     mkdir /data/vendor/bluetooth 0770 bluetooth bluetooth
     start vendor.macaddr
 
+on post-fs-data
+    # qcril's working files. It copies the prebuilt vendor/qcril.db here once
+    # prebuilt_db_support says it may, and keeps its own state alongside.
+    mkdir /data/misc/radio 0770 system radio
+    mkdir /data/misc/radio/modem_config 0770 radio radio
+    write /data/misc/radio/copy_complete 0
+    chown radio radio /data/misc/radio/copy_complete
+    chmod 0660 /data/misc/radio/copy_complete
+    write /data/misc/radio/prebuilt_db_support 1
+    chown radio radio /data/misc/radio/prebuilt_db_support
+    chmod 0400 /data/misc/radio/prebuilt_db_support
+    write /data/misc/radio/db_check_done 0
+    chown radio radio /data/misc/radio/db_check_done
+    chmod 0660 /data/misc/radio/db_check_done
+    mkdir /data/misc/netmgr 0770 radio radio
+
+on boot
+    # The QMI multiplexer's sockets and netmgrd's, created as stock did.
+    mkdir /dev/socket/qmux_radio 0770 radio radio
+    chmod 2770 /dev/socket/qmux_radio
+    mkdir /dev/socket/qmux_audio 0770 media audio
+    chmod 2770 /dev/socket/qmux_audio
+    mkdir /dev/socket/qmux_bluetooth 0770 bluetooth bluetooth
+    chmod 2770 /dev/socket/qmux_bluetooth
+    mkdir /dev/socket/qmux_gps 0770 gps gps
+    chmod 2770 /dev/socket/qmux_gps
+    mkdir /dev/socket/netmgr 0750 radio radio
+
 # libbt-vendor asks for the Bluetooth core with vendor.bluetooth.hciattach=true and
 # waits for vendor.bluetooth.status=on, which init.bt.sh sets.
 on property:vendor.bluetooth.hciattach=true
@@ -127,3 +155,48 @@ service vendor.macaddr /system/bin/sh /system/vendor/bin/init.macaddr.sh
     group root bluetooth
     disabled
     oneshot
+
+# The modem's userspace, as stock ran it (its init.qcom.rc and init.target.rc). The
+# modem does not boot by itself: it needs its EFS served (rmt_storage, tftp_server)
+# and the peripheral manager's vote (per_mgr). qmuxd and netmgrd were started by a
+# stock shell script depending on the baseband; this device has one baseband, so they
+# start with their class. rild itself comes with ril-caf's own rild.rc.
+# Stock also listed the qcom_diag group, which does not exist in Pie and would make
+# init reject the whole service; it only matters for the diag logging port.
+service rmt_storage /system/bin/rmt_storage
+    class core
+    user root
+
+service tftp_server /system/bin/tftp_server
+    class main
+    user root
+
+service irsc_util /system/bin/irsc_util "/etc/sec_config"
+    class main
+    user root
+    oneshot
+
+service per_mgr /system/bin/pm-service
+    class core
+    user system
+    group system net_raw
+
+service per_proxy /system/bin/pm-proxy
+    class core
+    user system
+    group system
+    disabled
+
+on property:init.svc.per_mgr=running
+    start per_proxy
+
+on property:sys.shutdown.requested=*
+    stop per_proxy
+
+service qmuxd /system/bin/qmuxd
+    class main
+    user root
+    group radio audio bluetooth gps
+
+service netmgrd /system/bin/netmgrd
+    class main

@@ -121,6 +121,38 @@ printf '%s\n' $files | while read -r f; do
         rm -f "$vendor_dir/proprietary/$f"
     fi
 done
+# Fixups. Some stock XML files carry a licence comment before the <?xml ...?>
+# declaration, which XML forbids (the declaration must come first). Nougat's parsers
+# did not care; Pie's build runs xmllint on every XML it copies and stops on them
+# ("XML declaration allowed only at the start of the document": etc/data's
+# netmgr_config.xml and qmi_config.xml). The declaration is optional, so where it is
+# not on the first line it is dropped and the rest of the file left as it was.
+for x in $(find "$vendor_dir/proprietary" -type f -name '*.xml'); do
+    if ! head -n 1 "$x" | grep -q '^<?xml' && grep -q '^[[:space:]]*<?xml' "$x"; then
+        sed -i '/^[[:space:]]*<?xml[^>]*?>[[:space:]]*$/d' "$x"
+        printf '    fixed the XML declaration in %s\n' "${x#"$vendor_dir"/proprietary/}"
+    fi
+done
+
+# Nougat's protobuf, for the two blobs that were built against it: libsettings
+# (qcril) links libprotobuf-cpp-full, libcneapiclient (netmgrd) links
+# libprotobuf-cpp-lite. Pie ships libraries of the same names with a different ABI, so
+# those blobs failed to load on missing symbols (qcril did not start, netmgrd did not
+# link). The stock libraries are installed renamed -- fl26/lt26, same length, so the
+# binaries keep their layout -- and the two blobs, and the libraries' own SONAMEs, are
+# pointed at the new names. Pie's protobuf stays as it is for everything else.
+pb_fix() { # file, old name, new name
+    [ -f "$vendor_dir/proprietary/$1" ] || return 0
+    if grep -q "$2" "$vendor_dir/proprietary/$1"; then
+        LC_ALL=C sed -i "s/$2/$3/g" "$vendor_dir/proprietary/$1"
+        printf '    %s: %s -> %s\n' "$1" "$2" "$3"
+    fi
+}
+pb_fix vendor/lib64/libsettings.so libprotobuf-cpp-full.so libprotobuf-cpp-fl26.so
+pb_fix vendor/lib64/libprotobuf-cpp-fl26.so libprotobuf-cpp-full.so libprotobuf-cpp-fl26.so
+pb_fix vendor/lib64/libcneapiclient.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
+pb_fix vendor/lib64/libprotobuf-cpp-lt26.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
+
 got=$(find "$vendor_dir/proprietary" -type f -size +0 | wc -l)
 say "got $got of $count"
 if [ "$got" -ne "$count" ]; then

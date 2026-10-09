@@ -240,3 +240,64 @@ etc/firmware/wlan/prima/WCNSS_cfg.dat
 # 32-bit libbtnv the first cut listed left it with "libbtnv.so not found".
 bin/hci_qcomm_init
 vendor/lib64/libbtnv.so
+
+# RIL and the modem's userspace. Every daemon stock ran for the radio, and the
+# libraries they and libril-qc-qmi-1 link, resolved transitively against what the
+# build already provides (36 files, nothing left unresolved). rild and libril are
+# built from hardware/ril-caf; this is the closed part.
+#   rmt_storage, tftp_server  the modem's EFS (modemst1/2, fsg) and remote files
+#   pm-service, pm-proxy      the peripheral manager, which votes the modem up
+#   irsc_util                 IPC router security rules (etc/sec_config)
+#   qmuxd                     the QMI multiplexer between Android and the modem
+#   netmgrd                   the mobile data interfaces (rmnet)
+bin/irsc_util
+bin/netmgrd
+bin/pm-proxy
+bin/pm-service
+bin/qmuxd
+bin/rmt_storage
+bin/tftp_server
+lib64/librilqmiservices.so
+lib64/librmnetctl.so
+vendor/lib64/libcneapiclient.so
+vendor/lib64/libconfigdb.so
+vendor/lib64/libdsi_netctrl.so
+vendor/lib64/libdsutils.so
+vendor/lib64/libidl.so
+vendor/lib64/liblqe.so
+vendor/lib64/libmdmdetect.so
+vendor/lib64/libnetmgr.so
+vendor/lib64/libperipheral_client.so
+vendor/lib64/libqdi.so
+vendor/lib64/libqdp.so
+vendor/lib64/libqmi.so
+vendor/lib64/libqmi_cci.so
+vendor/lib64/libqmi_client_helper.so
+vendor/lib64/libqmi_client_qmux.so
+vendor/lib64/libqmi_common_so.so
+vendor/lib64/libqmi_csi.so
+vendor/lib64/libqmi_encdec.so
+vendor/lib64/libqmiservices.so
+vendor/lib64/libril-qc-ltedirectdisc.so
+vendor/lib64/libril-qc-qmi-1.so
+vendor/lib64/libril-qc-radioconfig.so
+vendor/lib64/libril-qcril-hook-oem.so
+vendor/lib64/libsettings.so
+vendor/lib64/libsmemlog.so
+vendor/lib64/libsystem_health_mon.so
+vendor/lib64/libxml.so
+#
+# Their configuration, at the paths the binaries have compiled in: netmgrd and
+# libdsi_netctrl read etc/data, irsc_util is given etc/sec_config, and qcril copies
+# vendor/qcril.db (emergency numbers, operator rules) into /data/misc/radio.
+etc/data/dsi_config.xml
+etc/data/netmgr_config.xml
+etc/data/qmi_config.xml
+etc/sec_config
+vendor/qcril.db
+#
+# Nougat's protobuf, renamed: libsettings and libcneapiclient were built against it
+# and do not load against Pie's. extract-files.sh renames the libraries and points
+# the two blobs at the new names; see the fixup there.
+lib64/libprotobuf-cpp-full.so:vendor/lib64/libprotobuf-cpp-fl26.so
+lib64/libprotobuf-cpp-lite.so:vendor/lib64/libprotobuf-cpp-lt26.so

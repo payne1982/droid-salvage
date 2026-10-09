@@ -217,10 +217,14 @@ WIFI_DRIVER_FW_PATH_P2P := "p2p"
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_QCOM := true
 
+# RIL: hardware/ril-caf, the libril that loads Qualcomm's Nougat-era qcril
+# (libril-qc-qmi-1.so) rather than AOSP's.
+TARGET_RIL_VARIANT := caf
+TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
+
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
 # value into a first boot where every symptom has a dozen candidate causes:
 #   - graphics:  BOARD_EGL_CFG, TARGET_USES_ION, TARGET_USES_OVERLAY, gralloc bits
-#   - RIL:       BOARD_PROVIDES_LIBRIL, the qcril properties
 #   - camera:    left for last, as always on a legacy port
 # -----------------------------------------------------------------------------------
