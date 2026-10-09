@@ -17,6 +17,12 @@
 import /init.qcom.usb.rc
 
 on early-init
+    # debugfs, as stock mounted it: system_server reads kernel wakelock statistics from
+    # /d/wakeup_sources and logged a WTF at every boot without it, and the IPC router's
+    # state (the QMI services each processor registered) is only visible here.
+    mount debugfs debugfs /sys/kernel/debug
+    chmod 0755 /sys/kernel/debug
+
     # Mount points for the partitions fstab.qcom adds beyond AOSP's. The root
     # filesystem is still writable here; it is remounted read-only in post-fs.
     mkdir /firmware 0771 system system
@@ -62,6 +68,8 @@ on boot
 
 on post-fs-data
     mkdir /data/vendor/bluetooth 0770 bluetooth bluetooth
+    mkdir /persist/sensors 0775 system system
+    mkdir /data/misc/sensors 0775 system system
     start vendor.macaddr
 
 on post-fs-data
@@ -201,3 +209,16 @@ service qmuxd /system/bin/qmuxd
 
 service netmgrd /system/bin/netmgrd
     class main
+
+# The sensor daemon: it talks to the sensor subsystem on the ADSP over QMI and serves
+# the socket the sensors HAL connects to.
+#
+# Group 3011 is Qualcomm's "sensors" group, and the only one etc/sec_config lets talk to
+# the sensor services on the ADSP (256-273). The daemon starts as root and drops to the
+# "sensors" user by name; Pie has no such user, so it ends up as nobody and the IPC
+# router refuses its messages ("xport_send: Sendto failed", no sensors at all). Given
+# the group number here, as a supplementary group, it keeps it.
+service sensors /system/bin/sensors.qcom
+    class late_start
+    user root
+    group root 3011

@@ -301,3 +301,18 @@ vendor/qcril.db
 # the two blobs at the new names; see the fixup there.
 lib64/libprotobuf-cpp-full.so:vendor/lib64/libprotobuf-cpp-fl26.so
 lib64/libprotobuf-cpp-lite.so:vendor/lib64/libprotobuf-cpp-lt26.so
+
+# Sensors. On this tablet they hang off the ADSP: sensors.qcom talks to the sensor
+# subsystem there over QMI and serves a socket (sensor_ctl_socket) that libsensor1
+# connects to. The HAL is a multi-HAL: sensors.msm8952.so loads the HALs listed in
+# etc/sensors/hals.conf, here only Qualcomm's sensors.ssc.so. sensor_def_qcomdev.conf
+# carries this board's axis orientation for the accelerometer, gyroscope and
+# magnetometer. The sensor registry and calibration live in /persist/sensors, written
+# by sensors.qcom.
+bin/sensors.qcom
+lib64/hw/sensors.msm8952.so
+vendor/lib64/libsensor1.so
+vendor/lib64/libsensor_reg.so
+vendor/lib64/sensors.ssc.so
+etc/sensors/hals.conf
+etc/sensors/sensor_def_qcomdev.conf

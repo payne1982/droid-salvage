@@ -21,6 +21,25 @@ $(call inherit-product-if-exists, vendor/asus/ASUS_P00I/ASUS_P00I-vendor.mk)
 # Framework resource overrides; overlay/ says why for each value.
 DEVICE_PACKAGE_OVERLAYS += $(DEVICE_PATH)/overlay
 
+# Dalvik/ART heap: AOSP's profile for 10" xhdpi 2048 px tablets, which are this
+# tablet's numbers, and the values stock had. Without any, every app got the 16 MB
+# default and anything bigger died of OutOfMemoryError (F-Droid, on first launch).
+$(call inherit-product, frameworks/native/build/tablet-10in-xhdpi-2048-dalvik-heap.mk)
+
+# HWUI caches, stock's values (AOSP has no 10" profile for these).
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.hwui.texture_cache_size=72 \
+    ro.hwui.layer_cache_size=48 \
+    ro.hwui.r_buffer_cache_size=8 \
+    ro.hwui.path_cache_size=32 \
+    ro.hwui.gradient_cache_size=1 \
+    ro.hwui.drop_shadow_cache_size=6 \
+    ro.hwui.texture_cache_flushrate=0.4 \
+    ro.hwui.text_small_cache_width=1024 \
+    ro.hwui.text_small_cache_height=1024 \
+    ro.hwui.text_large_cache_width=2048 \
+    ro.hwui.text_large_cache_height=2048
+
 # A 2048x1536 tablet at 320 dpi.
 PRODUCT_CHARACTERISTICS := tablet
 PRODUCT_AAPT_CONFIG := normal
@@ -157,10 +176,17 @@ PRODUCT_PACKAGES += \
 # process crash-looped on the first boot that reached the launcher. With the feature
 # and no driver yet, wifi simply fails to switch on.
 #
-# tablet_core_hardware.xml is our copy, with bluetooth, compass and accelerometer taken
-# out until their HALs exist; the file says why.
+# tablet_core_hardware.xml declares bluetooth, compass and accelerometer, so it went in
+# only once their HALs did (it was a trimmed copy until then); the sensor features
+# below are the ones the sensors HAL reports on this tablet: Invensense accelerometer
+# and gyroscope, AKM AK09916 magnetometer, Lite-On AL3320B light sensor, and the step
+# sensors Qualcomm's fusion provides. No proximity or barometer on this tablet.
 PRODUCT_COPY_FILES += \
-    $(DEVICE_PATH)/configs/permissions/tablet_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/tablet_core_hardware.xml \
+    frameworks/native/data/etc/tablet_core_hardware.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/tablet_core_hardware.xml \
+    frameworks/native/data/etc/android.hardware.sensor.gyroscope.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.sensor.gyroscope.xml \
+    frameworks/native/data/etc/android.hardware.sensor.light.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.sensor.light.xml \
+    frameworks/native/data/etc/android.hardware.sensor.stepcounter.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.sensor.stepcounter.xml \
+    frameworks/native/data/etc/android.hardware.sensor.stepdetector.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.sensor.stepdetector.xml \
     frameworks/native/data/etc/android.hardware.touchscreen.multitouch.jazzhand.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.touchscreen.multitouch.jazzhand.xml \
     frameworks/native/data/etc/android.hardware.usb.accessory.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.usb.accessory.xml \
     frameworks/native/data/etc/android.hardware.usb.host.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.usb.host.xml \
@@ -290,6 +316,16 @@ PRODUCT_PACKAGES += \
     rild
 
 # ---------------------------------------------------------------------------------
+# Sensors
+# ---------------------------------------------------------------------------------
+# AOSP's wrapper around the legacy sensors HAL, which is a blob (sensors.msm8952.so,
+# see proprietary-files.txt); sensors.qcom, the daemon it talks to, starts from
+# init.qcom.rc.
+PRODUCT_PACKAGES += \
+    android.hardware.sensors@1.0-impl \
+    android.hardware.sensors@1.0-service
+
+# ---------------------------------------------------------------------------------
 # Observability -- the whole point of the first boot
 # ---------------------------------------------------------------------------------
 # A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
@@ -302,7 +338,6 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # ---------------------------------------------------------------------------------
 # Not here yet. Listed, not guessed:
 #
-#   sensors   sensors.msm8952.so and the sensor daemon
 #   camera    T4K35 and OV5670, last as always on a legacy port
 #   GPS       hardware/qcom/gps
 #   exFAT     texfat and tntfs are Tuxera's with no source; an open driver is needed

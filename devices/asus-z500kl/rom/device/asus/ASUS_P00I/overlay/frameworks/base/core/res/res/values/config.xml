@@ -13,4 +13,60 @@
     <!-- The magnet in the cover: "lid_input" reports SW_LID. Closing the cover
          turns the screen off, opening it turns it back on. -->
     <bool name="config_lidControlsSleep">true</bool>
+
+    <!-- Automatic brightness, with ASUS' curve for this panel from the stock
+         framework-res: lux thresholds, and the backlight level below the first, between
+         each pair and above the last (one more entry than the thresholds). Stock's last
+         four levels went past 255 (319-510), ASUS' sunlight boost; Pie clamps backlight
+         values to 255, so they are written as 255 here. Without these the framework
+         treats the light sensor as absent for brightness and offers no auto toggle. -->
+    <bool name="config_automatic_brightness_available">true</bool>
+    <integer-array name="config_autoBrightnessLevels">
+        <item>50</item>
+        <item>100</item>
+        <item>200</item>
+        <item>300</item>
+        <item>400</item>
+        <item>500</item>
+        <item>650</item>
+        <item>800</item>
+        <item>1000</item>
+        <item>1500</item>
+        <item>2000</item>
+        <item>3000</item>
+        <item>4000</item>
+        <item>5000</item>
+        <item>7000</item>
+        <item>10000</item>
+        <item>12500</item>
+        <item>15000</item>
+        <item>17500</item>
+        <item>20000</item>
+    </integer-array>
+    <integer-array name="config_autoBrightnessLcdBacklightValues">
+        <item>10</item>
+        <item>45</item>
+        <item>66</item>
+        <item>84</item>
+        <item>95</item>
+        <item>104</item>
+        <item>111</item>
+        <item>121</item>
+        <item>131</item>
+        <item>142</item>
+        <item>182</item>
+        <item>210</item>
+        <item>233</item>
+        <item>243</item>
+        <item>248</item>
+        <item>251</item>
+        <item>255</item>
+        <item>255</item>
+        <item>255</item>
+        <item>255</item>
+        <item>255</item>
+    </integer-array>
+    <integer name="config_screenBrightnessSettingMinimum">4</integer>
+    <integer name="config_screenBrightnessSettingDefault">60</integer>
+    <integer name="config_screenBrightnessDim">10</integer>
 </resources>
