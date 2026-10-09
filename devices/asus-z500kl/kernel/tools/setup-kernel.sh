@@ -15,6 +15,15 @@ repo_root=$(CDPATH= cd -- "$here/../../.." && pwd)
 KERNEL_TREE=${KERNEL_TREE:-$HOME/droid-salvage-build/kernel}
 KERNEL_REMOTE=${KERNEL_REMOTE:-https://github.com/6ccg/android_kernel_asus_z500kl.git}
 
+# The WLAN driver. ASUS built theirs out of tree from a repository they did not
+# publish, and the stock wlan.ko will not load on a kernel we build (vermagic). This is
+# Qualcomm's prima for the WCNSS Pronto core, as LineageOS carries it in-tree for the
+# Xiaomi Redmi Note 3 Pro (kenzo): same SoC, same CAF 3.10 base, CAF tag
+# LA.BR.1.3.6_rb1.19. 28 MB of driver, so it is fetched at a pinned commit rather than
+# committed here as a patch; patches/0009 wires it into drivers/staging.
+PRIMA_REMOTE=${PRIMA_REMOTE:-https://github.com/LineageOS/android_kernel_xiaomi_msm8956.git}
+PRIMA_COMMIT=${PRIMA_COMMIT:-07cdc182da45ce1edc6a589e20eb3e72d0b9792e}
+
 if [ ! -d "$KERNEL_TREE/.git" ]; then
     echo "==> cloning $KERNEL_REMOTE into $KERNEL_TREE"
     git clone --depth=1 --single-branch "$KERNEL_REMOTE" "$KERNEL_TREE"
@@ -23,6 +32,20 @@ else
 fi
 
 cd "$KERNEL_TREE"
+
+if [ ! -f drivers/staging/prima/Kconfig ]; then
+    echo "==> fetching prima from $PRIMA_REMOTE at $PRIMA_COMMIT"
+    tmp=$(mktemp -d)
+    git -C "$tmp" init -q
+    git -C "$tmp" remote add origin "$PRIMA_REMOTE"
+    git -C "$tmp" sparse-checkout set --no-cone /drivers/staging/prima/
+    git -C "$tmp" fetch -q --depth=1 --filter=blob:none origin "$PRIMA_COMMIT"
+    git -C "$tmp" checkout -q FETCH_HEAD
+    cp -r "$tmp/drivers/staging/prima" drivers/staging/prima
+    rm -rf "${tmp:?}"
+else
+    echo "==> reusing drivers/staging/prima"
+fi
 
 echo "==> applying patches"
 for p in "$here"/patches/*.patch; do

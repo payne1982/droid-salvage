@@ -218,6 +218,20 @@ that kenzo's port carries and Pie's sdcard daemon triggers (its first mount atte
 by design); without it the first sdcardfs boot crash-looped. The patch header has the
 whole trail, from the oops to the two numbers in it that were the mount options.
 
+`patches/0009` and the prima fetch in `tools/setup-kernel.sh` add the WiFi driver.
+ASUS built `wlan.ko` out of tree from sources they did not publish, and their module
+does not load on a kernel we build. This is Qualcomm's prima for the WCNSS Pronto core
+as LineageOS carries it in the kenzo kernel (CAF `LA.BR.1.3.6_rb1.19`), built in. It is
+28 MB, so it is fetched at a pinned commit instead of living in a patch; 0009 is the
+two lines that wire it into `drivers/staging`. The defconfig gains kenzo's eight prima
+options (`PRONTO_WLAN`, roaming, OKC, 11ac, 11w, 11r, Linux regulatory, TDLS -- the
+driver does not compile without TDLS).
+
+`patches/0010` is ambient capabilities (Linux 4.3), as kenzo backported them. Pie's
+init grants a service its declared capabilities that way; without them it starts the
+service with none. The WiFi HAL needs `NET_ADMIN` to bring `wlan0` up, so WiFi could
+not be switched on although the driver and the radio worked.
+
 ## A note for anyone building the recovery
 
 With the kernel built from these sources, `tools/patch-kernel.py` in the TWRP device

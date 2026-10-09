@@ -1,0 +1,36 @@
+Subject: [PATCH 9/9] staging: wire in the prima WLAN driver
+
+The two lines that make drivers/staging build prima, exactly as LineageOS'
+kenzo kernel has them. The driver itself is not in this patch: it is 28 MB,
+and tools/setup-kernel.sh fetches drivers/staging/prima from kenzo at a
+pinned commit before the patches are applied.
+
+prima is Qualcomm's driver for the WCNSS Pronto WLAN core in this SoC. ASUS
+built it out of tree as wlan.ko from sources they did not publish, and that
+module will not load on a kernel we build. Built in instead, it starts when
+the WiFi HAL writes "sta" to /sys/module/wlan/parameters/fwpath.
+
+PRONTO_WLAN is the option the defconfig sets; PRIMA_WLAN is the same driver
+for the older Riva core, kept as kenzo has it.
+---
+diff --git drivers/staging/Kconfig drivers/staging/Kconfig
+index 25c8bffd..544bec36 100644
+--- drivers/staging/Kconfig
++++ drivers/staging/Kconfig
+@@ -136,4 +136,6 @@ source "drivers/staging/netlogic/Kconfig"
+ 
+ source "drivers/staging/dwc2/Kconfig"
+ 
++source "drivers/staging/prima/Kconfig"
++
+ endif # STAGING
+diff --git drivers/staging/Makefile drivers/staging/Makefile
+index 57e5076f..88544b08 100644
+--- drivers/staging/Makefile
++++ drivers/staging/Makefile
+@@ -59,3 +59,5 @@ obj-$(CONFIG_FIREWIRE_SERIAL)	+= fwserial/
+ obj-$(CONFIG_ZCACHE)		+= zcache/
+ obj-$(CONFIG_GOLDFISH)		+= goldfish/
+ obj-$(CONFIG_USB_DWC2)		+= dwc2/
++obj-$(CONFIG_PRIMA_WLAN)	+= prima/
++obj-$(CONFIG_PRONTO_WLAN)	+= prima/
