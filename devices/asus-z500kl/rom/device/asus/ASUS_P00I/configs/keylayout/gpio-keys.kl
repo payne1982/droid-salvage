@@ -1,0 +1,11 @@
+# Physical keys wired to GPIOs on ASUS_P00I: home and volume up (volume down and
+# power come from the PMIC, qpnp_pon, which Generic.kl already maps right).
+#
+# This file exists for one line. Without it Android falls back to Generic.kl, where
+# key 102 (KEY_HOME, what this driver reports) is MOVE_HOME -- the keyboard's Home
+# key, "move to the start" -- so the launcher moved its focus to the first item
+# instead of going home. On a device's own buttons KEY_HOME means HOME, as the stock
+# gpio-keys.kl says.
+
+key 102   HOME
+key 115   VOLUME_UP

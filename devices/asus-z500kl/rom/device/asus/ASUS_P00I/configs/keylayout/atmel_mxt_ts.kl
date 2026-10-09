@@ -1,0 +1,10 @@
+# The two capacitive keys under the screen, reported by the Atmel touch controller
+# itself (KEY_BACK and KEY_MENU in getevent).
+#
+# KEY_MENU is the square key, and it is recent apps, not a menu: APP_SWITCH, as in
+# the stock file. The stock file also maps ASUS' gesture keycodes (183-189) to labels
+# like GESTURE_W that exist only in ASUS' framework; Pie's parser rejects a whole
+# file over one unknown label, so they are left out.
+
+key 158   BACK
+key 139   APP_SWITCH

@@ -164,6 +164,15 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.wifi.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.wifi.xml
 
 # ---------------------------------------------------------------------------------
+# Key layouts
+# ---------------------------------------------------------------------------------
+# Ours, two lines each; the files say why. Without gpio-keys.kl the home key did
+# MOVE_HOME (Generic.kl's meaning of KEY_HOME) and the launcher just moved its focus.
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/keylayout/gpio-keys.kl:$(TARGET_COPY_OUT_VENDOR)/usr/keylayout/gpio-keys.kl \
+    $(DEVICE_PATH)/configs/keylayout/atmel_mxt_ts.kl:$(TARGET_COPY_OUT_VENDOR)/usr/keylayout/atmel_mxt_ts.kl
+
+# ---------------------------------------------------------------------------------
 # Audio -- a stub, so that the boot can finish
 # ---------------------------------------------------------------------------------
 # Not real audio: AOSP's audio.primary.default accepts every stream and discards it.
@@ -212,4 +221,9 @@ PRODUCT_PROPERTY_OVERRIDES += \
 #   bluetooth bt-caf, same chip as the wifi
 #   GPS       hardware/qcom/gps
 #   exFAT     texfat and tntfs are Tuxera's with no source; an open driver is needed
+#   cover     the magnet in the cover should turn the screen off and does not. The
+#             kernel side looks present -- there is a "lid_input" input device
+#             (event4) -- so the likely missing piece is the framework's: the lid
+#             switch overlay (config_lidControlsSleep) and checking what the device
+#             reports (SW_LID?). Not looked at yet.
 # ---------------------------------------------------------------------------------
