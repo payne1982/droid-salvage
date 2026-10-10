@@ -12,7 +12,8 @@ The reasons are measured, not guessed:
    in 3.18; Android 10's `netd` builds traffic accounting on eBPF. Verified absent
    from the published kernel tree, not merely unset in the configuration.
 2. **Android 10 also removed the FUSE `sdcard` daemon**, and this kernel has no
-   `sdcardfs`. Pie still ships the daemon, so Pie works without either.
+   `sdcardfs`. *Corrected later: Pie's daemon cannot do without sdcardfs either, so it
+   was backported (`kernel/patches/0007`). Android 10 still needs `bpf()`.*
 3. **There is no `vendor` partition** — this tablet is pre-Treble, and the partition
    table is not something to rewrite on a device whose bootloader is locked. LineageOS
    16.0 is the last branch with genuine non-Treble support, so a GSI is out and a
@@ -121,6 +122,9 @@ kernel (same SoC, same CAF base), which has the whole series; see `kernel/README
 from the stock `/system`. The extraction needs no tablet at all: the full partition
 dump is already in hand and `debugfs` reads an ext4 image without root or mounting.
 
+**Done, 8 October 2026,** with the first complete build. The vendor tree is not committed:
+`tools/extract-files.sh` produces it from your own dumps. See `rom/README.md`.
+
 ### M3 — first boot, measured in logs rather than in hope
 The goal of the first boot is not a usable tablet, it is **observability**: `init`
 running, `adbd` up, `logcat` and `dmesg` retrievable. Booting permissive — which this
@@ -140,9 +144,9 @@ and same CAF base, plus one fix of ours for a double free that kenzo's Android 8
 reached. Display and GPU, which this roadmap expected to be the hardest part, worked
 from the first boot that got that far.
 
-Still open, carried into M4: real audio, Wi-Fi, Bluetooth, sensors, RIL, camera, GPS;
-SELinux is permissive; `adb` is open without authorisation; the boot image inside the
-OTA zip is unsigned, so installing still needs the signed image written by hand.
+Still open at that point, carried into M4: real audio, Wi-Fi, Bluetooth, sensors, RIL,
+camera, GPS; SELinux permissive; `adb` open without authorisation; the boot image inside
+the OTA zip unsigned. All of it was closed in M4 and M5.
 
 ### M4 — the HALs, one at a time
 Expected order of difficulty: display first and hardest (a Pixelworks **iris2**
@@ -150,21 +154,38 @@ bridge sits between the SoC and the panel, and the hwcomposer blob is Nougat), t
 input, audio, sensors, Wi-Fi, then RIL, with the camera last. Each one shipped only
 when it demonstrably works.
 
+**Done, 10 October 2026.** Audio, Wi-Fi, Bluetooth, the modem, sensors, the hardware video
+codecs, GPS and both cameras, each confirmed on the tablet, in roughly that order — one
+commit per subsystem. The expectations above were wrong in both directions: the display
+worked from the first boot, and the camera, expected last and possibly never, works
+with ASUS' own HAL and a few bytes patched in two blobs. What each one needed is in the
+commit messages and in the comments next to the code; `rom/HARDWARE.md` has the map.
+
 ### M5 — release
 Same conventions as the recovery: `payne_N`, AVB1-signed with the public AOSP test
-key, image on GitHub Releases, written with `dd` because `fastboot flash` is
-disabled.
+key, on GitHub Releases. Unlike the recovery it needs no `dd`: the zip installs from
+TWRP and writes a `boot` image that is already signed.
+
+**In progress.** Done: SELinux enforcing, the CPU and low-power settings stock used,
+secure adb, the signed boot image inside the zip, and a release build that passes the
+whole test round on the tablet. Making the first release build found three more things
+development builds had hidden — no USB at all with adb off, the USB mode greyed out, and
+a race that could leave the tablet without sensors — all fixed. Left: a test with a
+SIM, and file transfer to a computer. See `rom/README.md`.
 
 ## What could still stop this
 
-Worth stating plainly rather than discovering later.
+Worth stating plainly rather than discovering later. Written before the work; kept, with
+how each one turned out.
 
 - **Display.** If the Nougat `hwcomposer.msm8952.so` cannot be driven through Pie's
   composer wrapper, the fallback is building the display HAL from the CAF sources
   matching this SoC, and if the iris2 bridge needs vendor code that is only in the
-  blob, that is the hard limit.
-- **Camera.** Usually the last thing to work on a legacy port, sometimes never.
+  blob, that is the hard limit. *It was not a problem: the display HAL is built from
+  the CAF sources and worked from the first boot.*
+- **Camera.** Usually the last thing to work on a legacy port, sometimes never. *It
+  works, both cameras, photos and video.*
 - **The 3.10 kernel itself.** It sets the ceiling at Android 9 and no amount of
-  userspace work changes that.
+  userspace work changes that. *Still true.*
 
 No dates. The recovery took the time it took.

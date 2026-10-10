@@ -1,14 +1,62 @@
-# LineageOS 16.0 for ASUS_P00I — work in progress
+# LineageOS 16.0 for ASUS_P00I
 
-This does not boot yet. It is the device tree being built up towards M3 in
-[../ROADMAP.md](../ROADMAP.md): a boot that can be watched, rather than a usable tablet.
+Android 9 on the ZenPad 3S 10 LTE, from a device tree written for it, a kernel built from
+ASUS' sources and the Nougat vendor blobs taken off your own tablet. It runs as a daily
+tablet with SELinux enforcing, and no image has been published yet: the last checks
+before a first release are listed below.
 
 - **what the hardware is, and where each piece comes from:** [HARDWARE.md](HARDWARE.md)
 - **the kernel:** [../kernel/](../kernel/) — buildable from ASUS' sources, and built
   inside this tree
 - **why Android 9 and not something newer:** [../ROADMAP.md](../ROADMAP.md)
 
-## Setting it up
+## What works
+
+Every item below has been checked on the tablet, on a release build with SELinux
+enforcing.
+
+| | |
+|---|---|
+| display, touch, buttons, the magnetic cover | yes |
+| audio: speaker, internal microphone, headset and its microphone | yes |
+| Wi-Fi, 5 GHz included, with the tablet's own MAC address | yes |
+| Bluetooth, with audio | yes |
+| sensors: accelerometer, gyroscope, compass, light, hall | yes, 25 hardware sensors |
+| hardware video decoding: H.264, HEVC (up to 4K), MPEG-4, VP8, VP9 | yes |
+| hardware video encoding (camera recording, screen recording) | yes |
+| cameras, rear and front: photos and video | yes — video records at about 11 fps, under investigation |
+| GPS | yes |
+| modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
+| USB: charging, adb with on-screen authorisation | yes — choosing the mode and file transfer (MTP) to be confirmed on a PC |
+| CPU frequency scaling and low-power states as on stock | yes |
+
+Not there:
+
+- **exFAT and NTFS.** Stock used Tuxera's closed drivers, which only load on ASUS'
+  kernel. A microSD card over 32 GB in its factory exFAT format will not mount; FAT32
+  cards work.
+- **Qualcomm's network location and geofencing** (IZat). GPS works without them.
+
+## Installing
+
+You need the [TWRP for this tablet](../README.md), and **a full backup first** —
+including the last 16 KB of `userdata`, the encryption footer, which no other backup
+covers and which cannot be recreated. The TWRP README explains why that is not
+boilerplate.
+
+1. **Coming from the stock Android 7, format data** in TWRP (*Wipe → Format Data*). This
+   erases everything on internal storage. Nothing on stock's encrypted `/data` is
+   carried over, and LineageOS starts on an unencrypted one.
+2. Install the zip from TWRP. It writes `system` and `boot` only; the recovery stays.
+3. Reboot. The first boot takes a few minutes.
+
+The `boot` image inside the zip is already signed for this bootloader (AVB1, AOSP test
+key), so nothing has to be written by hand afterwards. Expect the usual warning screens
+at boot; see the TWRP README for why they are harmless.
+
+Updating from one build to the next is step 2 alone: no wipe.
+
+## Building
 
 ```sh
 # 1. the LineageOS 16.0 manifest
@@ -36,16 +84,27 @@ cd <tree>/device/asus/ASUS_P00I
 ./tools/setup-gps.sh
 
 # 5. build
-# WITH_ADB_INSECURE: during bring-up adb must work without being authorised on the
-# screen, because the screen may well not work yet. LineageOS only allows that on eng
-# builds or with this variable (vendor/lineage/config/common.mk). Drop it for a release.
-cd <tree> && source build/envsetup.sh && lunch lineage_ASUS_P00I-userdebug && WITH_ADB_INSECURE=true mka bacon
+cd <tree> && source build/envsetup.sh && lunch lineage_ASUS_P00I-userdebug
+device/asus/ASUS_P00I/tools/release-build.sh payne_N     # a release
+WITH_ADB_INSECURE=true mka bacon                         # or a development build
 ```
+
+**Release or development build.** A release has secure adb: off until it is switched on
+in developer options, and then only for a computer whose key has been accepted on the
+screen. `release-build.sh` also gives the build its own fingerprint, and checks both
+things in the result. A development build turns adb on without authorisation, which is
+what bring-up needs when the screen cannot be trusted yet — and what a tablet in daily
+use should not have.
 
 Step 4 takes partition dumps rather than a device on purpose. It needs no root and no
 mounting — `debugfs` reads an ext4 image directly — it is reproducible, and it works
 when the tablet does not boot, which is when you are most likely to want it. There is a
 `--from-device` mode for a running tablet if you prefer.
+
+A few of the Nougat blobs need a few bytes patched to work under Pie (the camera HAL and
+ISP library). `extract-files.sh` does it, and only to a file whose SHA-256 and original
+bytes are exactly the expected ones; the comments there say what each patch does and
+why.
 
 Nothing proprietary is committed here: not the blobs, which are not ours to
 redistribute, and not ASUS' init scripts, which are theirs. Both come off your own
@@ -69,15 +128,8 @@ works because it is authenticated by definition, so a temporary key plus
 `url."git@github.com:".insteadOf "https://github.com/"` is the least invasive route —
 it leaves the manifest and the recorded remotes untouched.
 
-## State of each piece
+## Before a first release
 
-| piece | state |
-|---|---|
-| `BoardConfig.mk` | written; the open questions are listed at the end of it rather than guessed |
-| `device.mk` | graphics, keymaster, gatekeeper, light, power, health. The rest is listed, not guessed |
-| `rootdir/etc/fstab.qcom` | ours, rewritten from stock: no `verify`, no `rebooterr` |
-| `proprietary-files.txt` | 72 files for M3, in four documented blocks |
-| `tools/extract-files.sh` | works, 72 of 72 from the dumps |
-| ASUS' init scripts | extracted, **not yet adapted** — they are written for Nougat's init and Pie's is stricter |
-| `lunch` | passes: `LINEAGE_VERSION=16.0-…-ASUS_P00I`, arm64 with a 32-bit second arch |
-| `mka bootimage` | the kernel builds inside the tree; the rest is in progress |
+- calls, SMS and mobile data with a SIM;
+- file transfer (MTP) to a computer;
+- the camera's video frame rate.

@@ -13,7 +13,11 @@ firmware makes is no longer true. Those findings are recorded next to the code.
 devices/<vendor>-<model>/
 ├── README.md     what works, how to build it, how to flash it
 ├── NOTES.md      the technical findings, in enough detail to be reproduced
-└── twrp/         mirrors an AOSP tree, so it can be copied in as-is
+├── ROADMAP.md    where a device is going, and how each step went
+├── kernel/       patches and tools to build the kernel from the vendor's sources
+├── twrp/         mirrors an AOSP tree, so it can be copied in as-is
+│   └── device/<vendor>/<CODENAME>/
+└── rom/          the same, for a ROM tree
     └── device/<vendor>/<CODENAME>/
 ```
 
@@ -26,7 +30,7 @@ at the top of each device's README.
 
 | device | status |
 |---|---|
-| [asus-z500kl](devices/asus-z500kl) — ASUS ZenPad 3S 10 LTE (Z500KL / P00I) | TWRP 3.7 working: touch, all partitions, FDE decryption of `/data`, adb |
+| [asus-z500kl](devices/asus-z500kl) — ASUS ZenPad 3S 10 LTE (Z500KL / P00I) | TWRP 3.7 released: touch, all partitions, FDE decryption of `/data`, adb. LineageOS 16.0 (Android 9) working, SELinux enforcing, nearly ready for a first release. Kernel built from ASUS' sources |
 
 ## Local settings
 

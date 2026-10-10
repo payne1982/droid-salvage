@@ -300,12 +300,18 @@ reboot-and-read-logs cycle per hypothesis.
   writing an empty value (that property is 1); `exec_background` unsupported in Pie init
   (it is supported).
 
-## 8. Still open
+## 8. What came next
 
-- A custom ROM. Not blocked by the bootloader (§1). The same SoC family (msm8956) runs
-  LineageOS on a 3.10 kernel on other devices, so the backports exist; the vendor blobs
-  and HALs are the real work. The device is not Treble, though with 112 GB of
-  `userdata` there is room to carve a `vendor` partition — the riskiest operation in the
-  whole project, since recovering a botched GPT means EDL and a signed programmer.
-- This kernel lacks what Android 12+ expects (no `MEMCG`, no `BPF_SYSCALL`, no
-  `CGROUP_BPF`), which is where the backporting effort would go.
+This file is about the recovery. The ROM it made possible is in [`rom/`](rom/): LineageOS
+16.0, Android 9, on a kernel built from ASUS' sources ([`kernel/`](kernel/)), with the
+plan and how each step went in [`ROADMAP.md`](ROADMAP.md).
+
+Two guesses written here before that work, and how they turned out:
+
+- *Carving a `vendor` partition out of `userdata`* turned out unnecessary: LineageOS 16.0
+  is the last branch that supports a non-Treble device properly, so the partition table
+  was never touched — which, with a locked bootloader and EDL as the only way back from
+  a broken GPT, is the best outcome there was.
+- *The kernel lacks `MEMCG`* — it did, and turning it on exposed a bug in ASUS' tree
+  (`kernel/README.md`). `bpf()` is still missing, and that is what keeps this tablet on
+  Android 9.

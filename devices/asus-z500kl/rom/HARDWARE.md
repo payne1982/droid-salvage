@@ -25,15 +25,15 @@ can only wire up and hope. The split turned out better than expected.
 | **touch** | Atmel maXTouch 1666T2 | kernel driver, with our one-line fix | the controller config `mTX1666T2_cfg.raw` |
 | **microSD** | slot on the side | kernel `mmc`/`sdhci` driver and `vold`, both ours | none |
 | **USB — charging** | hvdcp-capable charger on the PMI8950 | kernel `qpnp-smbcharger`, which is in the sources | `hvdcp_opti` |
-| **USB — file transfer** | legacy `android_usb` gadget, not ConfigFS | MTP is AOSP, and the gadget driver is in the kernel | none |
+| **USB — file transfer** | legacy `android_usb` gadget, not ConfigFS; the FUSB302 Type-C controller | MTP is AOSP, and the gadget driver is in the kernel; LineageOS' basic USB HAL. Pie's platform init only defines adb and the accessory modes for this gadget, so `init.qcom.usb.rc` defines MTP, PTP, tethering and MIDI with ASUS' product IDs; and ASUS' bootloader calls an ordinary boot `androidboot.mode=main`, which Pie's USB service took for a factory mode until `init/` renamed it | none |
 | **USB — host / OTG** | OTG on the same port | kernel host mode and the framework | none |
 | **mic / speakers** | on the WCD codec | part of the audio HAL above | the ACDB calibration above |
 
-## Not in the list of things to care about, but present
+## Not in the first list of things to care about, but present
 
-Worth naming so the choice to skip them is deliberate: **bluetooth** (same WCNSS chip as
-wifi), **GPS**, and the **sensor** stack, which is what gives auto-rotation and the
-ambient light. There is no NFC and no fingerprint reader on this tablet.
+**Bluetooth** (same WCNSS chip as wifi), **GPS**, and the **sensor** stack, which is what
+gives auto-rotation and the ambient light, were first left out of scope. All three work
+now. There is no NFC and no fingerprint reader on this tablet.
 
 ## The prebuilt kernel modules are all lost on a kernel we build
 
@@ -77,9 +77,10 @@ meets it next: `wcnss_service` has to open `/dev/wcnss_wlan` to power the core u
 before prima will start; prima starts when the HAL writes the mode to
 `/sys/module/wlan/parameters/fwpath`, which has to be the wifi user's; and the HAL
 needs `NET_ADMIN`, which Pie's init can only grant through ambient capabilities
-(`kernel/patches/0010`). Still open: the MAC address is the placeholder from
-`WCNSS_qcom_cfg.ini` until `wcnss_service` is built with QMI, which needs the RIL's
-libraries.
+(`kernel/patches/0010`). The MAC address is the tablet's own: ASUS wrote it to
+`/persist/wifi_mac.txt` at the factory, and `init.macaddr.sh` hands it to the driver,
+which prefers it over the placeholder in `WCNSS_qcom_cfg.ini`. The Bluetooth address
+comes the same way, from the NV item in `/persist/.bt_nv.bin`.
 
 ### The camera blob list cannot be derived from what is present
 ASUS shipped the tuning for their whole sensor portfolio, not for this tablet: imx132,

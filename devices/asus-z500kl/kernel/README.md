@@ -282,12 +282,13 @@ honest caveat is that AOSP's `android-base.config` requirements target kernels 4
 newer, so there is no authoritative list for a 3.10, and the real verification is M3,
 where `init` says out loud what it cannot find.
 
-And two that are not in this kernel at all, which is what sets the ceiling:
+And what was not in this kernel at all:
 
-- **no `fs/sdcardfs`.** Android 9 still ships the FUSE `sdcard` daemon as a fallback,
-  so Pie works without it (more slowly). Android 10 removed that daemon.
+- **no `fs/sdcardfs`.** Written before the ROM booted, this said Pie could fall back on
+  the FUSE `sdcard` daemon. It cannot: in LineageOS 16 the daemon has no FUSE path left
+  and aborts. `patches/0007` backports sdcardfs, above.
 - **no `bpf()` syscall.** It arrived in Linux 3.18. Android 10's `netd` requires eBPF
-  for traffic accounting.
+  for traffic accounting. This one is what sets the ceiling.
 
 That is the honest reason the first ROM target here is Android 9 and not something
 newer: on 3.10 the wall is not the bootloader, it is `bpf()`.
