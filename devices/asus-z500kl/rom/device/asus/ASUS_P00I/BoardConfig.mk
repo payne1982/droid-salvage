@@ -68,7 +68,7 @@ TARGET_COPY_OUT_VENDOR := system/vendor
 # silently discarded, which is how the first build failed: the -fcommon below never
 # arrived and scripts/dtc would not link.
 #
-# Three things have to go through it:
+# Four things go through it:
 #
 #   TARGET_PROJECT=Z500KL  arch/arm64/boot/dts/qcom/Makefile builds
 #                          msm8956-v1.1-cdp-$(TARGET_PROJECT).dtb. Without it this
@@ -84,6 +84,13 @@ TARGET_COPY_OUT_VENDOR := system/vendor
 #   -fcommon               -fno-common is the default, and scripts/dtc declares yylloc
 #                          in both its lexer and its parser, so it fails to link. The
 #                          other flags are the tree's own defaults, kept as they are.
+#   KBUILD_BUILD_USER,     /proc/version, and Settings' "Kernel version", name the user
+#   KBUILD_BUILD_HOST      and machine that built the kernel. Fixed, so a published image
+#                          does not carry the name of whoever's computer built it.
+#
+# Changing any of these does not rebuild a kernel that is already built: nothing in
+# kernel.mk depends on them. Delete obj/KERNEL_OBJ/arch/arm64/boot/Image.gz-dtb in
+# $OUT first.
 #
 # TARGET_KERNEL_CLANG_COMPILE stays false (the default), which leaves KERNEL_CC empty
 # so our CC is the only one in play. A current clang cannot build a 3.10 kernel anyway.
@@ -96,6 +103,7 @@ KERNEL_TOOLCHAIN_BIN := prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.
 TARGET_KERNEL_ADDITIONAL_FLAGS := TARGET_PROJECT=Z500KL
 TARGET_KERNEL_ADDITIONAL_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/aarch64-linux-android-gcc-4.9.x)
 TARGET_KERNEL_ADDITIONAL_FLAGS += HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -fcommon"
+TARGET_KERNEL_ADDITIONAL_FLAGS += KBUILD_BUILD_USER=payne1982 KBUILD_BUILD_HOST=droid-salvage
 
 # Boot image. Taken from the stock header: version 0, 2048-byte pages, dt_size 0,
 # because the DTBs are appended to Image.gz rather than carried in a QCDT section.
