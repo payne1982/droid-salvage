@@ -257,6 +257,10 @@ TARGET_NO_RPC := true
 # into whatever process loads the HAL.
 TARGET_LD_SHIM_LIBS := /system/lib/hw/camera.msm8952.so|libshim_camera.so
 
+# Init: ASUS' bootloader calls an ordinary boot androidboot.mode=main, which Pie's USB
+# service takes for a factory mode; init/init_ASUS_P00I.cpp says what that breaks.
+TARGET_INIT_VENDOR_LIB := libinit_ASUS_P00I
+
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong
 # value into a first boot where every symptom has a dozen candidate causes:
