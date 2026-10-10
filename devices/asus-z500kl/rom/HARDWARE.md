@@ -53,7 +53,7 @@ the wifi note below. Where each one stands:
 | `wlan` | the WiFi driver | **not in ASUS' sources.** Open source at CodeAurora; has to be built against our kernel |
 | `qcrypto_module`, `qdrbg_module` | Qualcomm crypto offload | in the tree (`drivers/crypto/msm`); the recovered config even has `CONFIG_CRYPTO_DEV_QCRYPTO=y` |
 | `core_ctl` | CPU core control | in the tree (`drivers/soc/qcom`) |
-| `texfat`, `tntfs` | **Tuxera** exFAT and NTFS | proprietary, no source. A kernel we build loses exFAT and NTFS, which means microSD cards over 32 GB in their factory format will not mount. The tree has the open read-only `fs/ntfs` but nothing for exFAT, so this needs an open driver rather than a copied binary |
+| `texfat`, `tntfs` | **Tuxera** exFAT and NTFS | proprietary, no source, so both are replaced rather than copied. exFAT, the factory format of microSD cards over 32 GB, is the GPL driver Samsung published, built into the kernel ([`kernel/patches/0013`](../kernel/)). NTFS needs nothing from the kernel but FUSE: LineageOS mounts it with ntfs-3g |
 
 ## Two findings that are real work, not wiring
 

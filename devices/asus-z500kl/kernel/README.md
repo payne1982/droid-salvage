@@ -244,6 +244,21 @@ the unknown-syscall path, which dumps registers to the log ("syscall 384") -- dm
 was flooded from early boot. One hunk of `random.c` is adapted to the ASUS file; the
 patch header says which.
 
+`patches/0013` and the exfat fetch in `tools/setup-kernel.sh` add exFAT, the format
+every SD card over 32 GB is sold in. Stock read it with Tuxera's closed `texfat.ko`,
+lost like every other stock module, and Linux has a driver of its own only from 5.4
+(5.7 for the current one), too far from 3.10 to backport. This is exfat-nofuse 1.2.9,
+the GPLv2 driver Samsung published in its Android kernels: fetched at a pinned commit
+into `fs/exfat`, wired in by the two lines of 0013, built in with `CONFIG_EXFAT_FS=y`.
+It registers as `exfat`, the name LineageOS' vold looks for in `/proc/filesystems`,
+and takes vold's mount options; `fsck.exfat` and `mkfs.exfat` LineageOS already ships.
+Checked on the tablet with a 6 GB exFAT image handed to vold as its virtual disk:
+checked and mounted by Android itself, a 4.2 GB file written and read back, Unicode
+names, and a clean `fsck` after unmounting.
+
+NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
+NTFS with ntfs-3g over FUSE, which this kernel already has.
+
 ## A note for anyone building the recovery
 
 With the kernel built from these sources, `tools/patch-kernel.py` in the TWRP device

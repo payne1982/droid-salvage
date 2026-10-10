@@ -189,6 +189,13 @@ running kernel actually probed (`rom/HARDWARE.md`).
   fingerprints differed, because incremental builds regenerate one `build.prop` and not
   the other. The fingerprint is fixed in `BoardConfig.mk`, and changing it means
   deleting the property files first — `tools/release-build.sh` does that.
+- **exFAT cards would not mount.** Stock read them with Tuxera's closed module, and 3.10
+  has no exFAT of its own. Samsung's GPL driver is built in now (`kernel/patches/0013`);
+  NTFS already worked, through ntfs-3g. To test either without a card: put a formatted
+  image at `/data/misc/vold/virtual_disk` and run `sm set-virtual-disk true`. Android
+  then treats it as a card, check and mount included. A plain loop mount of an image
+  elsewhere fails with "Invalid argument", because SELinux does not let the kernel's
+  loop thread read the file. `sm set-virtual-disk false` deletes the image.
 
 ---
 

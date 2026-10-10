@@ -29,13 +29,11 @@ enforcing.
 | GPS | yes |
 | modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
 | USB: charging, adb with on-screen authorisation | yes — choosing the mode and file transfer (MTP) to be confirmed on a PC |
+| removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
 | CPU frequency scaling and low-power states as on stock | yes |
 
 Not there:
 
-- **exFAT and NTFS.** Stock used Tuxera's closed drivers, which only load on ASUS'
-  kernel. A microSD card over 32 GB in its factory exFAT format will not mount; FAT32
-  cards work.
 - **Qualcomm's network location and geofencing** (IZat). GPS works without them.
 
 ## Installing
@@ -133,4 +131,5 @@ it leaves the manifest and the recorded remotes untouched.
 
 - calls, SMS and mobile data with a SIM;
 - file transfer (MTP) to a computer;
+- an exFAT card in the slot;
 - the camera's video frame rate.
