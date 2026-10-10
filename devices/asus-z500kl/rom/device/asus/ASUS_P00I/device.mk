@@ -423,6 +423,19 @@ PRODUCT_COPY_FILES += \
 # a release too.
 
 # ---------------------------------------------------------------------------------
+# USB HAL
+# ---------------------------------------------------------------------------------
+# Pie's Settings let the USB mode be chosen (file transfer, PTP, MIDI, tethering) only
+# when a USB port reports the device data role, and ports come from the USB HAL; without
+# one every option is greyed out. LineageOS's basic HAL reports one fixed port in device
+# mode, which is all the gadget side needs. The FUSB302 Type-C driver does expose real
+# roles in /sys/class/dual_role_usb/otg_default, for AOSP's default HAL, should role
+# swapping from Settings ever be wanted; host mode (OTG) works without either.
+# device/lineage/sepolicy labels it into hal_usb_default.
+PRODUCT_PACKAGES += \
+    android.hardware.usb@1.0-service.basic
+
+# ---------------------------------------------------------------------------------
 # Not here yet. Listed, not guessed:
 #
 #   exFAT     texfat and tntfs are Tuxera's with no source; an open driver is needed
