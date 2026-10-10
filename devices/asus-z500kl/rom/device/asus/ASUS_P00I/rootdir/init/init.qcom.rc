@@ -252,3 +252,80 @@ service qcamerasvr /system/bin/mm-qcamera-daemon
 on post-fs-data
     mkdir /data/misc/camera 0770 camera camera
     mkdir /data/camera 0770 media camera
+
+# CPU and memory-bus tuning, once boot has completed, as stock's
+# init.qcom.post_boot.sh did for this SoC (its msm8952 branch, soc_id 266). Until
+# then the kernel's defaults stand: the performance governor and, from the command
+# line, lpm_levels.sleep_disabled=1 -- both good for a fast boot, and both what the
+# tablet ran on all day before this block existed: every core at its top frequency
+# and none ever entering a low-power state.
+#
+# Left out from stock: core_ctl, which ASUS built as an out-of-tree module that does
+# not load on a kernel we build (only its helper is in the published sources); and
+# the thermal/BCL core-control toggling that existed only to let it start. All cores
+# stay online; idle ones are power-collapsed by the low-power modes enabled here.
+on property:sys.boot_completed=1
+    # HMP scheduler: when tasks move between the A53 and the A72 cluster.
+    write /proc/sys/kernel/sched_upmigrate 95
+    write /proc/sys/kernel/sched_downmigrate 85
+    write /proc/sys/kernel/sched_window_stats_policy 2
+    write /proc/sys/kernel/sched_ravg_hist_size 5
+    write /sys/devices/system/cpu/cpu0/sched_mostly_idle_nr_run 3
+    write /sys/devices/system/cpu/cpu1/sched_mostly_idle_nr_run 3
+    write /sys/devices/system/cpu/cpu2/sched_mostly_idle_nr_run 3
+    write /sys/devices/system/cpu/cpu3/sched_mostly_idle_nr_run 3
+    write /sys/devices/system/cpu/cpu4/sched_mostly_idle_nr_run 3
+    write /sys/devices/system/cpu/cpu5/sched_mostly_idle_nr_run 3
+    write /sys/devices/system/cpu/cpu0/sched_mostly_idle_load 20
+    write /sys/devices/system/cpu/cpu1/sched_mostly_idle_load 20
+    write /sys/devices/system/cpu/cpu2/sched_mostly_idle_load 20
+    write /sys/devices/system/cpu/cpu3/sched_mostly_idle_load 20
+    write /sys/devices/system/cpu/cpu4/sched_mostly_idle_load 20
+    write /sys/devices/system/cpu/cpu5/sched_mostly_idle_load 20
+    write /proc/sys/kernel/sched_small_task 30
+
+    # CPU-to-DDR bandwidth follows measured traffic instead of the CPU frequency.
+    # (Stock also set mincpubw to cpufreq and sched_boost to 0; both are already so,
+    # and the kernel refuses a write of the value already there.)
+    write /sys/class/devfreq/qcom,cpubw.49/governor bw_hwmon
+    write /sys/class/devfreq/qcom,cpubw.49/bw_hwmon/io_percent 20
+    write /sys/class/devfreq/qcom,cpubw.49/bw_hwmon/guard_band_mbps 30
+
+    # The little cluster (A53, cpu0-3): interactive, stock's tunables.
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor interactive
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/go_hispeed_load 80
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/timer_rate 20000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/io_is_busy 0
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/above_hispeed_delay 59000
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq 1305600
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/target_loads "1 691200:80"
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 691200
+
+    # The big cluster (A72, cpu4-5).
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_governor interactive
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/go_hispeed_load 85
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/timer_rate 20000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/io_is_busy 0
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/min_sample_time 40000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/max_freq_hysteresis 60000
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/above_hispeed_delay "19000 1382400:39000"
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq 1382400
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/target_loads "85 1382400:90 1747200:80"
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 883200
+
+    # Let the scheduler's load tracking drive the governor.
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/use_sched_load 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/interactive/use_migration_notif 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/use_sched_load 1
+    write /sys/devices/system/cpu/cpu4/cpufreq/interactive/use_migration_notif 1
+    write /proc/sys/kernel/sched_freq_inc_notify 50000
+    write /proc/sys/kernel/sched_freq_dec_notify 50000
+
+    write /proc/sys/kernel/power_aware_timer_migration 1
+    write /proc/sys/kernel/sched_grp_upmigrate 130
+    write /proc/sys/kernel/sched_grp_downmigrate 110
+    write /proc/sys/kernel/sched_enable_thread_grouping 1
+
+    # Low-power modes on. The command line keeps them off during boot.
+    write /sys/module/lpm_levels/parameters/sleep_disabled 0
