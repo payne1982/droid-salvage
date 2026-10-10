@@ -238,6 +238,12 @@ and the ASUS headers do not define, so the encoder did not compile. It brings th
 control and its handling in the driver together, rather than a definition the
 driver would then reject.
 
+`patches/0012` is the getrandom(2) system call (Linux 3.17), as kenzo backported it:
+Pie's bionic asks for every random number that way, and on this kernel each call hit
+the unknown-syscall path, which dumps registers to the log ("syscall 384") -- dmesg
+was flooded from early boot. One hunk of `random.c` is adapted to the ASUS file; the
+patch header says which.
+
 ## A note for anyone building the recovery
 
 With the kernel built from these sources, `tools/patch-kernel.py` in the TWRP device
