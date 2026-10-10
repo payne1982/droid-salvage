@@ -24,6 +24,14 @@ KERNEL_REMOTE=${KERNEL_REMOTE:-https://github.com/6ccg/android_kernel_asus_z500k
 PRIMA_REMOTE=${PRIMA_REMOTE:-https://github.com/LineageOS/android_kernel_xiaomi_msm8956.git}
 PRIMA_COMMIT=${PRIMA_COMMIT:-07cdc182da45ce1edc6a589e20eb3e72d0b9792e}
 
+# The exFAT driver. Stock used Tuxera's closed texfat.ko, which will not load on a
+# kernel we build either, and Linux has its own only from 5.4. This is exfat-nofuse,
+# the GPLv2 driver Samsung published in its Android kernels, version 1.2.9; it is a
+# separate repository, so it is fetched at a pinned commit, and patches/0013 wires it
+# into fs/.
+EXFAT_REMOTE=${EXFAT_REMOTE:-https://github.com/dorimanx/exfat-nofuse.git}
+EXFAT_COMMIT=${EXFAT_COMMIT:-01c30ad52625a7261e1b0d874553b6ca7af25966}
+
 if [ ! -d "$KERNEL_TREE/.git" ]; then
     echo "==> cloning $KERNEL_REMOTE into $KERNEL_TREE"
     git clone --depth=1 --single-branch "$KERNEL_REMOTE" "$KERNEL_TREE"
@@ -45,6 +53,21 @@ if [ ! -f drivers/staging/prima/Kconfig ]; then
     rm -rf "${tmp:?}"
 else
     echo "==> reusing drivers/staging/prima"
+fi
+
+if [ ! -f fs/exfat/Kconfig ]; then
+    echo "==> fetching exfat from $EXFAT_REMOTE at $EXFAT_COMMIT"
+    tmp=$(mktemp -d)
+    git -C "$tmp" init -q
+    git -C "$tmp" remote add origin "$EXFAT_REMOTE"
+    git -C "$tmp" fetch -q --depth=1 origin "$EXFAT_COMMIT"
+    git -C "$tmp" checkout -q FETCH_HEAD
+    mkdir fs/exfat
+    # the kernel sources and the licence; not the DKMS and standalone-module files
+    cp "$tmp"/*.c "$tmp"/*.h "$tmp"/Kconfig "$tmp"/Makefile "$tmp"/LICENSE fs/exfat/
+    rm -rf "${tmp:?}"
+else
+    echo "==> reusing fs/exfat"
 fi
 
 echo "==> applying patches"
