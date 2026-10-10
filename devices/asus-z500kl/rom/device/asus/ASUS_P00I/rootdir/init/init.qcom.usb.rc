@@ -1,4 +1,4 @@
-# USB gadget for ASUS_P00I on Pie: adb only, for now.
+# USB gadget for ASUS_P00I on Pie.
 #
 # The 3.10 kernel has the legacy android_usb gadget, not configfs, so the platform's
 # init.usb.rc does the switching (sys.usb.configfs=0 branch: functions, idVendor 18d1,
@@ -8,9 +8,9 @@
 # connect/disconnect events -- enough of them to push the whole boot out of the 256 KB
 # pstore console on the first M3 attempt.
 #
-# Same lines as the stock init.qcom.usb.rc; the rest of that file (diag, serial, rmnet,
-# QXDM compositions, the init.qcom.usb.sh service) is left for when MTP and tethering
-# are on the table.
+# Same lines as the stock init.qcom.usb.rc. The platform's init.usb.rc only knows none,
+# adb and the accessory modes; everything else is the device's to define (below). The
+# diag, serial, rmnet and QXDM compositions of the stock file are left out.
 
 on init
     write /sys/class/android_usb/android0/iSerial ${ro.serialno}
@@ -30,3 +30,82 @@ on fs
 on boot
     write /sys/class/android_usb/android0/iManufacturer ${ro.product.manufacturer}
     write /sys/class/android_usb/android0/iProduct ${ro.product.model}
+
+# The compositions the framework asks for besides adb, with ASUS's product IDs from the
+# stock file. Without them a build where adb is off has no USB at all: on Pie "charging
+# only" is the mtp function with data locked, so nothing answered sys.usb.config=mtp,
+# sys.usb.state never followed, and the host saw no device and the tablet showed no USB
+# notification. Development builds never noticed, as with adb on the framework's default
+# is plain adb, which the platform file handles.
+
+on property:sys.usb.config=mtp && property:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 610F
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=mtp,adb && property:sys.usb.configfs=0
+    stop adbd
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 612F
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=ptp && property:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 616F
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=ptp,adb && property:sys.usb.configfs=0
+    stop adbd
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 618F
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=rndis && property:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 614F
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=rndis,adb && property:sys.usb.configfs=0
+    stop adbd
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 615F
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=midi && property:sys.usb.configfs=0
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 61AF
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    setprop sys.usb.state ${sys.usb.config}
+
+on property:sys.usb.config=midi,adb && property:sys.usb.configfs=0
+    stop adbd
+    write /sys/class/android_usb/android0/enable 0
+    write /sys/class/android_usb/android0/idVendor 0B05
+    write /sys/class/android_usb/android0/idProduct 61CF
+    write /sys/class/android_usb/android0/functions ${sys.usb.config}
+    write /sys/class/android_usb/android0/enable 1
+    start adbd
+    setprop sys.usb.state ${sys.usb.config}
