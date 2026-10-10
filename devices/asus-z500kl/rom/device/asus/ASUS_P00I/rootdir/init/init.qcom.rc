@@ -23,6 +23,17 @@ on early-init
     mount debugfs debugfs /sys/kernel/debug
     chmod 0755 /sys/kernel/debug
 
+    # Keep the Venus firmware loaded once it is. msm_vidc unloads it 15 s after the
+    # last video session and loads it again on the next, into a 5 MB CMA region
+    # (venus_mem) it needs whole. Early on that works; after a while in use, pages
+    # there can no longer be moved out ("venus: Failed to allocate relocatable region
+    # of size 500000"), and every hardware codec failed from then on -- first seen as
+    # the camera recording with the software encoder. Loaded while the region is still
+    # clean and never unloaded, it never has to be allocated again. An idle core is
+    # power-collapsed either way (qcom,sw-power-collapse); unloading only saves the
+    # region, which is reserved for it anyway.
+    write /sys/kernel/debug/msm_vidc/firmware_unload_delay 4294967295
+
     # Mount points for the partitions fstab.qcom adds beyond AOSP's. The root
     # filesystem is still writable here; it is remounted read-only in post-fs.
     mkdir /firmware 0771 system system
