@@ -1,0 +1,14 @@
+# ASUS_P00I file labels, on top of device/qcom/sepolicy-legacy. The Qualcomm daemons
+# need none here: they are installed in /system/vendor/bin, where sepolicy-legacy
+# already labels them into their domains.
+
+# Our two init scripts. Labelled like Qualcomm's init.qcom.*.sh and executed directly
+# by init (they have a #! line): init.macaddr.sh runs as qti_init_shell, init.bt.sh
+# as bluetooth_loader (seclabel in init.qcom.rc), the domain sepolicy-legacy gives
+# stock's init.qcom.bt.sh and hci_qcomm_init.
+/(vendor|system/vendor)/bin/init\.macaddr\.sh   u:object_r:qti_init_shell_exec:s0
+/(vendor|system/vendor)/bin/init\.bt\.sh        u:object_r:qti_init_shell_exec:s0
+
+# netmgrd keeps its state and log where the Nougat build expects them, in
+# /data/misc/netmgr (made by init.qcom.rc), not in sepolicy-legacy's /data/vendor/netmgr.
+/data/misc/netmgr(/.*)?                         u:object_r:netmgrd_data_file:s0

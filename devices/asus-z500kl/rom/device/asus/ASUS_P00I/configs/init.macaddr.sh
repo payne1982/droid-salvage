@@ -1,7 +1,8 @@
 #!/system/bin/sh
 # Give WiFi and Bluetooth the addresses ASUS assigned this tablet at the factory.
-# Ours. Run once at boot, as root, before either is switched on (init.qcom.rc). It
-# also starts wcnss_service, which powers the WCNSS core up, once the MAC is set.
+# Ours. Run once at boot, as root, before either is switched on (init.qcom.rc).
+# wcnss_service, which powers the WCNSS core up, is started by init once this has
+# exited (init.qcom.rc), so the MAC is set by then.
 #
 # The addresses are in /persist, written at the factory:
 #   wifi_mac.txt   the WiFi MAC as twelve hex digits ("88d7f6xxxxxx")
@@ -41,7 +42,6 @@ if [ -z "$mac" ]; then
     src="the serial number (no usable /persist/wifi_mac.txt)"
 fi
 echo "$mac" > "$WCNSS_MAC" && log -t macaddr "WiFi MAC set from $src"
-setprop ctl.start wcnss-service
 
 # --- Bluetooth ---
 bt=

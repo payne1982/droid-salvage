@@ -1,0 +1,4 @@
+# mediacodec and cameraserver look into msm_vidc's debugfs directory, as they did
+# when it was plain debugfs; it has its own label now (genfs_contexts) so init can
+# set the firmware unload delay there.
+allow { mediacodec cameraserver } debugfs_msm_vidc:dir search;

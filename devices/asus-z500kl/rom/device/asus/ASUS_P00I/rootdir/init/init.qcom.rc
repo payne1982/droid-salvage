@@ -138,7 +138,7 @@ on post-fs-data
 # (fifth M3 attempt). Same definition as the stock init.target.rc. It needs /firmware
 # (the keymaster trustlet), /persist and /dev/block/bootdevice (librpmb), all of which
 # are in place by the time class core starts.
-service qseecomd /system/bin/qseecomd
+service qseecomd /system/vendor/bin/qseecomd
     class core
     user root
     group root
@@ -166,21 +166,27 @@ service wpa_supplicant /system/vendor/bin/hw/wpa_supplicant \
     disabled
     oneshot
 
-service vendor.hciattach /system/bin/sh /system/vendor/bin/init.bt.sh
+service vendor.hciattach /system/vendor/bin/init.bt.sh
     class late_start
     user bluetooth
     group bluetooth net_bt_admin system
+    seclabel u:r:bluetooth_loader:s0
     disabled
     oneshot
 
 # WiFi and Bluetooth addresses, from /persist or failing that from the serial number,
-# before either is switched on; it also starts wcnss_service. See the script.
-service vendor.macaddr /system/bin/sh /system/vendor/bin/init.macaddr.sh
+# before either is switched on. See the script.
+service vendor.macaddr /system/vendor/bin/init.macaddr.sh
     class main
     user root
     group root bluetooth
     disabled
     oneshot
+
+# wcnss_service once the WiFi MAC is in place. The script used to start it itself
+# (setprop ctl.start), which SELinux does not let qti_init_shell do; init does it here.
+on property:init.svc.vendor.macaddr=stopped
+    start wcnss-service
 
 # The modem's userspace, as stock ran it (its init.qcom.rc and init.target.rc). The
 # modem does not boot by itself: it needs its EFS served (rmt_storage, tftp_server)
@@ -189,25 +195,25 @@ service vendor.macaddr /system/bin/sh /system/vendor/bin/init.macaddr.sh
 # start with their class. rild itself comes with ril-caf's own rild.rc.
 # Stock also listed the qcom_diag group, which does not exist in Pie and would make
 # init reject the whole service; it only matters for the diag logging port.
-service rmt_storage /system/bin/rmt_storage
+service rmt_storage /system/vendor/bin/rmt_storage
     class core
     user root
 
-service tftp_server /system/bin/tftp_server
+service tftp_server /system/vendor/bin/tftp_server
     class main
     user root
 
-service irsc_util /system/bin/irsc_util "/etc/sec_config"
+service irsc_util /system/vendor/bin/irsc_util "/etc/sec_config"
     class main
     user root
     oneshot
 
-service per_mgr /system/bin/pm-service
+service per_mgr /system/vendor/bin/pm-service
     class core
     user system
     group system net_raw
 
-service per_proxy /system/bin/pm-proxy
+service per_proxy /system/vendor/bin/pm-proxy
     class core
     user system
     group system
@@ -219,12 +225,12 @@ on property:init.svc.per_mgr=running
 on property:sys.shutdown.requested=*
     stop per_proxy
 
-service qmuxd /system/bin/qmuxd
+service qmuxd /system/vendor/bin/qmuxd
     class main
     user root
     group radio audio bluetooth gps
 
-service netmgrd /system/bin/netmgrd
+service netmgrd /system/vendor/bin/netmgrd
     class main
 
 # The sensor daemon: it talks to the sensor subsystem on the ADSP over QMI and serves
@@ -235,7 +241,7 @@ service netmgrd /system/bin/netmgrd
 # "sensors" user by name; Pie has no such user, so it ends up as nobody and the IPC
 # router refuses its messages ("xport_send: Sendto failed", no sensors at all). Given
 # the group number here, as a supplementary group, it keeps it.
-service sensors /system/bin/sensors.qcom
+service sensors /system/vendor/bin/sensors.qcom
     class late_start
     user root
     group root 3011
@@ -244,7 +250,7 @@ service sensors /system/bin/sensors.qcom
 # post-processing pipeline and serves the HAL. Same definition as the stock
 # init.target.rc. It probes the sensors itself when it starts (sensor_init), so the
 # kernel log only shows "probe succeeded" once it has run.
-service qcamerasvr /system/bin/mm-qcamera-daemon
+service qcamerasvr /system/vendor/bin/mm-qcamera-daemon
     class late_start
     user camera
     group camera system inet input graphics

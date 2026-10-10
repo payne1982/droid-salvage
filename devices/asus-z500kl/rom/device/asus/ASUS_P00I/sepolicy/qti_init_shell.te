@@ -1,0 +1,11 @@
+# init.macaddr.sh: reads the factory addresses ASUS wrote to /persist, hands the WiFi
+# one to the WCNSS driver and writes the Bluetooth one where the HAL looks
+# (ro.bt.bdaddr_path). init starts wcnss_service once it has exited.
+allow qti_init_shell sysfs_wcnss_mac_addr:file w_file_perms;
+allow qti_init_shell bluetooth_data_file:dir rw_dir_perms;
+allow qti_init_shell bluetooth_data_file:file create_file_perms;
+
+# Both our scripts (init.macaddr.sh here, init.bt.sh as bluetooth_loader) are
+# #!/system/bin/sh and use toybox for od, sed, setprop, log and the like.
+allow { qti_init_shell bluetooth_loader } shell_exec:file rx_file_perms;
+allow { qti_init_shell bluetooth_loader } toolbox_exec:file { rx_file_perms execute_no_trans };

@@ -1,0 +1,14 @@
+# The boot_completed tuning in init.qcom.rc (see genfs_contexts for the nodes).
+allow init proc_sched:file w_file_perms;
+allow init sysfs_devices_system_cpu:file w_file_perms;
+allow init sysfs_devfreq:dir search;
+allow init sysfs_devfreq:file w_file_perms;
+allow init sysfs_msm_power:file w_file_perms;
+
+# Keep the Venus firmware loaded (init.qcom.rc, early-init).
+allow init debugfs_msm_vidc:dir search;
+allow init debugfs_msm_vidc:file w_file_perms;
+
+# init.qcom.rc hands the ADSP boot switch to the audio group and the WiFi firmware
+# path to the wifi user (chown/chmod).
+allow init { sysfs_boot_adsp sysfs_wlan_fwpath }:file setattr;

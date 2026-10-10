@@ -114,11 +114,10 @@ BOARD_KERNEL_CMDLINE += androidboot.hardware=qcom msm_rtb.filter=0x237 ehci-hcd.
 BOARD_KERNEL_CMDLINE += androidboot.bootdevice=7824900.sdhci lpm_levels.sleep_disabled=1
 BOARD_KERNEL_CMDLINE += earlyprintk
 
-# Permissive for bring-up, so the first boots fail on what is actually broken rather than
-# on policy. This kernel already allows it -- CONFIG_SECURITY_SELINUX_DEVELOP is set in
-# the stock configuration -- and Android's init honours androidboot.selinux only on
-# userdebug and eng builds. To come out before anything is released.
-BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
+# SELinux enforcing. Bring-up ran with androidboot.selinux=permissive here; it came out
+# once every daemon had its domain (sepolicy-legacy's, with the binaries moved to
+# /system/vendor/bin) and sepolicy/ covered what is particular to this tablet. For
+# debugging, the line can be put back: init honours it on userdebug builds.
 
 # Partitions, straight from the GPT (backup/gpt_primary.bin):
 #   p41 boot 64 MiB, p43 recovery 64 MiB, p44 system 3700 MiB,

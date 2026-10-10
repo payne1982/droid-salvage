@@ -1,0 +1,5 @@
+# The modem's helpers ask for CAP_NET_RAW when they open their QMI channels: the
+# peripheral manager, the EFS server (rmt_storage) and the TFTP file server for the
+# modem (tftp_server, domain rfs_access). All run with group net_raw, as stock defined
+# them.
+allow { per_mgr rmt_storage rfs_access } self:capability net_raw;

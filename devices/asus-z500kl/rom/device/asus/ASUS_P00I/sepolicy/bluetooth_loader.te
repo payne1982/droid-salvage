@@ -1,0 +1,3 @@
+# hci_qcomm_init (sepolicy-legacy's bluetooth_loader, which init.bt.sh also runs as)
+# looks into the /firmware partition while it configures the Bluetooth core.
+r_dir_file(bluetooth_loader, firmware_file)

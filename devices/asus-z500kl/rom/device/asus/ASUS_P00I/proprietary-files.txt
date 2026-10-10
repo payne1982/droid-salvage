@@ -94,7 +94,7 @@ lib64/libiris_ioctl_wrapper.so
 # (lib-imsdpl, lib-rtpcommon, and through them the QMI stack) belong to the RIL block.
 # libsecureui's two missing libraries are added; lib-sec-disp exists only as 64-bit in
 # the stock system, so the 32-bit libsecureui stays unusable, as it was on stock.
-bin/qseecomd
+bin/qseecomd:vendor/bin/qseecomd
 vendor/lib/libdiag.so
 vendor/lib/libtime_genoff.so
 vendor/lib/libStDrvInt.so
@@ -238,7 +238,7 @@ etc/firmware/wlan/prima/WCNSS_cfg.dat
 # Bluetooth: hci_qcomm_init configures the WCNSS Bluetooth core over /dev/smd3 when
 # Bluetooth is switched on (configs/bluetooth/init.bt.sh runs it). Both 64-bit: the
 # 32-bit libbtnv the first cut listed left it with "libbtnv.so not found".
-bin/hci_qcomm_init
+bin/hci_qcomm_init:vendor/bin/hci_qcomm_init
 vendor/lib64/libbtnv.so
 
 # RIL and the modem's userspace. Every daemon stock ran for the radio, and the
@@ -250,13 +250,13 @@ vendor/lib64/libbtnv.so
 #   irsc_util                 IPC router security rules (etc/sec_config)
 #   qmuxd                     the QMI multiplexer between Android and the modem
 #   netmgrd                   the mobile data interfaces (rmnet)
-bin/irsc_util
-bin/netmgrd
-bin/pm-proxy
-bin/pm-service
-bin/qmuxd
-bin/rmt_storage
-bin/tftp_server
+bin/irsc_util:vendor/bin/irsc_util
+bin/netmgrd:vendor/bin/netmgrd
+bin/pm-proxy:vendor/bin/pm-proxy
+bin/pm-service:vendor/bin/pm-service
+bin/qmuxd:vendor/bin/qmuxd
+bin/rmt_storage:vendor/bin/rmt_storage
+bin/tftp_server:vendor/bin/tftp_server
 lib64/librilqmiservices.so
 lib64/librmnetctl.so
 vendor/lib64/libcneapiclient.so
@@ -309,7 +309,7 @@ lib64/libprotobuf-cpp-lite.so:vendor/lib64/libprotobuf-cpp-lt26.so
 # carries this board's axis orientation for the accelerometer, gyroscope and
 # magnetometer. The sensor registry and calibration live in /persist/sensors, written
 # by sensors.qcom.
-bin/sensors.qcom
+bin/sensors.qcom:vendor/bin/sensors.qcom
 lib64/hw/sensors.msm8952.so
 vendor/lib64/libsensor1.so
 vendor/lib64/libsensor_reg.so
@@ -378,7 +378,7 @@ etc/gps.conf
 # cpp_firmware_v1_5_0.fw is the one CPP microcode this kernel asks for (the post-
 # processor that scales and rotates frames; "Fail to loc blob" without it).
 # media_profiles is stock's for this chip, at the path Pie reads.
-bin/mm-qcamera-daemon
+bin/mm-qcamera-daemon:vendor/bin/mm-qcamera-daemon
 lib/hw/camera.msm8952.so
 lib/libarcsoft_beautyshot.so
 lib/libarcsoft_face_tracking.so

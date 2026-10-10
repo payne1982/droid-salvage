@@ -10,7 +10,7 @@
 # "-e" makes it print the result as shell assignments.
 
 log -t init.bt "configuring the WCNSS Bluetooth core"
-eval $(/system/bin/hci_qcomm_init -e -P 1 && echo "rc=0" || echo "rc=1")
+eval $(/system/vendor/bin/hci_qcomm_init -e -P 1 && echo "rc=0" || echo "rc=1")
 
 if [ "$rc" = 0 ]; then
     log -t init.bt "hci_qcomm_init done: $BTS_DEVICE $BTS_TYPE $BTS_ADDRESS"

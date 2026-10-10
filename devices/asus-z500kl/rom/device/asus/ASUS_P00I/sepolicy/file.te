@@ -1,0 +1,5 @@
+# Kernel nodes this device's init and daemons write or read, which would otherwise be
+# plain sysfs/proc/debugfs. Labelled in genfs_contexts.
+type sysfs_wcnss_mac_addr, fs_type, sysfs_type;
+type proc_camera_otp, fs_type, proc_type;
+type debugfs_msm_vidc, fs_type, debugfs_type;

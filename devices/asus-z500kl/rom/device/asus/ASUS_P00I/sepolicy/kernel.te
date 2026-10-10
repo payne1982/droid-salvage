@@ -1,0 +1,4 @@
+# mdss_fb0, the display driver's kernel thread, uses DAC override at boot: it opens
+# something from kernel context that its owner bits would not let it. The denial names
+# only the thread; with the display at stake, it is allowed rather than chased.
+allow kernel self:capability dac_override;
