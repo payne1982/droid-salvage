@@ -34,7 +34,27 @@ enforcing.
 
 Not there:
 
+- **Widevine.** The only DRM plugin installed is ClearKey, so the streaming apps that
+  require Widevine (Netflix, Prime Video, Disney+ and the like) will not play. Whether
+  the Nougat Widevine blobs can be made to work under Pie has not been tried.
 - **Qualcomm's network location and geofencing** (IZat). GPS works without them.
+
+Not tested yet — none of these is known to be broken, and none is known to work:
+
+- **calls, SMS and mobile data.** The modem comes up and reads the IMEI; no SIM has
+  been in the tablet.
+- **file transfer to a computer** (MTP), and switching the USB mode from the
+  notification.
+- **a card in the slot formatted exFAT or NTFS.** Both mount from a disk image.
+- **encrypting `/data`.** LineageOS runs here on an unencrypted `/data`. The partition
+  table allows encryption (`encryptable=footer`, the hardware-backed kind stock used),
+  but it has never been switched on under Pie. Do not switch it on to find out on a
+  tablet with data you care about: if it fails, the way back is *Format Data*.
+- **Wi-Fi hotspot and USB tethering.**
+- **USB OTG**: sticks, keyboards, mice.
+- **charging with the tablet switched off.**
+- **screen casting** (Miracast).
+- **battery drain on standby**, over a night.
 
 ## Installing
 
@@ -128,6 +148,8 @@ works because it is authenticated by definition, so a temporary key plus
 it leaves the manifest and the recorded remotes untouched.
 
 ## Before a first release
+
+From the lists above, the ones a first image should not go out without:
 
 - calls, SMS and mobile data with a SIM;
 - file transfer (MTP) to a computer;
