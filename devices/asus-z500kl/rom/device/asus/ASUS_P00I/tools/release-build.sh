@@ -25,11 +25,25 @@ for f in system/build.prop system/vendor/build.prop system/product/build.prop \
     rm -f "${out:?}/$f"
 done
 
+# A release has secure adb: ro.adb.secure=1, so adb is off by default and needs the
+# host's key accepted on the screen. Development builds are made with
+# WITH_ADB_INSECURE; it must not leak into this one from the environment.
+unset WITH_ADB_INSECURE
+
 P00I_RELEASE=$release mka bacon
 
 echo "fingerprints in the result:"
 grep -h 'build.fingerprint=' "$out/system/build.prop" "$out/system/vendor/build.prop" "$out/root/default.prop"
 if [ "$(grep -h 'build.fingerprint=' "$out/system/build.prop" "$out/system/vendor/build.prop" "$out/root/default.prop" | sed 's/^[^=]*=//' | sort -u | wc -l)" -ne 1 ]; then
     echo "error: the fingerprints differ" >&2
+    exit 1
+fi
+
+echo "adb in the result:"
+grep -h -E '^(ro.adb.secure|persist.sys.usb.config)=' "$out/root/default.prop"
+grep -qx 'ro.adb.secure=1' "$out/root/default.prop" ||
+    { echo "error: ro.adb.secure is not 1" >&2; exit 1; }
+if grep -h '^persist.sys.usb.config=' "$out/root/default.prop" "$out/system/build.prop" | grep -q adb; then
+    echo "error: adb is on by default" >&2
     exit 1
 fi

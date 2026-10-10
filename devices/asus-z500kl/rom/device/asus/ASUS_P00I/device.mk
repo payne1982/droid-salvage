@@ -411,14 +411,16 @@ PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.camera.front.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.camera.front.xml
 
 # ---------------------------------------------------------------------------------
-# Observability -- the whole point of the first boot
+# adb
 # ---------------------------------------------------------------------------------
-# A boot that fails silently teaches nothing. ro.debuggable and a root adb shell let us
-# pull logcat and dmesg; pstore's console-ramoops keeps the previous boot's kernel log
-# across a warm reboot, which is how the recovery was debugged before adb worked.
-PRODUCT_PROPERTY_OVERRIDES += \
-    ro.debuggable=1 \
-    persist.sys.usb.config=adb
+# Nothing set here. The build decides, from ro.adb.secure: development builds are made
+# with WITH_ADB_INSECURE (no authorisation, which bring-up needed while the screen could
+# not be trusted), and the build then turns adb on by default
+# (build/make/tools/post_process_props.py). tools/release-build.sh makes them without
+# it: ro.adb.secure=1, adb off until switched on in developer options, and the host's
+# key to be accepted on the screen. ro.debuggable=1 comes with the userdebug variant.
+# This block used to force persist.sys.usb.config=adb, which would have kept adb on in
+# a release too.
 
 # ---------------------------------------------------------------------------------
 # Not here yet. Listed, not guessed:

@@ -107,6 +107,17 @@ BOARD_KERNEL_TAGS_OFFSET := 0x00000100
 BOARD_MKBOOTIMG_ARGS += --ramdisk_offset $(BOARD_RAMDISK_OFFSET)
 BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_KERNEL_TAGS_OFFSET)
 
+# The installable zip has to carry the signed boot image (device.mk, "Boot image
+# signature"), and by default it did not: the release tools rebuild boot.img from the
+# target files, and sign it only when misc_info.txt names a verity key, which the build
+# writes only with PRODUCT_SUPPORTS_VERITY -- off here on purpose. So the zip flashed an
+# unsigned image the bootloader refuses, and every install needed the signed one written
+# by hand afterwards. BOARD_CUSTOM_BOOTIMG makes the build put its own boot.img, signed,
+# into the target files (BOOTABLE_IMAGES), and the release tools take it as it is.
+# (It copies recovery.img there too; nothing uses it: the zip writes only system and
+# boot, and there is no recovery-from-boot patch.)
+BOARD_CUSTOM_BOOTIMG := true
+
 # The stock command line, kept as it is. androidboot.bootdevice is what makes the
 # by-name symlink tree appear; losing it cost real time while getting TWRP to work.
 BOARD_KERNEL_CMDLINE := console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0
