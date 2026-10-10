@@ -135,7 +135,7 @@ as the stock boot image does.
 boots and runs:
 
 ```
-Linux version 3.10.84-perf-g68a4f29d-dirty (payne@payne-hp450)
+Linux version 3.10.84-perf-g68a4f29d-dirty (user@host)
   (gcc version 4.9.x 20150123 (prerelease) (GCC)) #1 SMP PREEMPT
 ```
 

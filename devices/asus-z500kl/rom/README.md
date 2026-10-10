@@ -9,6 +9,7 @@ before a first release are listed below.
 - **the kernel:** [../kernel/](../kernel/) — buildable from ASUS' sources, and built
   inside this tree
 - **why Android 9 and not something newer:** [../ROADMAP.md](../ROADMAP.md)
+- **what it took, problem by problem:** [NOTES.md](NOTES.md)
 
 ## What works
 
