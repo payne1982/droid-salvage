@@ -30,7 +30,15 @@ done
 # WITH_ADB_INSECURE; it must not leak into this one from the environment.
 unset WITH_ADB_INSECURE
 
+# mka is a shell function: the caller's envsetup.sh does not reach this script, so it
+# is sourced again here (lunch's exported variables are kept). Neither the file nor its
+# functions are -e or -u clean, so both run without them and mka's status is checked.
+set +eu
+source build/envsetup.sh >/dev/null
 P00I_RELEASE=$release mka bacon
+status=$?
+set -eu
+[ "$status" -eq 0 ] || { echo "error: the build failed ($status)" >&2; exit 1; }
 
 echo "fingerprints in the result:"
 grep -h 'build.fingerprint=' "$out/system/build.prop" "$out/system/vendor/build.prop" "$out/root/default.prop"
