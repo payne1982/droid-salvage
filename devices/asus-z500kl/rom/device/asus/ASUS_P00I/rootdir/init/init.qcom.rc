@@ -246,6 +246,16 @@ service sensors /system/vendor/bin/sensors.qcom
     user root
     group root 3011
 
+# The HAL asks the daemon for the sensor list once, when it starts, and keeps the
+# answer. Pie runs it as its own service in class hal, which init starts before
+# late_start, so it usually asked before the daemon was there and kept an empty list:
+# "No Sensors on the device", no rotation, no light sensor. (In Nougat the HAL lived
+# in system_server and loaded long after the daemon.) So it is started again once the
+# daemon's socket exists; system_server reads the list a good ten seconds later.
+on property:init.svc.sensors=running
+    wait /dev/socket/sensor_ctl_socket 5
+    restart vendor.sensors-hal-1-0
+
 # The camera daemon: ASUS' mm-qcamera-daemon, which owns the sensors, the ISP and the
 # post-processing pipeline and serves the HAL. Same definition as the stock
 # init.target.rc. It probes the sensors itself when it starts (sensor_init), so the
