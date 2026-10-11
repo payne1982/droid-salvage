@@ -59,8 +59,15 @@ PRODUCT_AAPT_PREF_CONFIG := xhdpi
 # so a destination built from it expands to "/fstab.qcom" and the file silently lands
 # nowhere. The first build produced a ramdisk of 59 entries with no fstab in it, and
 # nothing complained.
+#
+# Android 13: init's second stage lives in /system, so the first stage, which is all
+# the ramdisk holds now, has to mount /system itself, and it reads the fstab from the
+# ramdisk to do it (the entry marked first_stage_mount). The copy under /vendor/etc is
+# the one mount_all and vold read once /system is there. TARGET_COPY_OUT_RAMDISK is no
+# longer empty on this tree.
 PRODUCT_COPY_FILES += \
-    $(DEVICE_PATH)/rootdir/etc/fstab.qcom:$(TARGET_COPY_OUT_ROOT)/fstab.qcom
+    $(DEVICE_PATH)/rootdir/etc/fstab.qcom:$(TARGET_COPY_OUT_RAMDISK)/fstab.qcom \
+    $(DEVICE_PATH)/rootdir/etc/fstab.qcom:$(TARGET_COPY_OUT_VENDOR)/etc/fstab.qcom
 
 # ASUS' own init scripts are extracted into rootdir/etc by extract-files.sh but are
 # deliberately NOT installed. They are 150 KB written for Nougat's init, and a first
@@ -71,17 +78,21 @@ PRODUCT_COPY_FILES += \
 # "AOSP's init alone" was the first plan and it does not boot: the core init.rc leaves
 # mount_all to init.${ro.hardware}.rc, so without one nothing is mounted and the tablet
 # sits on the bootloader logo (first M3 attempt, see init.qcom.rc).
+#
+# Android 13 imports /vendor/etc/init/hw/init.${ro.hardware}.rc; nothing of the device
+# goes in the root directory any more.
 PRODUCT_COPY_FILES += \
-    $(DEVICE_PATH)/rootdir/init/init.qcom.rc:$(TARGET_COPY_OUT_ROOT)/init.qcom.rc \
-    $(DEVICE_PATH)/rootdir/init/init.qcom.usb.rc:$(TARGET_COPY_OUT_ROOT)/init.qcom.usb.rc
+    $(DEVICE_PATH)/rootdir/init/init.qcom.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.qcom.rc \
+    $(DEVICE_PATH)/rootdir/init/init.qcom.usb.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.qcom.usb.rc
 
 # ueventd.qcom.rc is the one ASUS file installed as it is: a plain table of device node
 # owners and modes (kgsl, camera, video, audio, sensors...), no commands, nothing that
 # depends on the init version. Without it every Qualcomm node is root-only and the
 # HALs, which run as system/media/camera, cannot open their hardware. It comes from
 # extract-files.sh; the wildcard keeps a tree that has not run it buildable.
+# Android 13's ueventd reads /vendor/ueventd.rc, whatever ro.hardware is.
 PRODUCT_COPY_FILES += $(foreach f,$(wildcard $(DEVICE_PATH)/rootdir/etc/ueventd.qcom.rc), \
-    $(f):$(TARGET_COPY_OUT_ROOT)/ueventd.qcom.rc)
+    $(f):$(TARGET_COPY_OUT_VENDOR)/ueventd.rc)
 
 # ---------------------------------------------------------------------------------
 # Boot image signature
@@ -106,18 +117,20 @@ PRODUCT_VERITY_SIGNING_KEY := build/target/product/security/verity
 # which is a generation behind what Pie expects. No flag is needed for that: the AOSP
 # composer@2.1 default implementation links libhwc2on1adapter unconditionally and wraps
 # an HWC1 HAL by itself.
+#
+# Android 13: the composer service has the passthrough implementation built in (there
+# is no separate -impl), and the mapper wrapper is the 2.1 one. copybit.msm8952 and
+# libgenlock, in this list on LineageOS 16, are not built by this version of the
+# display tree, and Android 13 stops on a package that does not exist.
 PRODUCT_PACKAGES += \
     android.hardware.graphics.allocator@2.0-impl \
     android.hardware.graphics.allocator@2.0-service \
-    android.hardware.graphics.composer@2.1-impl \
     android.hardware.graphics.composer@2.1-service \
-    android.hardware.graphics.mapper@2.0-impl \
+    android.hardware.graphics.mapper@2.0-impl-2.1 \
     android.hardware.memtrack@1.0-impl \
     android.hardware.memtrack@1.0-service \
-    copybit.msm8952 \
     gralloc.msm8952 \
     hwcomposer.msm8952 \
-    libgenlock \
     liboverlay \
     libqdMetaData \
     libqdutils \
@@ -141,11 +154,9 @@ PRODUCT_PACKAGES += \
     android.hardware.gatekeeper@1.0-impl \
     android.hardware.gatekeeper@1.0-service
 
-# Hardware FDE: the master key is wrapped by keymaster in the TrustZone, and
-# libcryptfs_hw is the vendor side of that. qseecomd loads the trustlet from
-# /firmware/image, so /firmware has to be mounted -- it is, in our fstab.
-PRODUCT_PACKAGES += \
-    libcryptfs_hw
+# keymaster@3.0 is no longer in AOSP at this version; the wrapper around a legacy
+# keystore module survives in LineageOS-UL's hardware/interfaces. libcryptfs_hw, the
+# vendor side of hardware full-disk encryption, is gone with FDE (BoardConfig.mk).
 
 # ---------------------------------------------------------------------------------
 # DRM
@@ -264,10 +275,14 @@ PRODUCT_COPY_FILES += \
 # This replaced a stub (audio.primary.default) that was there only so Pie could boot:
 # with no audio HAL, audioserver dies on a null DevicesFactoryHal and system_server
 # waits for media.audio_policy forever.
+#
+# Android 13: one service for every version of the audio HAL, and the 6.0 wrappers
+# around the legacy module. Not 7.0: from that version the wrapper validates the policy
+# file against a schema, and the CAF tree's file was written long before it.
 PRODUCT_PACKAGES += \
-    android.hardware.audio@2.0-service \
-    android.hardware.audio@4.0-impl \
-    android.hardware.audio.effect@4.0-impl \
+    android.hardware.audio.service \
+    android.hardware.audio@6.0-impl \
+    android.hardware.audio.effect@6.0-impl \
     audio.primary.msm8952 \
     audio.r_submix.default \
     audio.usb.default \
@@ -282,7 +297,7 @@ PRODUCT_PACKAGES += \
 # loads Dolby and MaxxAudio libraries that are not here.
 AUDIO_POLICY_CONFIG_DIR := frameworks/av/services/audiopolicy/config
 PRODUCT_COPY_FILES += \
-    hardware/qcom/audio-caf/msm8952/configs/common/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
+    hardware/qcom-caf/msm8952/audio/configs/common/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/a2dp_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/a2dp_audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/usb_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_policy_configuration.xml \
@@ -360,10 +375,12 @@ PRODUCT_PACKAGES += \
 # SMS and refuses voice calls in both directions, as ASUS sold it (overlay/ has the
 # detail), and a Phone icon would promise what the tablet cannot do. Messaging, Stk
 # and the APN list come from LineageOS' own telephony.mk.
+#
+# Android 13: cell broadcasts are a mainline module (com.android.cellbroadcast), which
+# every product gets; there is no CellBroadcastReceiver package to ask for.
 PRODUCT_PACKAGES += \
     CarrierConfig \
     CarrierDefaultApp \
-    CellBroadcastReceiver \
     EmergencyInfo
 
 PRODUCT_COPY_FILES += \

@@ -5,6 +5,10 @@
 #
 # ASUS ZenPad 3S 10 LTE (Z500KL / ASUS_P00I) - MSM8956, kernel 3.10, pre-Treble.
 #
+# This is the LineageOS 20 (Android 13) branch. The tree came from LineageOS 16, and a
+# comment that says "Pie" describes what was found there; where Android 13 differs the
+# comment says so.
+#
 # Everything here that is not self-evident is either measured on the device or
 # explained. The partition map comes from the GPT, the kernel settings from the stock
 # boot image, and the crypto settings from the footer in the last 16 KB of userdata.
@@ -56,6 +60,16 @@ TARGET_OTA_ASSERT_DEVICE := ASUS_P00I,P00I,Z500KL
 # Pre-Treble: no vendor partition exists, so /vendor lives inside system, as it does
 # on the stock ROM.
 TARGET_COPY_OUT_VENDOR := system/vendor
+
+# The vendor blobs reach the image as plain file copies (vendor/asus/ASUS_P00I), ELF
+# files included. Android 13 refuses that by default and wants each one declared as a
+# prebuilt module, so that it can check what they link against; Nougat blobs would not
+# pass that check anyway.
+BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
+
+# The GPS HAL in gps/ (tools/setup-gps.sh) is Qualcomm's code of 2016 and installs its
+# headers with LOCAL_COPY_HEADERS, which Android 13 calls obsolete.
+BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 
 # Kernel, built from ASUS' published sources with the configuration recovered from the
 # stock image. See ../../../../kernel/README.md for the whole story.
@@ -153,11 +167,10 @@ BOARD_HAS_LARGE_FILESYSTEM := true
 TARGET_USERIMAGES_USE_EXT4 := true
 TARGET_USERIMAGES_USE_F2FS := true
 
-# Full-disk encryption in hardware: aes-xts through Qualcomm ICE (/dev/icesdcc), the
-# master key wrapped by keymaster in the TrustZone, scrypt+keymaster as the KDF, and
-# the footer in the last 16 KB of userdata. Not FBE: this kernel has no fscrypt.
-TARGET_HW_DISK_ENCRYPTION := true
-TARGET_KEYMASTER_WAIT_FOR_QSEE := true
+# No encryption of /data on this branch. Stock and LineageOS 16 can use full-disk
+# encryption in hardware (Qualcomm ICE, key wrapped by keymaster); Android 13 removed
+# full-disk encryption altogether, and file-based encryption needs fscrypt, which this
+# kernel does not have.
 
 # SELinux. sepolicy-legacy, not sepolicy: the latter targets the UM platforms, and
 # this is a pre-UM Nougat vendor.
@@ -171,7 +184,11 @@ TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.qcom
 # The bootloader refuses an image whose AVB1 signature does not name the partition it
 # is being written to, and fastboot flash is disabled on it, so images go on with dd
 # from a root shell. Nothing here needs a verity key.
-PLATFORM_SECURITY_PATCH := 2099-12-31
+#
+# LineageOS 16 also set PLATFORM_SECURITY_PATCH := 2099-12-31 here, a habit carried over
+# from the recovery tree, where a patch level in the far future keeps keymaster from
+# refusing keys made by a newer system. Android 13 makes that variable read-only, and
+# with no encrypted /data to open there is nothing left that needs it.
 
 # A fixed build fingerprint, the same in system, vendor and the boot image whatever an
 # incremental build regenerates. The default one carries the build number (user, date
@@ -201,7 +218,7 @@ P00I_KEYS := dev-keys
 else
 P00I_KEYS := test-keys
 endif
-BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:9/PQ3A.190801.002/$(P00I_RELEASE):userdebug/$(P00I_KEYS)
+BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:13/TQ3A.230901.001/$(P00I_RELEASE):userdebug/$(P00I_KEYS)
 
 # The HIDL manifest: every HAL this device provides. See the file for why it matters
 # even on a non-Treble device.
@@ -244,9 +261,8 @@ WIFI_DRIVER_FW_PATH_P2P := "p2p"
 BOARD_HAVE_BLUETOOTH := true
 BOARD_HAVE_BLUETOOTH_QCOM := true
 
-# RIL: hardware/ril-caf, the libril that loads Qualcomm's Nougat-era qcril
-# (libril-qc-qmi-1.so) rather than AOSP's.
-TARGET_RIL_VARIANT := caf
+# RIL: on LineageOS 16 this was hardware/ril-caf (TARGET_RIL_VARIANT := caf). That
+# tree is gone; libril and rild now come from hardware/ril, LineageOS-UL's fork.
 TARGET_SYSTEM_PROP += $(DEVICE_PATH)/system.prop
 
 # Video: the Venus codecs from media-caf/msm8952 (device.mk). TARGET_USES_ION is the
@@ -276,7 +292,7 @@ TARGET_LD_SHIM_LIBS := /system/lib/hw/camera.msm8952.so|libshim_camera.so
 
 # Init: ASUS' bootloader calls an ordinary boot androidboot.mode=main, which Pie's USB
 # service takes for a factory mode; init/init_ASUS_P00I.cpp says what that breaks.
-TARGET_INIT_VENDOR_LIB := libinit_ASUS_P00I
+TARGET_INIT_VENDOR_LIB := //$(DEVICE_PATH):libinit_ASUS_P00I
 
 # -----------------------------------------------------------------------------------
 # Still to be settled. Listed rather than guessed, so nothing silently carries a wrong

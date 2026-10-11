@@ -1,6 +1,8 @@
 // Linked into init through TARGET_INIT_VENDOR_LIB (BoardConfig.mk).
 cc_library_static {
     name: "libinit_ASUS_P00I",
+    // init is also built for the recovery image, and takes this library there too
+    recovery_available: true,
     srcs: ["init_ASUS_P00I.cpp"],
     include_dirs: ["system/core/init"],
     static_libs: ["libbase"],

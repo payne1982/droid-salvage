@@ -14,7 +14,7 @@
 # ro.hardware is "qcom" (androidboot.hardware=qcom on the stock command line), which is
 # why the file has this name.
 
-import /init.qcom.usb.rc
+import /vendor/etc/init/hw/init.qcom.usb.rc
 
 on early-init
     # debugfs, as stock mounted it: system_server reads kernel wakelock statistics from
@@ -72,7 +72,7 @@ on init
 
 on fs
     wait /dev/block/bootdevice
-    mount_all /fstab.qcom
+    mount_all /vendor/etc/fstab.qcom
 
     restorecon_recursive /persist
     mkdir /persist/data 0700 system system
