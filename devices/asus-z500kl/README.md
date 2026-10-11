@@ -17,8 +17,8 @@ As far as the XDA threads for this tablet go, this is the first working TWRP for
 - **Ready-to-flash image:** see [Releases](../../releases) — already AVB1-signed, so you
   can skip the signing step below.
 - **LineageOS 16.0 (Android 9):** [rom/README.md](rom/README.md) — runs as a daily
-  tablet; what is missing and what is still untested is listed there. No image
-  published yet.
+  tablet; what is missing and what is still untested is listed there. The image is on
+  the same Releases page.
 - **The kernel**, buildable from ASUS's sources: [kernel/README.md](kernel/README.md).
 - **How it got here:** [ROADMAP.md](ROADMAP.md).
 

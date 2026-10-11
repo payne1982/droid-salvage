@@ -30,7 +30,7 @@ at the top of each device's README.
 
 | device | status |
 |---|---|
-| [asus-z500kl](devices/asus-z500kl) — ASUS ZenPad 3S 10 LTE (Z500KL / P00I) | TWRP 3.7 released: touch, all partitions, FDE decryption of `/data`, adb. LineageOS 16.0 (Android 9) working, SELinux enforcing, nearly ready for a first release. Kernel built from ASUS' sources |
+| [asus-z500kl](devices/asus-z500kl) — ASUS ZenPad 3S 10 LTE (Z500KL / P00I) | TWRP 3.7 released: touch, all partitions, FDE decryption of `/data`, adb. LineageOS 16.0 (Android 9) released, SELinux enforcing; no voice calls and no Widevine level 1. Kernel built from ASUS' sources |
 
 ## Local settings
 

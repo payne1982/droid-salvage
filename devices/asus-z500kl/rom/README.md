@@ -2,8 +2,9 @@
 
 Android 9 on the ZenPad 3S 10 LTE, from a device tree written for it, a kernel built from
 ASUS' sources and the Nougat vendor blobs taken off your own tablet. It runs as a daily
-tablet with SELinux enforcing, and no image has been published yet: the last checks
-before a first release are listed below.
+tablet with SELinux enforcing. The first image, `payne_31`, is on the
+[Releases](https://github.com/payne1982/droid-salvage/releases) page; what it does not
+do, and what nobody has tried on it yet, is listed below.
 
 - **what the hardware is, and where each piece comes from:** [HARDWARE.md](HARDWARE.md)
 - **the kernel:** [../kernel/](../kernel/) — buildable from ASUS' sources, and built
@@ -99,6 +100,10 @@ key), so nothing has to be written by hand afterwards. Expect the usual warning 
 at boot; see the TWRP README for why they are harmless.
 
 Updating from one build to the next is step 2 alone: no wipe.
+
+The published image is a `userdebug` build signed with its author's own keys, not with
+AOSP's public test keys ("Signing", below, is how to do the same with yours). adb is
+off until you switch it on, and asks before trusting a computer.
 
 ## Google apps
 
@@ -262,11 +267,13 @@ Python 2.7 under that name, `libtinfo.so.5`, and a few rewritten `#!` lines. The
 [TWRP README](../README.md) has the list and the commands; the same environment builds
 both.
 
-## Before a first release
+## Loose ends
 
-From the lists above, the ones a first image should not go out without:
+Two things the first image went out with, known and not settled:
 
 - a cable plugged in **while the tablet is booting**. Seen once: the tablet charged,
   the computer did not see it, and plugging the cable again did not help until a
-  reboot with the cable already in. Not reproduced or explained yet;
-- a night of standby on the image to be released.
+  reboot with the cable already in. Done again on purpose, at the same point of the
+  boot, it worked. Not explained;
+- standby has not been measured on this image. The night in the table above is from
+  an earlier build, before the Wi-Fi scan fix.

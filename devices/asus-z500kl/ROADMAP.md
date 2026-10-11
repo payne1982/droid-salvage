@@ -166,13 +166,15 @@ Same conventions as the recovery: `payne_N`, AVB1-signed with the public AOSP te
 key, on GitHub Releases. Unlike the recovery it needs no `dd`: the zip installs from
 TWRP and writes a `boot` image that is already signed.
 
-**In progress.** Done: SELinux enforcing, the CPU and low-power settings stock used,
-secure adb, the signed boot image inside the zip, and a release build that passes the
-whole test round on the tablet. Making the first release build found three more things
-development builds had hidden — no USB at all with adb off, the USB mode greyed out, and
-a race that could leave the tablet without sensors — all fixed. Left, before a first
-image: a test with a SIM and an exFAT card in the slot. `rom/README.md` has those and
-everything else that is missing or untested.
+**Done: `payne_31`.** SELinux enforcing, the CPU and low-power settings stock used,
+secure adb, the signed boot image inside the zip, private signing keys, and a release
+build that passes the whole test round on the tablet, the last time on a clean
+installation. Making the first release build found three things development builds had
+hidden — no USB at all with adb off, the USB mode greyed out, and a race that could
+leave the tablet without sensors — and the last tests before publishing found more: a
+SIM gives data and SMS and no calls, the browser had stopped working, the SIM PIN was
+never asked with the screen lock off. All fixed or said. `rom/README.md` has what is
+missing, what is untested and what was never tried.
 
 ## What could still stop this
 
