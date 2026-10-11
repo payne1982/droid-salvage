@@ -183,10 +183,18 @@ x-github-edge-message: GitHub is temporarily limiting some unauthenticated downl
                        Please retry later or authenticate.
 ```
 
-Retrying at `-j2` with pauses gets most of the way; authenticating finishes it. SSH
-works because it is authenticated by definition, so a temporary key plus
-`url."git@github.com:".insteadOf "https://github.com/"` is the least invasive route —
-it leaves the manifest and the recorded remotes untouched.
+Retrying at `-j2` with pauses gets most of the way: here the projects still missing
+went 104, 36, 24 over three rounds. `device/asus/ASUS_P00I/tools/sync-retry.sh`, run
+from the top of the tree, does that until none is left, and counts what is actually on
+disk rather than trusting repo's exit status (`--count` only counts). Authenticating
+finishes it at once. SSH works because it is authenticated by definition, so a
+temporary key plus `url."git@github.com:".insteadOf "https://github.com/"` is the least
+invasive route — it leaves the manifest and the recorded remotes untouched.
+
+The build host itself needs what any Android 9 tree needs on a current distribution:
+Python 2.7 under that name, `libtinfo.so.5`, and a few rewritten `#!` lines. The
+[TWRP README](../README.md) has the list and the commands; the same environment builds
+both.
 
 ## Before a first release
 
