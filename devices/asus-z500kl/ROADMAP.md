@@ -119,6 +119,15 @@ these exists on 16 and has to be redone, not copied.
 The round `payne_31` passed, on a clean installation, then with Google apps. Only then
 the question whether this is worth publishing next to 16 or instead of it.
 
+**Before anything is published: bring the LineageOS-UL forks up to date ourselves.**
+They stopped on 4 April 2025, and LineageOS has kept patching `lineage-20.0` since. Measured
+on 11 October 2026, the fork of `frameworks/base` carries 59 changes of its own and lacks
+184 of LineageOS'; `frameworks/av` 55 and 15; `frameworks/native` 30 and 13; the
+Connectivity module 8 and 5. An image built from them as they are has the security level
+of April 2025 in exactly the parts that matter most. The work is merging LineageOS'
+branch into each fork and resolving what collides. It is not needed to build, boot or
+test, so it waits until there is something worth publishing.
+
 ## What could stop this
 
 - **The Nougat vendor files under Android 13.** On 16 they load through wrappers Pie
@@ -127,8 +136,10 @@ the question whether this is worth publishing next to 16 or instead of it.
 - **Memory.** 4 GB and a 2048x1536 screen. Android 13 on the Tab S2, which has 3 GB,
   says it starts; it does not say it is pleasant.
 - **LineageOS-UL stopped moving.** Its `lineage-20.0` repositories were last pushed in
-  April 2025, so the security patch level is frozen there unless the forks are carried
-  forward here.
+  April 2025, while the rest of the tree follows LineageOS to this day. Its manifest
+  needed 17 projects redirected before the tree would even be analysed
+  (`rom/local_manifests/lineage-20-forks.xml`); more mismatches may show while
+  compiling. The security side of it is under L5.
 - **The kernel is still 3.10.** eBPF is the requirement that was known. Others may
   appear only when something fails to start; each goes on this page when found.
 - **The build machine.** It built `payne_31`. A tree four versions newer asks for
