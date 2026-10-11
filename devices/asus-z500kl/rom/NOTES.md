@@ -214,6 +214,14 @@ running kernel actually probed (`rom/HARDWARE.md`).
   if it finds no camera at a boot -- as it did before the camera stack worked. Both
   are right after *Format Data*. Run the test round on a formatted `/data` before
   calling an image finished.
+- **Google apps: two walls that are not the ROM's.** The setup wizard dead-ends at the
+  Assistant with a message about an administrator; the log of the Google app (8.91, from
+  2018, in MindTheGapps 9.0.0) has the cause, `OmniConsentReqHelper: CMS fetch failed
+  with status = 4`. And the Play Store calls the device uncertified. A build with ASUS'
+  stock fingerprint, installed over the same data, was still uncertified -- the build
+  is still userdebug, signed with private keys and booted from an unlocked bootloader,
+  and nobody here knows what Google weighs. LineageOS tells an update by `ro.build.date`
+  and not by the fingerprint, so a constant fingerprint would not have broken updates.
 - **A SIM gives data and SMS, and no calls.** The modem answers a dial request with
   `QMI_ERR_INVALID_ARG` before trying the network, and never passes an incoming call
   on. qcril says so only with `persist.radio.adb_log_on` set to 1 and `ril-daemon`

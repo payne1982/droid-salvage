@@ -100,6 +100,50 @@ at boot; see the TWRP README for why they are harmless.
 
 Updating from one build to the next is step 2 alone: no wipe.
 
+## Google apps
+
+None are in the image. If you want them, the package checked here is
+[MindTheGapps 9.0.0 for arm64](https://github.com/MindTheGapps/9.0.0-arm64/releases/latest)
+(the build of 22 September 2023), the one LineageOS' wiki points to for 16.0. Install
+its zip from TWRP **right after the ROM and before the first boot**; it stays through
+later updates of the ROM.
+
+With it the tablet boots, signs in, keeps Google's push connection and installs apps
+from the Play Store. Two things do not go by themselves.
+
+**The setup wizard stops at the Google Assistant.** After you sign in it says the
+Assistant "is not available for this account", blames an administrator and offers only
+*Change account*. The account is not the reason: the Google app in the package dates
+from 2018, and the request it makes for that step fails. Take that app out before the
+first boot, from TWRP's terminal or over adb while still in TWRP:
+
+```sh
+mount /system
+rm -r /system/priv-app/Velvet
+umount /system
+```
+
+The wizard then has no such step. Here it was done after getting stuck, booting into
+TWRP again; the wizard completed on the next boot with the account it already had.
+What goes with that app is the Google search bar and the Assistant, and the Assistant
+could not be set up with it left in either. The Play Store did not offer a newer Google
+app to this tablet.
+
+**The Play Store says the device is not certified.** Google does not know this build
+as a certified one. Signing in and installing apps worked all the same. Google's own remedy is to register the tablet at
+<https://www.google.com/android/uncertified/> with its Google Services Framework ID,
+which a root shell reads with:
+
+```sh
+adb root
+adb shell 'sqlite3 /data/data/com.google.android.gsf/databases/gservices.db "select value from main where name = \"android_id\";"'
+```
+
+That ID lives in `/data`: it survives updates of the ROM and is new after *Format Data*.
+Registered here, the Play Store went on saying "not certified" in the minutes that
+followed. A build declaring the fingerprint of ASUS' last firmware, as many device trees
+do for this, was tried and made no difference, so the fingerprint stays this build's own.
+
 ## Building
 
 ```sh
