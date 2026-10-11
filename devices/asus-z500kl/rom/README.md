@@ -28,7 +28,7 @@ enforcing.
 | DRM: Widevine (level 3) and ClearKey | yes — checked by provisioning and opening a session, not yet with a streaming app |
 | cameras, rear and front: photos and video | yes — 1080p video at 30 fps in good light. In a dim room the camera stretches the exposure to 1/12 s and video drops to 11.5 fps, although the app asks for a steady 30 |
 | GPS | yes |
-| modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
+| mobile network with a SIM: data on LTE and 3G, SMS in both directions | yes — the APN was picked from the SIM without help. **No voice calls**, see below. With the screen lock set to *None* the SIM PIN is not asked at boot: the prompt comes up under the boot animation and is dismissed at once, and the SIM stays locked. Any other screen lock, *Swipe* included, shows it |
 | USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes — behind one external USB hub, booting with the cable in, the port was taken for a charger and the computer did not see the tablet until the cable was plugged again; on a direct port it does not happen |
 | removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
 | CPU frequency scaling and low-power states as on stock | yes |
@@ -46,12 +46,17 @@ Not there:
   the boot image: ours is not signed by ASUS, the bootloader reports that to the
   TrustZone, and DRM trustlets are what that report exists to stop. Not proven -- the
   TrustZone's own log is switched off on this tablet -- and not something a ROM can fix.
+- **Voice calls.** The network registers the tablet for voice, but the modem itself
+  turns calls down: a dial request comes back as an invalid argument within 30 ms,
+  before anything is sent to the network, on 3G and on LTE alike, and an incoming call
+  never reaches Android while the caller hears busy. ASUS sold this tablet without a
+  phone function and stock had no dialer; the ROM follows, with no Phone app. That
+  includes emergency numbers: do not count on this tablet to call one.
 - **Qualcomm's network location and geofencing** (IZat). GPS works without them.
 
 Not tested yet — none of these is known to be broken, and none is known to work:
 
-- **calls, SMS and mobile data.** The modem comes up and reads the IMEI; no SIM has
-  been in the tablet.
+- **MMS.**
 - **the other USB modes** in the notification: PTP, MIDI, tethering. File transfer,
   the default, works.
 - **a card in the slot formatted exFAT or NTFS.** Both mount from a disk image.
@@ -63,6 +68,16 @@ Not tested yet — none of these is known to be broken, and none is known to wor
 - **USB OTG**: sticks, keyboards, mice.
 - **charging with the tablet switched off.**
 - **screen casting** (Miracast).
+
+Not tried — not on the list of things to do; here so that nobody takes them for
+impossible, or for done:
+
+- **switching voice calls on in the modem.** The refusal looks like configuration and
+  not like missing hardware: the audio configuration ASUS shipped has every voice-call
+  route in it. If it is a setting, it lives in the modem's own storage, out of reach of
+  a ROM: changing it means Qualcomm's diagnostic tools, on each tablet, writing to
+  partitions that hold the IMEI. Nobody has looked for the setting, and call audio has
+  never been heard on this hardware.
 
 ## Installing
 
@@ -200,5 +215,8 @@ both.
 
 From the lists above, the ones a first image should not go out without:
 
-- calls, SMS and mobile data with a SIM;
-- an exFAT card in the slot.
+- an exFAT card in the slot;
+- an installation on a formatted `/data`. Everything above was checked on one `/data`
+  carried from build to build, and it kept a preferred network type of 3G from before
+  the tree asked for LTE; a first boot should set LTE by itself, and that has not been
+  seen.

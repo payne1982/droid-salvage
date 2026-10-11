@@ -79,6 +79,15 @@
     <bool name="config_wifi_background_scan_support">true</bool>
     <bool name="config_wifi_dual_band_support">true</bool>
 
+    <!-- A SIM gives this tablet mobile data and SMS, not voice calls. The modem is
+         registered for voice on the network, but it answers a dial request with
+         QMI_ERR_INVALID_ARG within 30 ms, before trying the network, on 3G and on LTE
+         alike, and an incoming call never reaches Android (the caller hears busy).
+         ASUS sold the tablet without a phone function and stock had no dialer. This
+         is what the framework and the apps ask before they offer a call: the lock
+         screen's emergency button, Contacts, Messaging. -->
+    <bool name="config_voice_capable">false</bool>
+
     <!-- GPS parameters. The framework reads these, not the HAL's /etc/gps.conf, and
          pushes them down to the HAL at start, overriding what gps.conf says; so they
          are ASUS' gps.conf values, not AOSP's defaults (which differ in SUPL_MODE and

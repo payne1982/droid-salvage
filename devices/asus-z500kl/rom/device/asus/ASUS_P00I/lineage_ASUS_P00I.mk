@@ -9,7 +9,13 @@
 # 64-bit with a 32-bit second arch: the vendor blobs are Nougat and plenty of them
 # are 32-bit only, audio and the camera daemon among them.
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
-$(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+# aosp_base and not full_base_telephony: that one is aosp_base plus AOSP's telephony.mk,
+# which brings the Phone app. device.mk lists the telephony packages this tablet wants;
+# the property is the other thing full_base_telephony sets.
+$(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base.mk)
+
+PRODUCT_PROPERTY_OVERRIDES += \
+    keyguard.no_require_sim=true
 
 $(call inherit-product, device/asus/ASUS_P00I/device.mk)
 

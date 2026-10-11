@@ -355,6 +355,20 @@ PRODUCT_PACKAGES += \
     librilutils \
     rild
 
+# The apps and the feature that go with a SIM. This is AOSP's telephony.mk without the
+# two packages that are about calls, Dialer and CallLogBackup: the modem does data and
+# SMS and refuses voice calls in both directions, as ASUS sold it (overlay/ has the
+# detail), and a Phone icon would promise what the tablet cannot do. Messaging, Stk
+# and the APN list come from LineageOS' own telephony.mk.
+PRODUCT_PACKAGES += \
+    CarrierConfig \
+    CarrierDefaultApp \
+    CellBroadcastReceiver \
+    EmergencyInfo
+
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.telephony.gsm.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.telephony.gsm.xml
+
 # ---------------------------------------------------------------------------------
 # Sensors
 # ---------------------------------------------------------------------------------
