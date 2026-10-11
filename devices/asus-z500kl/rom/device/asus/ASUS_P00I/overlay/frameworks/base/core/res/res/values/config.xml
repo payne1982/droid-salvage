@@ -70,6 +70,15 @@
     <integer name="config_screenBrightnessSettingDefault">60</integer>
     <integer name="config_screenBrightnessDim">10</integer>
 
+    <!-- Wi-Fi, as stock's framework-res has them. The first is what lets Android hand
+         the search for a known network to the chip while the tablet sleeps (PNO, a
+         scheduled scan in prima). Without it every such request was refused as "not
+         supported" and retried with a wake-up alarm, about every six seconds for as
+         long as Wi-Fi was disconnected with the screen off: 2600 wake-ups in one night,
+         and no reconnection until a 20-minute watchdog ran an ordinary scan. -->
+    <bool name="config_wifi_background_scan_support">true</bool>
+    <bool name="config_wifi_dual_band_support">true</bool>
+
     <!-- GPS parameters. The framework reads these, not the HAL's /etc/gps.conf, and
          pushes them down to the HAL at start, overriding what gps.conf says; so they
          are ASUS' gps.conf values, not AOSP's defaults (which differ in SUPL_MODE and
