@@ -28,7 +28,7 @@ enforcing.
 | cameras, rear and front: photos and video | yes — video records at about 11 fps, under investigation |
 | GPS | yes |
 | modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
-| USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes — booting with the cable in, the port is sometimes taken for a plain charger and the computer does not see the tablet: unplug and plug again |
+| USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes — behind one external USB hub, booting with the cable in, the port was taken for a charger and the computer did not see the tablet until the cable was plugged again; on a direct port it does not happen |
 | removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
 | CPU frequency scaling and low-power states as on stock | yes |
 | standby | yes — one night with Wi-Fi on: 94% of it in deep sleep, about 1% of the battery in 8 h 40, measured before the Wi-Fi scan fix that should lower it further |
