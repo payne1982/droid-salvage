@@ -25,6 +25,7 @@ enforcing.
 | sensors: accelerometer, gyroscope, compass, light, hall | yes, 25 hardware sensors |
 | hardware video decoding: H.264, HEVC (up to 4K), MPEG-4, VP8, VP9 | yes |
 | hardware video encoding (camera recording, screen recording) | yes |
+| DRM: Widevine (level 3) and ClearKey | yes — checked by provisioning and opening a session, not yet with a streaming app |
 | cameras, rear and front: photos and video | yes — 1080p video at 30 fps in good light. In a dim room the camera stretches the exposure to 1/12 s and video drops to 11.5 fps, although the app asks for a steady 30 |
 | GPS | yes |
 | modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
@@ -35,9 +36,13 @@ enforcing.
 
 Not there:
 
-- **Widevine.** The only DRM plugin installed is ClearKey, so the streaming apps that
-  require Widevine (Netflix, Prime Video, Disney+ and the like) will not play. Whether
-  the Nougat Widevine blobs can be made to work under Pie has not been tried.
+- **Widevine level 1.** Widevine itself works, with the tablet's own plugin: Google's
+  server provisions it and sessions open. But it runs at level 3, the software one,
+  which streaming services usually limit to standard definition. Level 1 needs the
+  Widevine trustlet in the TrustZone, and the TrustZone refuses to load it, from this
+  system and from the recovery alike (the hardware keymaster, which the bootloader
+  loads, works). Whether that is the price of a boot image ASUS did not sign, or
+  something in the kernel we build, is not known.
 - **Qualcomm's network location and geofencing** (IZat). GPS works without them.
 
 Not tested yet — none of these is known to be broken, and none is known to work:

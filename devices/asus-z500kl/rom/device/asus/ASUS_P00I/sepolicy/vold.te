@@ -1,4 +1,11 @@
 # mount.ntfs (ntfs-3g) runs in vold's domain and does the same walk through the mount
-# table as fsck.ntfs, down to the block devices behind the mounts; the system
-# partition's is the one vold may not stat. NTFS cards mount regardless.
-dontaudit vold system_block_device:blk_file getattr;
+# table as fsck.ntfs, down to the block device behind each mount, to make sure the card
+# is not mounted already. vold may stat userdata's and no other; these are the rest of
+# what is mounted here (system, cache, persist, and the modem and dsp partitions, which
+# carry the generic label). NTFS cards mount regardless, so the denials are silenced.
+dontaudit vold {
+    block_device
+    cache_block_device
+    persist_block_device
+    system_block_device
+}:blk_file getattr;
