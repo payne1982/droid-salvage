@@ -302,6 +302,17 @@ vendor/qcril.db
 lib64/libprotobuf-cpp-full.so:vendor/lib64/libprotobuf-cpp-fl26.so
 lib64/libprotobuf-cpp-lite.so:vendor/lib64/libprotobuf-cpp-lt26.so
 
+# Widevine, this tablet's own: the plugin Android's DRM service loads from
+# vendor/lib/mediadrm, and liboemcrypto, which the plugin opens to reach the Widevine
+# trustlet in the TrustZone (widevine.mdt in /firmware/image, with the keybox ASUS
+# provisioned at the factory). That pair is what makes it level 1; without liboemcrypto
+# the plugin falls back to its built-in software level 3. Both exist in 32 bits only.
+# The plugin was built against Nougat's protobuf as well, so the 32-bit library comes
+# along under the same new name as the 64-bit one above.
+vendor/lib/mediadrm/libwvdrmengine.so
+vendor/lib/liboemcrypto.so
+lib/libprotobuf-cpp-lite.so:vendor/lib/libprotobuf-cpp-lt26.so
+
 # Sensors. On this tablet they hang off the ADSP: sensors.qcom talks to the sensor
 # subsystem there over QMI and serves a socket (sensor_ctl_socket) that libsensor1
 # connects to. The HAL is a multi-HAL: sensors.msm8952.so loads the HALs listed in

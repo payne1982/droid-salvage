@@ -148,6 +148,16 @@ PRODUCT_PACKAGES += \
     libcryptfs_hw
 
 # ---------------------------------------------------------------------------------
+# DRM
+# ---------------------------------------------------------------------------------
+# AOSP's DRM service for plugins of the old kind, which is what stock's Widevine is:
+# it loads whatever it finds in vendor/lib/mediadrm. The Widevine plugin itself and
+# its TrustZone half are blobs (proprietary-files.txt). 32-bit, like the plugin.
+PRODUCT_PACKAGES += \
+    android.hardware.drm@1.0-impl \
+    android.hardware.drm@1.0-service
+
+# ---------------------------------------------------------------------------------
 # Health. AOSP's service with this board's paths for the charge counter and the full
 # charge, which live in the fuel gauge and not in the battery supply (health/).
 # ---------------------------------------------------------------------------------

@@ -134,13 +134,14 @@ for x in $(find "$vendor_dir/proprietary" -type f -name '*.xml'); do
     fi
 done
 
-# Nougat's protobuf, for the two blobs that were built against it: libsettings
-# (qcril) links libprotobuf-cpp-full, libcneapiclient (netmgrd) links
-# libprotobuf-cpp-lite. Pie ships libraries of the same names with a different ABI, so
-# those blobs failed to load on missing symbols (qcril did not start, netmgrd did not
-# link). The stock libraries are installed renamed -- fl26/lt26, same length, so the
-# binaries keep their layout -- and the two blobs, and the libraries' own SONAMEs, are
-# pointed at the new names. Pie's protobuf stays as it is for everything else.
+# Nougat's protobuf, for the three blobs that were built against it: libsettings
+# (qcril) links libprotobuf-cpp-full, libcneapiclient (netmgrd) and libwvdrmengine
+# (Widevine, 32-bit) link libprotobuf-cpp-lite. Pie ships libraries of the same names
+# with a different ABI, so those blobs failed to load on missing symbols (qcril did
+# not start, netmgrd did not link). The stock libraries are installed renamed --
+# fl26/lt26, same length, so the binaries keep their layout -- and the blobs, and the
+# libraries' own SONAMEs, are pointed at the new names. Pie's protobuf stays as it is
+# for everything else.
 pb_fix() { # file, old name, new name
     [ -f "$vendor_dir/proprietary/$1" ] || return 0
     if grep -q "$2" "$vendor_dir/proprietary/$1"; then
@@ -152,6 +153,8 @@ pb_fix vendor/lib64/libsettings.so libprotobuf-cpp-full.so libprotobuf-cpp-fl26.
 pb_fix vendor/lib64/libprotobuf-cpp-fl26.so libprotobuf-cpp-full.so libprotobuf-cpp-fl26.so
 pb_fix vendor/lib64/libcneapiclient.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
 pb_fix vendor/lib64/libprotobuf-cpp-lt26.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
+pb_fix vendor/lib/mediadrm/libwvdrmengine.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
+pb_fix vendor/lib/libprotobuf-cpp-lt26.so libprotobuf-cpp-lite.so libprotobuf-cpp-lt26.so
 
 # Stock's camcorder profiles carry two qualities that only Qualcomm's framework
 # knew, "vga" and "timelapsevga". Pie's MediaProfiles does not, and meeting an
