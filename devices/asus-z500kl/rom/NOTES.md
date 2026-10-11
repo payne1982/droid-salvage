@@ -196,6 +196,19 @@ running kernel actually probed (`rom/HARDWARE.md`).
   then treats it as a card, check and mount included. A plain loop mount of an image
   elsewhere fails with "Invalid argument", because SELinux does not let the kernel's
   loop thread read the file. `sm set-virtual-disk false` deletes the image.
+- **The browser showed nothing.** Every WebView renderer died at start on `Failed
+  open(/sys/kernel/debug/tracing/trace_marker): Permission denied`. The marker was
+  0220, the kernel's default; AOSP makes it 0222 in `atrace.rc`, under `on late-init`.
+  That file is on `/system`, which this tablet mounts in `on fs`, and init reads the
+  scripts in `/system/etc/init` only then: whatever they say under `early-init`,
+  `init`, `late-init` and `fs` has already gone by and never runs. Apps were fine,
+  because their zygote is root; the WebView's is not. `init.qcom.rc` sets the mode
+  now. The same applies to the `on fs` lines of `logd.rc` and `wifi-events.rc` and to
+  `on init` in LineageOS' two scripts, none of which has shown a consequence yet.
+- **A SIM gives data and SMS, and no calls.** The modem answers a dial request with
+  `QMI_ERR_INVALID_ARG` before trying the network, and never passes an incoming call
+  on. qcril says so only with `persist.radio.adb_log_on` set to 1 and `ril-daemon`
+  restarted; the ordinary radio log has just "Error unspecified".
 
 ---
 

@@ -23,6 +23,15 @@ on early-init
     mount debugfs debugfs /sys/kernel/debug
     chmod 0755 /sys/kernel/debug
 
+    # With debugfs mounted the zygote holds the kernel trace marker open, and every
+    # process it forks opens it again. AOSP makes it writable for all in atrace.rc, "on
+    # late-init"; but that file is on /system, which this tablet mounts in "on fs", and
+    # init reads it only then, after late-init has gone by, so none of it ever runs.
+    # The marker kept the kernel's 0220, root reopened it without trouble, and the
+    # WebView renderer, forked by a zygote that is not root, died on "Permission
+    # denied" at every start: the browser showed nothing.
+    chmod 0222 /sys/kernel/debug/tracing/trace_marker
+
     # Keep the Venus firmware loaded once it is. msm_vidc unloads it 15 s after the
     # last video session and loads it again on the next, into a 5 MB CMA region
     # (venus_mem) it needs whole. Early on that works; after a while in use, pages
