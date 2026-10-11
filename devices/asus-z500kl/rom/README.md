@@ -40,9 +40,12 @@ Not there:
   server provisions it and sessions open. But it runs at level 3, the software one,
   which streaming services usually limit to standard definition. Level 1 needs the
   Widevine trustlet in the TrustZone, and the TrustZone refuses to load it, from this
-  system and from the recovery alike (the hardware keymaster, which the bootloader
-  loads, works). Whether that is the price of a boot image ASUS did not sign, or
-  something in the kernel we build, is not known.
+  system and from the recovery alike. Stock Android loaded the same file on the same
+  tablet, and what the kernel is told about the hardware is identical, byte for byte;
+  the hardware keymaster, which the bootloader loads, works here too. What is left is
+  the boot image: ours is not signed by ASUS, the bootloader reports that to the
+  TrustZone, and DRM trustlets are what that report exists to stop. Not proven -- the
+  TrustZone's own log is switched off on this tablet -- and not something a ROM can fix.
 - **Qualcomm's network location and geofencing** (IZat). GPS works without them.
 
 Not tested yet — none of these is known to be broken, and none is known to work:
