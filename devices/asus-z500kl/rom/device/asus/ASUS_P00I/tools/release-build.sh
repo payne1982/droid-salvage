@@ -47,6 +47,9 @@ if [ "$(grep -h 'build.fingerprint=' "$out/system/build.prop" "$out/system/vendo
     exit 1
 fi
 
+echo "signed with:"
+grep -h '^ro.build.tags=' "$out/system/build.prop"
+
 echo "adb in the result:"
 grep -h -E '^(ro.adb.secure|persist.sys.usb.config)=' "$out/root/default.prop"
 grep -qx 'ro.adb.secure=1' "$out/root/default.prop" ||

@@ -123,6 +123,36 @@ things in the result. A development build turns adb on without authorisation, wh
 what bring-up needs when the screen cannot be trusted yet — and what a tablet in daily
 use should not have.
 
+**Signing.** Without anything else the build is signed with AOSP's test keys, which are
+public: anyone can sign an app with the platform one and Android will hand it the
+system's own permissions. LineageOS says so at every boot (*Trust: this build was signed
+with public keys*). To sign with keys of your own, put them in
+`<tree>/vendor/lineage-priv/keys/` — `releasekey`, `platform`, `shared`, `media` and
+`testkey`, each as `.pk8` and `.x509.pem` — with a `keys.mk` next to them:
+
+```make
+PRODUCT_DEFAULT_DEV_CERTIFICATE := vendor/lineage-priv/keys/releasekey
+```
+
+LineageOS includes that file when it exists; nothing in this repository changes. The
+build is then tagged `dev-keys`, in `ro.build.tags` and in the fingerprint, and Trust has
+nothing to say. Three things to know first:
+
+- `releasekey` has to be RSA 2048. It is also the key updates are checked against, and
+  Android 9's tools accept no other size for that (`dumpkey`: *Modulus should be 2048
+  bits long*). The other four can be 4096.
+- The private keys must be PKCS#8. `development/tools/make_key` writes that; OpenSSL 3's
+  `genpkey -outform DER` writes the older RSA format instead, and every APK then fails
+  to sign with *unknown object in getInstance: ASN1Integer*. `openssl pkcs8 -topk8
+  -nocrypt` converts a key without changing it.
+- A system that has run with one set of keys does not take a build signed with
+  another: Android remembers who signed the system apps. Format data, or run LineageOS'
+  key migration script from the recovery, before installing across the change.
+
+Keys are per builder and belong outside any repository. A build signed this way has
+been made and its signatures checked; the builds run on the tablet so far used the test
+keys.
+
 Step 4 takes partition dumps rather than a device on purpose. It needs no root and no
 mounting — `debugfs` reads an ext4 image directly — it is reproducible, and it works
 when the tablet does not boot, which is when you are most likely to want it. There is a

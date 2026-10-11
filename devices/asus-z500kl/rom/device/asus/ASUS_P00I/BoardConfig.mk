@@ -191,8 +191,17 @@ PLATFORM_SECURITY_PATCH := 2099-12-31
 # It has to be this make variable, read once in build/make/core/Makefile for all three
 # property files. PRODUCT_BUILD_PROP_OVERRIDES looks like the obvious place and is
 # wrong: it reaches system/build.prop only, which would make the two differ always.
+#
+# The last field says which keys signed the build, the way ro.build.tags does: test-keys
+# for AOSP's public ones, dev-keys when the tree has private ones in
+# vendor/lineage-priv/keys (rom/README.md, "Signing").
 P00I_RELEASE ?= dev
-BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:9/PQ3A.190801.002/$(P00I_RELEASE):userdebug/test-keys
+ifneq ($(filter-out build/target/product/security/testkey,$(PRODUCT_DEFAULT_DEV_CERTIFICATE)),)
+P00I_KEYS := dev-keys
+else
+P00I_KEYS := test-keys
+endif
+BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:9/PQ3A.190801.002/$(P00I_RELEASE):userdebug/$(P00I_KEYS)
 
 # The HIDL manifest: every HAL this device provides. See the file for why it matters
 # even on a non-Treble device.
