@@ -9,7 +9,7 @@ do, and what nobody has tried on it yet, is listed below.
 - **what the hardware is, and where each piece comes from:** [HARDWARE.md](HARDWARE.md)
 - **the kernel:** [../kernel/](../kernel/) — buildable from ASUS' sources, and built
   inside this tree
-- **why Android 9 and not something newer:** [../ROADMAP.md](../ROADMAP.md)
+- **why Android 9 first:** [../ROADMAP-LOS16.md](../ROADMAP-LOS16.md); **what comes after:** [../ROADMAP.md](../ROADMAP.md)
 - **what it took, problem by problem:** [NOTES.md](NOTES.md)
 
 ## What works

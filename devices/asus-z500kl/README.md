@@ -20,7 +20,8 @@ As far as the XDA threads for this tablet go, this is the first working TWRP for
   tablet; what is missing and what is still untested is listed there. The image is on
   the same Releases page.
 - **The kernel**, buildable from ASUS's sources: [kernel/README.md](kernel/README.md).
-- **How it got here:** [ROADMAP.md](ROADMAP.md).
+- **How it got here:** [ROADMAP-LOS16.md](ROADMAP-LOS16.md).
+- **Where it is going:** [ROADMAP.md](ROADMAP.md), LineageOS 20 as an experiment.
 
 This page is about the recovery, which the ROM needs to be installed.
 

@@ -304,7 +304,7 @@ reboot-and-read-logs cycle per hypothesis.
 
 This file is about the recovery. The ROM it made possible is in [`rom/`](rom/): LineageOS
 16.0, Android 9, on a kernel built from ASUS' sources ([`kernel/`](kernel/)), with the
-plan and how each step went in [`ROADMAP.md`](ROADMAP.md), and its own findings in
+plan and how each step went in [`ROADMAP-LOS16.md`](ROADMAP-LOS16.md), and its own findings in
 [`rom/NOTES.md`](rom/NOTES.md).
 
 Two guesses written here before that work, and how they turned out:
