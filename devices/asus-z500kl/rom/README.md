@@ -30,7 +30,7 @@ enforcing.
 | GPS | yes |
 | mobile network with a SIM: data on LTE and 3G, SMS in both directions | yes — the APN was picked from the SIM without help. **No voice calls**, see below. |
 | USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes — behind one external USB hub, booting with the cable in, the port was taken for a charger and the computer did not see the tablet until the cable was plugged again; on a direct port it does not happen |
-| removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
+| removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT with a card in the slot, and with a disk image given to Android as a card for the files over 4 GB; NTFS with a disk image only. A second partition Android cannot mount gets its own *Issue with SD card* notification, which leads to formatting it: leave it alone. That is what an ext4 partition made by a current Linux gets, since this kernel cannot load its journal: it is checked, found clean, and the mount is refused |
 | CPU frequency scaling and low-power states as on stock | yes |
 | standby | yes — one night with Wi-Fi on: 94% of it in deep sleep, about 1% of the battery in 8 h 40, measured before the Wi-Fi scan fix that should lower it further |
 
@@ -59,7 +59,7 @@ Not tested yet — none of these is known to be broken, and none is known to wor
 - **MMS.**
 - **the other USB modes** in the notification: PTP, MIDI, tethering. File transfer,
   the default, works.
-- **a card in the slot formatted exFAT or NTFS.** Both mount from a disk image.
+- **a card in the slot formatted NTFS.** It mounts from a disk image.
 - **encrypting `/data`.** LineageOS runs here on an unencrypted `/data`. The partition
   table allows encryption (`encryptable=footer`, the hardware-backed kind stock used),
   but it has never been switched on under Pie. Do not switch it on to find out on a
@@ -219,7 +219,6 @@ both.
 
 From the lists above, the ones a first image should not go out without:
 
-- an exFAT card in the slot;
 - an installation on a formatted `/data`. Everything above was checked on one `/data`
   carried from build to build, and it kept a preferred network type of 3G from before
   the tree asked for LTE; a first boot should set LTE by itself, and that has not been
