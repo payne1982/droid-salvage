@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     The LineageOS-UL manifest for lineage-20.0 was last updated in April 2025. Since then
+     LineageOS has forked these projects to keep applying security patches to Android 13,
+     and its other repositories, which this manifest follows at the branch head, now expect
+     the forks: with the AOSP tag still named there the tree does not get past the Soong
+     analysis (libdng_sdk wants a variant of libjpeg that only the fork has).
+
+     Each entry is the one in LineageOS' own lineage-20.0 manifest. Copy this file to
+     .repo/local_manifests/ before the first sync.
+-->
+<manifest>
+  <remove-project name="platform/external/expat" />
+  <project path="external/expat" name="LineageOS/android_external_expat" groups="pdk" />
+  <remove-project name="platform/external/freetype" />
+  <project path="external/freetype" name="LineageOS/android_external_freetype" groups="pdk" />
+  <remove-project name="platform/external/libhevc" />
+  <project path="external/libhevc" name="LineageOS/android_external_libhevc" groups="pdk" />
+  <remove-project name="platform/external/libjpeg-turbo" />
+  <project path="external/libjpeg-turbo" name="LineageOS/android_external_libjpeg-turbo" groups="pdk" />
+  <remove-project name="platform/external/libpng" />
+  <project path="external/libpng" name="LineageOS/android_external_libpng" groups="pdk" />
+  <remove-project name="platform/external/sqlite" />
+  <project path="external/sqlite" name="LineageOS/android_external_sqlite" groups="pdk" />
+  <remove-project name="platform/hardware/st/nfc" />
+  <project path="hardware/st/nfc" name="LineageOS/android_hardware_st_nfc" groups="pdk" />
+  <remove-project name="platform/packages/apps/CertInstaller" />
+  <project path="packages/apps/CertInstaller" name="LineageOS/android_packages_apps_CertInstaller" groups="pdk-cw-fs,pdk-fs" />
+  <remove-project name="platform/packages/apps/ManagedProvisioning" />
+  <project path="packages/apps/ManagedProvisioning" name="LineageOS/android_packages_apps_ManagedProvisioning" groups="pdk-fs" />
+  <remove-project name="platform/packages/apps/TV" />
+  <project path="packages/apps/TV" name="LineageOS/android_packages_apps_TV" groups="pdk" />
+  <remove-project name="platform/packages/modules/CellBroadcastService" />
+  <project path="packages/modules/CellBroadcastService" name="LineageOS/android_packages_modules_CellBroadcastService" groups="pdk" />
+  <remove-project name="platform/packages/modules/IntentResolver" />
+  <project path="packages/modules/IntentResolver" name="LineageOS/android_packages_modules_IntentResolver" groups="pdk" />
+  <remove-project name="platform/packages/services/BuiltInPrintService" />
+  <project path="packages/services/BuiltInPrintService" name="LineageOS/android_packages_services_BuiltInPrintService" groups="pdk-cw-fs,pdk-fs" />
+  <remove-project name="platform/packages/services/Car" />
+  <project path="packages/services/Car" name="LineageOS/android_packages_services_Car" groups="pdk-cw-fs,pdk-fs" />
+  <remove-project name="platform/system/incremental_delivery" />
+  <project path="system/incremental_delivery" name="LineageOS/android_system_incremental_delivery" groups="pdk" />
+  <remove-project name="platform/system/libufdt" />
+  <project path="system/libufdt" name="LineageOS/android_system_libufdt" groups="pdk" />
+  <remove-project name="platform/system/nfc" />
+  <project path="system/nfc" name="LineageOS/android_system_nfc" groups="pdk" />
+</manifest>
