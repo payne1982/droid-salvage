@@ -1,0 +1,15 @@
+diff --git a/ui/build/ninja.go b/ui/build/ninja.go
+index dab1a9b..840d1c7 100644
+--- a/ui/build/ninja.go
++++ b/ui/build/ninja.go
+@@ -119,6 +119,10 @@ func runNinjaForBuild(ctx Context, config Config) {
+ 			"JAVA_HOME",
+ 			"LANG",
+ 			"LC_MESSAGES",
++			// The RenderScript compiler (prebuilts/clang/host/linux-x86/clang-3289846)
++			// is linked against libncurses.so.5 and libtinfo.so.5. A host that no
++			// longer ships them can only point at a copy this way.
++			"LD_LIBRARY_PATH",
+ 			"OUT_DIR",
+ 			"PATH",
+ 			"PWD",
