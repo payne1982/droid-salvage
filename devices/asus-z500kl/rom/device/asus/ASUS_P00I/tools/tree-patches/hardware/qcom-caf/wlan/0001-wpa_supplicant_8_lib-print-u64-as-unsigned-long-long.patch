@@ -1,0 +1,24 @@
+diff --git a/qcwcn/wpa_supplicant_8_lib/driver_cmd_nl80211.c b/qcwcn/wpa_supplicant_8_lib/driver_cmd_nl80211.c
+index f93e64f..c664e0c 100644
+--- a/qcwcn/wpa_supplicant_8_lib/driver_cmd_nl80211.c
++++ b/qcwcn/wpa_supplicant_8_lib/driver_cmd_nl80211.c
+@@ -2832,7 +2832,7 @@ void print_setup_cmd_values(struct twt_setup_parameters *twt_setup_params)
+ 	wpa_printf(MSG_DEBUG, "TWT: max wake duration: %d ",
+ 		   twt_setup_params->max_wake_duration);
+ 	wpa_printf(MSG_DEBUG, "TWT: wake tsf: 0x%llx ",
+-		   twt_setup_params->wake_tsf);
++		   (unsigned long long)twt_setup_params->wake_tsf);
+ 	wpa_printf(MSG_DEBUG, "TWT: announce timeout(in us): %u",
+ 		   twt_setup_params->announce_timeout_us);
+ }
+@@ -5701,7 +5701,9 @@ static int wpa_driver_tsf_cmd_resp_handler(struct resp_info *info,
+ 		return NL_SKIP;
+ 	}
+ 	ret = os_snprintf(info->reply_buf, info->reply_buf_len,
+-			  "tsf_value:%llu host_time:%llu", tsf_value, host_time);
++			  "tsf_value:%llu host_time:%llu",
++			  (unsigned long long)tsf_value,
++			  (unsigned long long)host_time);
+ 	if (os_snprintf_error(info->reply_buf_len, ret)) {
+ 		wpa_printf(MSG_ERROR, "%s:Fail to print buffer", __func__);
+ 		return -ENOMEM;
