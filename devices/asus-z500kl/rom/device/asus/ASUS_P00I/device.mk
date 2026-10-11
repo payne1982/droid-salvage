@@ -148,10 +148,11 @@ PRODUCT_PACKAGES += \
     libcryptfs_hw
 
 # ---------------------------------------------------------------------------------
-# Health, so the battery is not a mystery during bring-up
+# Health. AOSP's service with this board's paths for the charge counter and the full
+# charge, which live in the fuel gauge and not in the battery supply (health/).
 # ---------------------------------------------------------------------------------
 PRODUCT_PACKAGES += \
-    android.hardware.health@2.0-service
+    android.hardware.health@2.0-service.ASUS_P00I
 
 # ---------------------------------------------------------------------------------
 # Lights and power

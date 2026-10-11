@@ -12,3 +12,6 @@
 # netmgrd keeps its state and log where the Nougat build expects them, in
 # /data/misc/netmgr (made by init.qcom.rc), not in sepolicy-legacy's /data/vendor/netmgr.
 /data/misc/netmgr(/.*)?                         u:object_r:netmgrd_data_file:s0
+
+# The health HAL built in health/, into the domain of AOSP's generic one.
+/(vendor|system/vendor)/bin/hw/android\.hardware\.health@2\.0-service\.ASUS_P00I   u:object_r:hal_health_default_exec:s0
