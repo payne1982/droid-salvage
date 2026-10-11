@@ -1,0 +1,30 @@
+Subject: [PATCH 14/14] kbuild: create the output directory
+
+With O=dir, a 3.10 Makefile stops if dir does not exist yet. LineageOS 20
+builds the kernel headers in a sandbox (generated_kernel_includes) whose
+output directory is made only by the command it runs, so the first thing
+that command does, `make O=... headers_install`, fails with
+
+    Makefile:121: *** output directory "..." does not exist.  Stop.
+
+Create it instead. The 3.10 kernel of the Galaxy Tab S2 (MSM8976) needed the
+same change to build under LineageOS 20.
+---
+--- Makefile
++++ Makefile
+@@ -114,11 +114,12 @@
+ 
+ ifneq ($(KBUILD_OUTPUT),)
+ # Invoke a second make in the output directory, passing relevant variables
+-# check that the output directory actually exists
++# make the output directory if it is not there, and get its absolute path
+ saved-output := $(KBUILD_OUTPUT)
+-KBUILD_OUTPUT := $(shell cd $(KBUILD_OUTPUT) && /bin/pwd)
++KBUILD_OUTPUT := $(shell mkdir -p $(KBUILD_OUTPUT) && cd $(KBUILD_OUTPUT) \
++								&& /bin/pwd)
+ $(if $(KBUILD_OUTPUT),, \
+-     $(error output directory "$(saved-output)" does not exist))
++     $(error failed to create output directory "$(saved-output)"))
+ 
+ PHONY += $(MAKECMDGOALS) sub-make
+ 

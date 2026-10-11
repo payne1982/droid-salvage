@@ -88,12 +88,13 @@ BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 #                          msm8956-v1.1-cdp-$(TARGET_PROJECT).dtb. Without it this
 #                          tablet's device tree is never compiled and the kernel has no
 #                          matching board, so it does not boot.
-#   CC=...gcc-4.9.x        the tree routes CC through scripts/gcc-wrapper.py, a Python 2
+#   CC=...real-...-gcc     the tree routes CC through scripts/gcc-wrapper.py, a Python 2
 #                          script. Pointing CC at the real driver binary skips it; all
-#                          it does is promote some warnings to errors. Note the AOSP
-#                          prebuilt "aarch64-linux-android-gcc" is itself a Python
-#                          wrapper that re-executes a "real-" file which does not exist
-#                          in these prebuilts, so it cannot be used.
+#                          it does is promote some warnings to errors. In LineageOS 20's
+#                          prebuilts that binary is real-aarch64-linux-android-gcc (the
+#                          one without "real-" is a Python wrapper around it); the
+#                          aarch64-linux-android-gcc-4.9.x that LineageOS 16 used is
+#                          still there but no longer executable.
 #   HOSTCFLAGS with        the host tools are built by the *system* gcc. Since gcc 10
 #   -fcommon               -fno-common is the default, and scripts/dtc declares yylloc
 #                          in both its lexer and its parser, so it fails to link. The
@@ -115,7 +116,7 @@ TARGET_KERNEL_ARCH := arm64
 
 KERNEL_TOOLCHAIN_BIN := prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin
 TARGET_KERNEL_ADDITIONAL_FLAGS := TARGET_PROJECT=Z500KL
-TARGET_KERNEL_ADDITIONAL_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/aarch64-linux-android-gcc-4.9.x)
+TARGET_KERNEL_ADDITIONAL_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/real-aarch64-linux-android-gcc)
 TARGET_KERNEL_ADDITIONAL_FLAGS += HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -fcommon"
 TARGET_KERNEL_ADDITIONAL_FLAGS += KBUILD_BUILD_USER=payne1982 KBUILD_BUILD_HOST=droid-salvage
 
