@@ -34,6 +34,14 @@ Android 9 is two releases up from stock, keeps Vulkan (the tablet ships
 Android 10 becomes a question about backporting `bpf()` and `sdcardfs` — worth asking
 then, not now.
 
+*Corrected after the release, 11 October 2026.* Reasons 1 and 3 were stated too strongly.
+Android 10 and 11 still carry a path for kernels without eBPF (`netd` falls back to
+`xt_qtaguid`, which this kernel has), and from Android 12 on, where AOSP removed that
+path, other 3.10 devices keep it on the Android side instead of adding eBPF to the
+kernel. A ROM built for the device does not need a `vendor` partition either: the vendor
+files stay in `/system/vendor`, as they do here. So Android 9 was the right first
+target, not the ceiling. What comes after it is on the branch `L1_DEV_LOS20`.
+
 ## Milestones
 
 Each one is independently verifiable, and nothing moves to the next until the current
@@ -189,6 +197,7 @@ how each one turned out.
 - **Camera.** Usually the last thing to work on a legacy port, sometimes never. *It
   works, both cameras, photos and video.*
 - **The 3.10 kernel itself.** It sets the ceiling at Android 9 and no amount of
-  userspace work changes that. *Still true.*
+  userspace work changes that. *Not true, as it turned out: see the correction
+  under the target, above.*
 
 No dates. The recovery took the time it took.
