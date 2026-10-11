@@ -9,3 +9,9 @@ dontaudit vold {
     persist_block_device
     system_block_device
 }:blk_file getattr;
+
+# The periodic trim (and the one right after a first boot) goes through every writable
+# ext4 mount in the fstab, /dsp among them: 16 MB of DSP firmware that nothing writes
+# to. vold is refused there and trims the rest; the refusal is not worth a line in the
+# log each time.
+dontaudit vold adsprpcd_file:dir read;

@@ -14,7 +14,9 @@ before a first release are listed below.
 ## What works
 
 Every item below has been checked on the tablet, on a release build with SELinux
-enforcing.
+enforcing. The whole round was then repeated on a clean installation of the same image
+-- *Format Data*, install, first boot -- except for the SIM and the card in the slot,
+which were checked on the installation before it.
 
 | | |
 |---|---|
@@ -219,7 +221,7 @@ both.
 
 From the lists above, the ones a first image should not go out without:
 
-- an installation on a formatted `/data`. Everything above was checked on one `/data`
-  carried from build to build, and it kept a preferred network type of 3G from before
-  the tree asked for LTE; a first boot should set LTE by itself, and that has not been
-  seen.
+- a cable plugged in **while the tablet is booting**. Seen once: the tablet charged,
+  the computer did not see it, and plugging the cable again did not help until a
+  reboot with the cable already in. Not reproduced or explained yet;
+- a night of standby on the image to be released.

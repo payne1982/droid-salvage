@@ -208,6 +208,12 @@ running kernel actually probed (`rom/HARDWARE.md`).
   `init.qcom.rc` as well: logd's event-tags file, and `TERMINFO` for the terminal
   programs. The others set up an I/O scheduler this kernel does not have, a Wi-Fi
   trace buffer, and the rest of the tracing permissions.
+- **Things only a clean installation shows.** A `/data` carried from build to build
+  had kept two decisions from the first days: a preferred network type of 3G, written
+  before the tree asked for LTE, and no Camera icon, which the app removes for good
+  if it finds no camera at a boot -- as it did before the camera stack worked. Both
+  are right after *Format Data*. Run the test round on a formatted `/data` before
+  calling an image finished.
 - **A SIM gives data and SMS, and no calls.** The modem answers a dial request with
   `QMI_ERR_INVALID_ARG` before trying the network, and never passes an incoming call
   on. qcril says so only with `persist.radio.adb_log_on` set to 1 and `ril-daemon`
