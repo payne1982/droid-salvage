@@ -1,0 +1,19 @@
+diff --git a/ui/build/soong.go b/ui/build/soong.go
+index a0ab1cc..35bd291 100644
+--- a/ui/build/soong.go
++++ b/ui/build/soong.go
+@@ -167,6 +167,14 @@ func primaryBuilderInvocation(
+ 
+ 	commonArgs = append(commonArgs, "-l", filepath.Join(config.FileListDir(), "Android.bp.list"))
+ 	invocationEnv := make(map[string]string)
++	// soong_build is started with `env -i`, so nothing the caller exports reaches it.
++	// Forward the garbage collector target: at the default of 100 the heap may grow to
++	// twice what is live before a collection, and on a host with little memory to spare
++	// that is the difference between fitting and swapping. The Go of this tree is 1.18,
++	// which has no GOMEMLIMIT yet; GOGC is the knob it has.
++	if gogc := os.Getenv("SOONG_GOGC"); gogc != "" {
++		invocationEnv["GOGC"] = gogc
++	}
+ 	debugMode := os.Getenv("SOONG_DELVE") != ""
+ 
+ 	if debugMode {
