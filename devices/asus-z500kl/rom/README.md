@@ -25,7 +25,7 @@ enforcing.
 | sensors: accelerometer, gyroscope, compass, light, hall | yes, 25 hardware sensors |
 | hardware video decoding: H.264, HEVC (up to 4K), MPEG-4, VP8, VP9 | yes |
 | hardware video encoding (camera recording, screen recording) | yes |
-| cameras, rear and front: photos and video | yes — video records at about 11 fps, under investigation |
+| cameras, rear and front: photos and video | yes — in a dim room video comes out at 11.5 fps: the camera stretches the exposure to 1/12 s although the app asks for a steady 30 fps. Not yet recorded in good light |
 | GPS | yes |
 | modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
 | USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes — behind one external USB hub, booting with the cable in, the port was taken for a charger and the computer did not see the tablet until the cable was plugged again; on a direct port it does not happen |

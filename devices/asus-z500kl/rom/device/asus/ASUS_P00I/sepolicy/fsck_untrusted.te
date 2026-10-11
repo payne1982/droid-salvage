@@ -1,0 +1,5 @@
+# fsck.ntfs (ntfs-3g's ntfsfix) walks the mount table before it touches a card, to make
+# sure the volume is not mounted, and stats every mount point on the way. /data/media
+# is the one it may not look at. The check works without it, so the denial is silenced
+# rather than allowed.
+dontaudit fsck_untrusted media_rw_data_file:dir getattr;

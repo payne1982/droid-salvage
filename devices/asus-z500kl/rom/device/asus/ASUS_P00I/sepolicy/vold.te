@@ -1,0 +1,4 @@
+# mount.ntfs (ntfs-3g) runs in vold's domain and does the same walk through the mount
+# table as fsck.ntfs, down to the block devices behind the mounts; the system
+# partition's is the one vold may not stat. NTFS cards mount regardless.
+dontaudit vold system_block_device:blk_file getattr;
