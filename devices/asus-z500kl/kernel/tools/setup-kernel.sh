@@ -3,9 +3,12 @@
 #
 # ASUS published the sources but not the per-project _diffconfig their build
 # system expects, so a plain checkout cannot be configured at all. This script
-# applies the one patch that fixes that and installs the recovered defconfig.
+# fetches the two drivers that are not in ASUS' tree, applies the patches in
+# patches/ (the first is the one that makes the tree configurable) and installs
+# the recovered defconfig.
 #
-# Run it from anywhere; it writes only into $KERNEL_TREE.
+# Run it from anywhere; it writes only into $KERNEL_TREE. Running it again on a
+# tree it has already prepared applies only what is new.
 set -eu
 
 here=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -71,12 +74,26 @@ else
 fi
 
 echo "==> applying patches"
-for p in "$here"/patches/*.patch; do
-    if git apply -p0 --check "$p" 2>/dev/null; then
+# They are applied in order, so the ones already in the tree are always the first few.
+# Only the last of those can be recognised by itself, by reversing cleanly: an earlier
+# one may since have been changed by a later one (0008 fixes code that 0007 adds).
+set -- "$here"/patches/*.patch
+applied=0
+n=0
+for p; do
+    n=$((n + 1))
+    if git apply -p0 --reverse --check "$p" 2>/dev/null; then
+        applied=$n
+    fi
+done
+n=0
+for p; do
+    n=$((n + 1))
+    if [ "$n" -le "$applied" ]; then
+        echo "    already applied $(basename "$p")"
+    elif git apply -p0 --check "$p" 2>/dev/null; then
         git apply -p0 "$p"
         echo "    applied $(basename "$p")"
-    elif git apply -p0 --reverse --check "$p" 2>/dev/null; then
-        echo "    already applied $(basename "$p")"
     else
         echo "    FAILED $(basename "$p")" >&2
         exit 1

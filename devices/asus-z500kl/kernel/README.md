@@ -65,9 +65,14 @@ contribute, so `patches/0001-*` simply restores the upstream rule.
 ## Building
 
 ```sh
-tools/setup-kernel.sh      # clone, apply patches, install the defconfig
+tools/setup-kernel.sh      # clone, fetch two drivers, apply patches, install the defconfig
 tools/build-kernel.sh      # -> out/arch/arm64/boot/Image.gz-dtb
 ```
+
+`setup-kernel.sh` has been run from nothing: a fresh clone of ASUS' sources, the WLAN
+and exFAT drivers fetched at their pinned commits, the thirteen patches applied in
+order. What comes out has the same kernel code, file for file, as the tree the ROM on
+the tablet is built from. Run again on a prepared tree it applies only what is new.
 
 Set `KERNEL_TREE` and `KERNEL_TOOLCHAIN` in `local.conf` first. Two traps, both
 handled by the script but worth knowing:
