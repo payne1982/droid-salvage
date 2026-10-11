@@ -126,8 +126,9 @@ umount /system
 The wizard then has no such step. Here it was done after getting stuck, booting into
 TWRP again; the wizard completed on the next boot with the account it already had.
 What goes with that app is the Google search bar and the Assistant, and the Assistant
-could not be set up with it left in either. The Play Store did not offer a newer Google
-app to this tablet.
+could not be set up with it left in either. The Play Store has no newer Google app
+for this tablet: it lists the app as not compatible with this version of Android, so
+the one in the package is the one that stays.
 
 **The Play Store says the device is not certified.** Google does not know this build
 as a certified one. Signing in and installing apps worked all the same. Google's own remedy is to register the tablet at
