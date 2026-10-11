@@ -31,6 +31,7 @@ enforcing.
 | USB: charging, adb with on-screen authorisation | yes — choosing the mode and file transfer (MTP) to be confirmed on a PC |
 | removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
 | CPU frequency scaling and low-power states as on stock | yes |
+| standby | yes — one night with Wi-Fi connected: 94% of it in deep sleep, about 1% of the battery in 8 h 40. Wi-Fi still wakes the tablet every 12 s to restart a scan, under investigation |
 
 Not there:
 
@@ -38,6 +39,9 @@ Not there:
   require Widevine (Netflix, Prime Video, Disney+ and the like) will not play. Whether
   the Nougat Widevine blobs can be made to work under Pie has not been tried.
 - **Qualcomm's network location and geofencing** (IZat). GPS works without them.
+- **Battery usage figures in Settings.** The level is right. The per-app estimates and
+  the discharge in mAh are not: the tree has no power profile yet, so Android assumes a
+  1000 mAh battery where this one is 7800, and the charge counter reads zero.
 
 Not tested yet — none of these is known to be broken, and none is known to work:
 
@@ -54,7 +58,6 @@ Not tested yet — none of these is known to be broken, and none is known to wor
 - **USB OTG**: sticks, keyboards, mice.
 - **charging with the tablet switched off.**
 - **screen casting** (Miracast).
-- **battery drain on standby**, over a night.
 
 ## Installing
 
