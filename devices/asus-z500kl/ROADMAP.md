@@ -51,10 +51,13 @@ at `lineage-20` ([ronnz98](https://github.com/ronnz98/android_device_samsung_msm
 This is the list of what to expect here too.
 
 - **No kernel change of its own.** The tree for 20 uses the same kernel repository,
-  whose current branch is still called `lineage-16.0`. Of some 45 configuration
-  options compared with ours (binder, cgroups, `xt_qtaguid`, sdcardfs, seccomp, FUSE,
-  dm-verity, USB gadget), ours has everything theirs has except `SWAP` and `F2FS`, and
-  has `MEMCG` and the three binder devices on top.
+  whose current branch is still called `lineage-16.0`. Compared with ours, option by
+  option: binder, cgroups, `xt_qtaguid`, sdcardfs, seccomp, FUSE, dm-verity, swap on
+  zram and the USB gadget are the same, and ours has `MEMCG` and the three binder
+  devices on top. Theirs has a few things ours lacks, none of them a backport: the
+  netfilter matches tethering uses (`rpfilter`, `TCPMSS`, IPv6 NAT), `PSTORE_PMSG`,
+  which keeps the last `logcat` across a reboot, and F2FS, which this tablet does not
+  need since its `/data` is ext4.
 - **`/system` mounted by the first stage of init.** From Android 10 `init` itself
   lives in `/system`, so the ramdisk has to mount it before anything else. Their
   kernel declares it in the device tree (`firmware/android/fstab`); their `fstab.qcom`
