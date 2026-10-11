@@ -146,12 +146,15 @@ nothing to say. Three things to know first:
   to sign with *unknown object in getInstance: ASN1Integer*. `openssl pkcs8 -topk8
   -nocrypt` converts a key without changing it.
 - A system that has run with one set of keys does not take a build signed with
-  another: Android remembers who signed the system apps. Format data, or run LineageOS'
-  key migration script from the recovery, before installing across the change.
+  another: Android remembers who signed the system apps, in `/data/system/packages.xml`.
+  Either format data, or migrate that file from the recovery before the first boot of
+  the new build. Each certificate is written out once in it, as the hex of its DER form
+  (`openssl x509 -outform DER`), and four of them are the test keys': replace `testkey`
+  with your `releasekey`, and `platform`, `shared` and `media` with their namesakes.
+  That is all LineageOS' own key-migration script does. The tablet went from test keys
+  to private ones this way, with its apps and data, and booted in 51 seconds.
 
-Keys are per builder and belong outside any repository. A build signed this way has
-been made and its signatures checked; the builds run on the tablet so far used the test
-keys.
+Keys are per builder and belong outside any repository.
 
 Step 4 takes partition dumps rather than a device on purpose. It needs no root and no
 mounting — `debugfs` reads an ext4 image directly — it is reproducible, and it works
