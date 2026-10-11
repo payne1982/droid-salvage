@@ -46,5 +46,8 @@ Copy `local.conf.example` to `local.conf` (which is git-ignored) and put yours t
 
 No vendor binaries are committed: no kernels, no firmware blobs, no stock init files.
 Each device tree ships a script that extracts them from your own tablet. This keeps the
-repository small and legally tidy, and it means the committed tree builds the exact
-image that is published, so anyone can reproduce it byte for byte.
+repository small and legally tidy, and it means nothing in a published image is out of
+reach: the project's own sources, the tagged commit of this repository, the blobs from
+your tablet and the steps in the README build the same system. The same, not the same
+file: a build carries its own date, and the ROM is signed with its author's private
+keys, where yours will have your own or AOSP's public ones.
