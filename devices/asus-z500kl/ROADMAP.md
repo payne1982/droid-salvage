@@ -171,9 +171,8 @@ secure adb, the signed boot image inside the zip, and a release build that passe
 whole test round on the tablet. Making the first release build found three more things
 development builds had hidden — no USB at all with adb off, the USB mode greyed out, and
 a race that could leave the tablet without sensors — all fixed. Left, before a first
-image: a test with a SIM, file transfer to a computer, an exFAT card in the slot and the
-camera's video frame rate. `rom/README.md` has those and everything else that is missing
-or untested.
+image: a test with a SIM, an exFAT card in the slot and the camera's video frame rate.
+`rom/README.md` has those and everything else that is missing or untested.
 
 ## What could still stop this
 

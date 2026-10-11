@@ -28,7 +28,7 @@ enforcing.
 | cameras, rear and front: photos and video | yes — video records at about 11 fps, under investigation |
 | GPS | yes |
 | modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
-| USB: charging, adb with on-screen authorisation | yes — choosing the mode and file transfer (MTP) to be confirmed on a PC |
+| USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes |
 | removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
 | CPU frequency scaling and low-power states as on stock | yes |
 | standby | yes — one night with Wi-Fi connected: 94% of it in deep sleep, about 1% of the battery in 8 h 40. Wi-Fi still wakes the tablet every 12 s to restart a scan, under investigation |
@@ -47,8 +47,8 @@ Not tested yet — none of these is known to be broken, and none is known to wor
 
 - **calls, SMS and mobile data.** The modem comes up and reads the IMEI; no SIM has
   been in the tablet.
-- **file transfer to a computer** (MTP), and switching the USB mode from the
-  notification.
+- **the other USB modes** in the notification: PTP, MIDI, tethering. File transfer,
+  the default, works.
 - **a card in the slot formatted exFAT or NTFS.** Both mount from a disk image.
 - **encrypting `/data`.** LineageOS runs here on an unencrypted `/data`. The partition
   table allows encryption (`encryptable=footer`, the hardware-backed kind stock used),
@@ -155,6 +155,5 @@ it leaves the manifest and the recorded remotes untouched.
 From the lists above, the ones a first image should not go out without:
 
 - calls, SMS and mobile data with a SIM;
-- file transfer (MTP) to a computer;
 - an exFAT card in the slot;
 - the camera's video frame rate.
