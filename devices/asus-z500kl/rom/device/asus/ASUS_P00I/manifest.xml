@@ -7,12 +7,17 @@
      lookups: but not everywhere: MediaCodecList could not reach IOmx/IOmxStore
      ("Cannot find entry android.hardware.media.omx@1.0::IOmx/default in either framework
      or device manifest"), so the codec list was empty and nothing played, not even a WAV.
+
+     Android 13: several services now install their own piece of the manifest (USB,
+     Wi-Fi, wpa_supplicant and hostapd, which speak AIDL here, and media CAS), and an
+     entry repeated in this file is a conflict, so those are gone from it. So is the
+     sepolicy version, which the build writes itself and refuses to find already set.
 -->
 <manifest version="1.0" type="device">
     <hal format="hidl">
         <name>android.hardware.audio</name>
         <transport>hwbinder</transport>
-        <version>4.0</version>
+        <version>6.0</version>
         <interface>
             <name>IDevicesFactory</name>
             <instance>default</instance>
@@ -21,18 +26,9 @@
     <hal format="hidl">
         <name>android.hardware.audio.effect</name>
         <transport>hwbinder</transport>
-        <version>4.0</version>
+        <version>6.0</version>
         <interface>
             <name>IEffectsFactory</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="hidl">
-        <name>android.hardware.usb</name>
-        <transport>hwbinder</transport>
-        <version>1.0</version>
-        <interface>
-            <name>IUsb</name>
             <instance>default</instance>
         </interface>
     </hal>
@@ -43,15 +39,6 @@
         <interface>
             <name>ICameraProvider</name>
             <instance>legacy/0</instance>
-        </interface>
-    </hal>
-    <hal format="hidl">
-        <name>android.hardware.cas</name>
-        <transport>hwbinder</transport>
-        <version>1.0</version>
-        <interface>
-            <name>IMediaCasService</name>
-            <instance>default</instance>
         </interface>
     </hal>
     <hal format="hidl">
@@ -93,7 +80,7 @@
     <hal format="hidl">
         <name>android.hardware.graphics.mapper</name>
         <transport arch="32+64">passthrough</transport>
-        <version>2.0</version>
+        <version>2.1</version>
         <interface>
             <name>IMapper</name>
             <instance>default</instance>
@@ -171,33 +158,6 @@
         </interface>
     </hal>
     <hal format="hidl">
-        <name>android.hardware.wifi</name>
-        <transport>hwbinder</transport>
-        <version>1.2</version>
-        <interface>
-            <name>IWifi</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="hidl">
-        <name>android.hardware.wifi.hostapd</name>
-        <transport>hwbinder</transport>
-        <version>1.0</version>
-        <interface>
-            <name>IHostapd</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="hidl">
-        <name>android.hardware.wifi.supplicant</name>
-        <transport>hwbinder</transport>
-        <version>1.1</version>
-        <interface>
-            <name>ISupplicant</name>
-            <instance>default</instance>
-        </interface>
-    </hal>
-    <hal format="hidl">
         <name>android.hardware.bluetooth</name>
         <transport>hwbinder</transport>
         <version>1.0</version>
@@ -246,7 +206,4 @@
             <instance>default</instance>
         </interface>
     </hal>
-    <sepolicy>
-        <version>28.0</version>
-    </sepolicy>
 </manifest>
