@@ -28,7 +28,7 @@ enforcing.
 | DRM: Widevine (level 3) and ClearKey | yes — checked by provisioning and opening a session, not yet with a streaming app |
 | cameras, rear and front: photos and video | yes — 1080p video at 30 fps in good light. In a dim room the camera stretches the exposure to 1/12 s and video drops to 11.5 fps, although the app asks for a steady 30 |
 | GPS | yes |
-| mobile network with a SIM: data on LTE and 3G, SMS in both directions | yes — the APN was picked from the SIM without help. **No voice calls**, see below. With the screen lock set to *None* the SIM PIN is not asked at boot: the prompt comes up under the boot animation and is dismissed at once, and the SIM stays locked. Any other screen lock, *Swipe* included, shows it |
+| mobile network with a SIM: data on LTE and 3G, SMS in both directions | yes — the APN was picked from the SIM without help. **No voice calls**, see below. |
 | USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes — behind one external USB hub, booting with the cable in, the port was taken for a charger and the computer did not see the tablet until the cable was plugged again; on a direct port it does not happen |
 | removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
 | CPU frequency scaling and low-power states as on stock | yes |
@@ -124,6 +124,10 @@ cd <tree>/device/asus/ASUS_P00I
 
 # 4b. the GPS HAL source, fetched at a pinned commit (the script says why)
 ./tools/setup-gps.sh
+
+# 4c. the changes to LineageOS' own sources: one so far, in the lock screen. Each patch
+#     in tools/tree-patches/ says what it fixes
+./tools/apply-tree-patches.sh
 
 # 5. build
 cd <tree> && source build/envsetup.sh && lunch lineage_ASUS_P00I-userdebug

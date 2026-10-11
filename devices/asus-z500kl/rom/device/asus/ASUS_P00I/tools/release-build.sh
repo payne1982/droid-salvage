@@ -33,9 +33,15 @@ unset WITH_ADB_INSECURE
 # mka is a shell function: the caller's envsetup.sh does not reach this script, so it
 # is sourced again here (lunch's exported variables are kept). Neither the file nor its
 # functions are -e or -u clean, so both run without them and mka's status is checked.
+#
+# A release also starts from an empty output image. What a build installs under the
+# product's out directory stays there when its package leaves the product, and is packed
+# into system.img all the same: the first release made after Dialer was dropped still
+# carried it. installclean removes the installed files and the images, and keeps the
+# compiled objects, so what it costs is the copying.
 set +eu
 source build/envsetup.sh >/dev/null
-P00I_RELEASE=$release mka bacon
+P00I_RELEASE=$release mka installclean && P00I_RELEASE=$release mka bacon
 status=$?
 set -eu
 [ "$status" -eq 0 ] || { echo "error: the build failed ($status)" >&2; exit 1; }

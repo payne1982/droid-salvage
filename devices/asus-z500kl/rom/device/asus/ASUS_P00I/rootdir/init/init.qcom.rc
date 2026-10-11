@@ -57,6 +57,19 @@ on init
     # mount_all waits 20 s for each partition and skips them all (second M3 attempt).
     symlink /dev/block/platform/soc.0/${ro.boot.bootdevice} /dev/block/bootdevice
 
+    # What two scripts in /system/etc/init say under triggers that have gone by when init
+    # reads them (see trace_marker above), and that has an effect on this tablet.
+    # logd.rc, "on fs": the file logd publishes its event tags in. Without it there is
+    # only the static list in /system/etc.
+    write /dev/event-log-tags "# content owned by logd
+"
+    chown logd logd /dev/event-log-tags
+    chmod 0644 /dev/event-log-tags
+    # lineage-system.rc, "on init": without TERMINFO the terminal programs LineageOS
+    # ships (nano, htop, vim) do not know the terminal they are in.
+    export ANDROID_CACHE /cache
+    export TERMINFO /system/etc/terminfo
+
 on fs
     wait /dev/block/bootdevice
     mount_all /fstab.qcom

@@ -204,11 +204,22 @@ running kernel actually probed (`rom/HARDWARE.md`).
   `init`, `late-init` and `fs` has already gone by and never runs. Apps were fine,
   because their zygote is root; the WebView's is not. `init.qcom.rc` sets the mode
   now. The same applies to the `on fs` lines of `logd.rc` and `wifi-events.rc` and to
-  `on init` in LineageOS' two scripts, none of which has shown a consequence yet.
+  `on init` in LineageOS' two scripts. Two of those have an effect here and are in
+  `init.qcom.rc` as well: logd's event-tags file, and `TERMINFO` for the terminal
+  programs. The others set up an I/O scheduler this kernel does not have, a Wi-Fi
+  trace buffer, and the rest of the tracing permissions.
 - **A SIM gives data and SMS, and no calls.** The modem answers a dial request with
   `QMI_ERR_INVALID_ARG` before trying the network, and never passes an incoming call
   on. qcril says so only with `persist.radio.adb_log_on` set to 1 and `ril-daemon`
   restarted; the ordinary radio log has just "Error unspecified".
+- **The SIM PIN was never asked with the screen lock set to None.** The PIN screen
+  came up under the boot animation and was gone 36 ms later. At system-ready the lock
+  screen finds itself switched off and queues a HIDE; the SIM state arrives next and
+  asks to show, and SHOW is sent to the front of the queue, ahead of a HIDE that a
+  main thread seconds behind has not handled yet. Shown, then hidden. This is in
+  LineageOS' SystemUI and not in anything of this tablet's, so it is the one change to
+  LineageOS' own sources: `tools/tree-patches/`, applied by
+  `tools/apply-tree-patches.sh`.
 
 ---
 
@@ -243,6 +254,10 @@ running kernel actually probed (`rom/HARDWARE.md`).
 - **USB mode greyed out** in Settings: they need a port reporting the device role, and
   ports come from a USB HAL. LineageOS' basic one is enough.
 - And the sensor race in §4.
+- **A package taken out of the product was still in the image.** What a build installs
+  under `out/target/product/` stays there when its package leaves the product, and
+  `system.img` is packed from that directory: the first release after the Phone app
+  was dropped shipped it all the same. `release-build.sh` runs `installclean` first.
 
 ---
 
