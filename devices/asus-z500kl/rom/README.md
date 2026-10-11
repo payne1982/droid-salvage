@@ -20,7 +20,7 @@ enforcing.
 |---|---|
 | display, touch, buttons, the magnetic cover | yes |
 | audio: speaker, internal microphone, headset and its microphone | yes |
-| Wi-Fi, 5 GHz included, with the tablet's own MAC address | yes |
+| Wi-Fi, 5 GHz included, with the tablet's own MAC address | yes — while the tablet sleeps the connection drops now and then; the chip finds the network again by itself within seconds. Why it drops is under investigation |
 | Bluetooth, with audio | yes |
 | sensors: accelerometer, gyroscope, compass, light, hall | yes, 25 hardware sensors |
 | hardware video decoding: H.264, HEVC (up to 4K), MPEG-4, VP8, VP9 | yes |
@@ -28,10 +28,10 @@ enforcing.
 | cameras, rear and front: photos and video | yes — video records at about 11 fps, under investigation |
 | GPS | yes |
 | modem: comes up, reads the IMEI | yes — **calls and mobile data not yet tested with a SIM** |
-| USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes |
+| USB: charging, adb with on-screen authorisation, file transfer (MTP) to a Windows PC | yes — booting with the cable in, the port is sometimes taken for a plain charger and the computer does not see the tablet: unplug and plug again |
 | removable storage: FAT32, exFAT (files over 4 GB included), NTFS | yes — exFAT and NTFS checked with disk images given to Android as a card, not yet with a card in the slot |
 | CPU frequency scaling and low-power states as on stock | yes |
-| standby | yes — one night with Wi-Fi connected: 94% of it in deep sleep, about 1% of the battery in 8 h 40. Wi-Fi still wakes the tablet every 12 s to restart a scan, under investigation |
+| standby | yes — one night with Wi-Fi on: 94% of it in deep sleep, about 1% of the battery in 8 h 40, measured before the Wi-Fi scan fix that should lower it further |
 
 Not there:
 
@@ -39,9 +39,6 @@ Not there:
   require Widevine (Netflix, Prime Video, Disney+ and the like) will not play. Whether
   the Nougat Widevine blobs can be made to work under Pie has not been tried.
 - **Qualcomm's network location and geofencing** (IZat). GPS works without them.
-- **Battery usage figures in Settings.** The level is right. The per-app estimates and
-  the discharge in mAh are not: the tree has no power profile yet, so Android assumes a
-  1000 mAh battery where this one is 7800, and the charge counter reads zero.
 
 Not tested yet — none of these is known to be broken, and none is known to work:
 
