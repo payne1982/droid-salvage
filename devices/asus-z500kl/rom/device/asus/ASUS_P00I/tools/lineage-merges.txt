@@ -1,0 +1,9 @@
+# The LineageOS-UL forks that tools/merge-lineage.sh brings up to LineageOS.
+#
+#   <path in the tree>  <repository name>  <LineageOS commit to merge>  <fetch history since>
+#
+# The repository has the same name under github.com/LineageOS-UL and github.com/LineageOS.
+# The commit is the head of LineageOS' lineage-20.0 on the day it was tried here; the
+# date only has to be older than the fork's last merge of LineageOS (4 April 2025).
+
+frameworks/base  android_frameworks_base  3a5c19c7b673b0d5f1f811629750ae6d1526ce09  2024-12-01
