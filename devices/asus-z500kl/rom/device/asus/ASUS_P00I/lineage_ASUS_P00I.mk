@@ -21,6 +21,14 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/aosp_base.mk)
 PRODUCT_PROPERTY_OVERRIDES += \
     keyguard.no_require_sim=true
 
+# The 3.10 kernel has no eBPF. LineageOS-UL asks its devices to say so with this
+# property, and both trees this one was compared with set it. In the lineage-20.0
+# sources nothing was found that reads it (netd, system/bpf, the Connectivity module,
+# the framework's services; nor does the string occur in the built image), so on this
+# version it follows the convention and decides nothing.
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.kernel.ebpf.supported=false
+
 $(call inherit-product, device/asus/ASUS_P00I/device.mk)
 
 # common_full_phone, not common_full_tablet_wifionly: this is the LTE model, and the

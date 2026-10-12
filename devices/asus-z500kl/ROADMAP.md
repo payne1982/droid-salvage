@@ -92,12 +92,23 @@ The LineageOS-UL `lineage-20.0` sources on the build machine, and a host that ca
 build them: Python 3 where the Android 9 tree wanted 2.7, and 23 GB of memory, which
 means fewer parallel jobs. Pass: `lunch` accepts a product.
 
+**Done, 11 October 2026.** The analysis of the whole tree peaks at 21.9 GB as it comes
+and at 15.9 GB with Go's collector told to work harder, which a small patch to the build
+system lets the environment ask for.
+
 ### L1 — the device tree builds
 `device/asus/ASUS_P00I` moved to the Android 13 build system: the product and board
 makefiles, the VINTF manifest, the sepolicy split, the properties, the eBPF switch,
 first-stage mount. The vendor files stay the ones `tools/extract-files.sh` produces
-from the stock image. The patches under `tools/tree-patches` are checked one by one:
-the keyguard race may or may not exist in 13. Pass: `mka bacon` produces a zip.
+from the stock image. The patches under `tools/tree-patches` are checked one by one.
+The keyguard one is gone: Google fixed the same race in July 2025 (`handleShow()` now
+drops a pending hide), and the fix arrives with the merge described under L5. Pass:
+`mka bacon` produces a zip.
+
+**Done, 12 October 2026.** The build completes and produces the zip; its install script
+writes `system` and `boot` only. Nothing of it has run on the tablet yet. The steps, and
+the ten places where the build stopped on the way, are in
+[`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md).
 
 ### L2 — first boot, for the logs
 Permissive, `adb` open, `logcat` and `dmesg` retrievable, `pstore` as the fallback: the
@@ -125,8 +136,15 @@ on 11 October 2026, the fork of `frameworks/base` carries 59 changes of its own 
 184 of LineageOS'; `frameworks/av` 55 and 15; `frameworks/native` 30 and 13; the
 Connectivity module 8 and 5. An image built from them as they are has the security level
 of April 2025 in exactly the parts that matter most. The work is merging LineageOS'
-branch into each fork and resolving what collides. It is not needed to build, boot or
-test, so it waits until there is something worth publishing.
+branch into each fork and resolving what collides.
+
+For `frameworks/base` it could not wait: the projects LineageOS-UL does not fork follow
+LineageOS, and six of them (ContactsProvider, Settings, Telephony, MmsService,
+IntentResolver, Trebuchet) stopped compiling against a framework of April 2025.
+`tools/merge-lineage.sh` merges LineageOS' branch into the fork at a fixed commit; the
+184 commits went in without a conflict. The other forks build as they are and wait
+until there is something worth publishing; each one is then a line in
+`tools/lineage-merges.txt`, if its merge is as clean.
 
 ## What could stop this
 
@@ -138,8 +156,9 @@ test, so it waits until there is something worth publishing.
 - **LineageOS-UL stopped moving.** Its `lineage-20.0` repositories were last pushed in
   April 2025, while the rest of the tree follows LineageOS to this day. Its manifest
   needed 17 projects redirected before the tree would even be analysed
-  (`rom/local_manifests/lineage-20-forks.xml`); more mismatches may show while
-  compiling. The security side of it is under L5.
+  (`rom/local_manifests/lineage-20-forks.xml`), and its `frameworks/base` had to be
+  brought forward before six applications would compile. What that means for security,
+  and what is still to do, is under L5.
 - **The kernel is still 3.10.** eBPF is the requirement that was known. Others may
   appear only when something fails to start; each goes on this page when found.
 - **The build machine.** It built `payne_31`. A tree four versions newer asks for
