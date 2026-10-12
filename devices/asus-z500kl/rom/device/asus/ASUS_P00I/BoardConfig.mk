@@ -67,6 +67,11 @@ TARGET_COPY_OUT_VENDOR := system/vendor
 # pass that check anyway.
 BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
 
+# The eleven executables that are declared as prebuilt modules (the daemons the init
+# scripts start) list no shared libraries, and the build checks each DT_NEEDED entry
+# against that list. Their libraries are blobs too, copied as files.
+BUILD_BROKEN_PREBUILT_ELF_FILES := true
+
 # The GPS HAL in gps/ (tools/setup-gps.sh) is Qualcomm's code of 2016 and installs its
 # headers with LOCAL_COPY_HEADERS, which Android 13 calls obsolete.
 BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
