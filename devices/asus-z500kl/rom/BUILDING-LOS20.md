@@ -55,9 +55,11 @@ cd <tree>/device/asus/ASUS_P00I
 ./tools/merge-lineage.sh
 ./tools/apply-tree-patches.sh
 
-# 6. build
+# 6. build. WITH_ADB_INSECURE is for bring-up: adb on from the first boot and with no
+#    key to accept on the screen, so that a system that starts halfway still gives a
+#    root shell. Not for an image meant to be used.
 cd <tree> && source build/envsetup.sh && lunch lineage_ASUS_P00I-userdebug
-SOONG_GOGC=25 mka bacon
+WITH_ADB_INSECURE=true SOONG_GOGC=25 mka bacon
 ```
 
 After a `repo sync`, steps 5 again: the sync puts the projects they change back as the
