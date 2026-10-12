@@ -67,6 +67,15 @@ The result is `out/target/product/ASUS_P00I/lineage-20.0-<date>-UNOFFICIAL-ASUS_
 Its install script writes `system` and `boot` and nothing else. The zip also carries a
 `recovery.img`, which the script does not install.
 
+**The recovery partition.** Left to itself, Android 13 would also put
+`/vendor/bin/install-recovery.sh` and a copy of LineageOS' recovery inside the system
+image, and LineageOS' setup wizard and Updater would offer to "update the recovery"
+with them. On this tablet that partition must not be rewritten. `BoardConfig.mk` sets
+`TARGET_NO_RECOVERY_PATCH`, a switch added by `tools/tree-patches/build/make/0001`, and
+neither file is in the image: checked in the target files the zip is made from, where
+the only mentions of the recovery partition left are the two copies of `fstab.qcom` and
+the SELinux label of the device node.
+
 ## What is not done, or not verified
 
 - The image is signed with AOSP's test keys and is a `userdebug` build. `release-build.sh`

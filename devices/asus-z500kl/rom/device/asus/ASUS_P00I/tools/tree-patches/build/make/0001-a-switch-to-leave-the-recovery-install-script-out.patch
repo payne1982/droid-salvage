@@ -1,0 +1,65 @@
+Subject: [PATCH] a switch to leave the recovery install script out
+
+For a device that is not A/B and builds a recovery image, the target files step
+always runs make_recovery_patch. With BOARD_USES_FULL_RECOVERY_IMAGE, which
+LineageOS turns on, that puts two files into the system image:
+
+    /vendor/bin/install-recovery.sh   writes /vendor/etc/recovery.img over the
+                                      recovery partition when its hash differs
+    /vendor/etc/recovery.img          LineageOS' recovery, 42 MB
+
+The script is started by the vendor_flash_recovery service when
+persist.vendor.recovery_update is true, and the setup wizard and the Updater
+offer that switch whenever the script exists.
+
+On ASUS_P00I the recovery partition holds the one tool the tablet can be
+repaired with, behind a locked bootloader, and nothing may rewrite it. Not
+building a recovery image at all (TARGET_NO_RECOVERY) is not a way out: the
+release tools then refuse to make the installable zip.
+
+TARGET_NO_RECOVERY_PATCH skips that one step. The generator of the zip insists
+on finding its result, so the switch is also written to misc_info.txt
+(no_recovery_patch) for it to accept the absence.
+---
+diff --git a/core/Makefile b/core/Makefile
+index fb655cd..e4971ba 100644
+--- a/core/Makefile
++++ b/core/Makefile
+@@ -5283,6 +5283,9 @@ endif
+ ifeq ($(BOARD_USES_FULL_RECOVERY_IMAGE),true)
+ 	$(hide) echo "full_recovery_image=true" >> $@
+ endif
++ifeq ($(TARGET_NO_RECOVERY_PATCH),true)
++	$(hide) echo "no_recovery_patch=true" >> $@
++endif
+ ifdef BUILDING_VENDOR_IMAGE
+ 	$(hide) echo "board_builds_vendorimage=true" >> $@
+ endif
+@@ -6016,10 +6019,12 @@ ifneq ($(PRODUCT_SYSTEM_DLKM_BASE_FS_PATH),)
+ endif
+ ifeq ($(TARGET_OTA_ALLOW_NON_AB),true)
+ ifneq ($(INSTALLED_RECOVERYIMAGE_TARGET),)
++ifneq ($(TARGET_NO_RECOVERY_PATCH),true)
+ 	$(hide) PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH MKBOOTIMG=$(MKBOOTIMG) \
+ 	    $(MAKE_RECOVERY_PATCH) $(zip_root) $(zip_root)
+ endif
+ endif
++endif
+ ifeq ($(AB_OTA_UPDATER),true)
+ 	@# When using the A/B updater, include the updater config files in the zip.
+ 	$(hide) cp $(TOPDIR)system/update_engine/update_engine.conf $(zip_root)/META/update_engine_config.txt
+diff --git a/tools/releasetools/non_ab_ota.py b/tools/releasetools/non_ab_ota.py
+index 9e4356b..1cc7d81 100644
+--- a/tools/releasetools/non_ab_ota.py
++++ b/tools/releasetools/non_ab_ota.py
+@@ -156,7 +156,9 @@ def WriteFullOTAPackage(input_zip, output_file):
+       metadata=metadata,
+       info_dict=OPTIONS.info_dict)
+ 
+-  assert HasRecoveryPatch(input_zip, info_dict=OPTIONS.info_dict)
++  # TARGET_NO_RECOVERY_PATCH: the build left the recovery install script out on purpose.
++  assert (OPTIONS.info_dict.get("no_recovery_patch") == "true" or
++          HasRecoveryPatch(input_zip, info_dict=OPTIONS.info_dict))
+ 
+   # Assertions (e.g. downgrade check, device properties check).
+   #ts = target_info.GetBuildProp("ro.build.date.utc")

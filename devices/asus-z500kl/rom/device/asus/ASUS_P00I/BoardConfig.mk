@@ -142,9 +142,17 @@ BOARD_MKBOOTIMG_ARGS += --tags_offset $(BOARD_KERNEL_TAGS_OFFSET)
 # unsigned image the bootloader refuses, and every install needed the signed one written
 # by hand afterwards. BOARD_CUSTOM_BOOTIMG makes the build put its own boot.img, signed,
 # into the target files (BOOTABLE_IMAGES), and the release tools take it as it is.
-# (It copies recovery.img there too; nothing uses it: the zip writes only system and
-# boot, and there is no recovery-from-boot patch.)
+# (It copies recovery.img there too, and the zip carries it; nothing uses it: the zip
+# writes only system and boot.)
 BOARD_CUSTOM_BOOTIMG := true
+
+# Nothing this build installs may write the recovery partition: it holds the tool the
+# tablet is repaired with, and the bootloader is locked. Left alone, Android 13 puts
+# /vendor/bin/install-recovery.sh and a copy of LineageOS' recovery into the system
+# image, and the setup wizard and the Updater then offer to "update the recovery". The
+# switch is ours: tools/tree-patches/build/make/0001 says why TARGET_NO_RECOVERY could
+# not be used instead.
+TARGET_NO_RECOVERY_PATCH := true
 
 # The stock command line, kept as it is. androidboot.bootdevice is what makes the
 # by-name symlink tree appear; losing it cost real time while getting TWRP to work.
