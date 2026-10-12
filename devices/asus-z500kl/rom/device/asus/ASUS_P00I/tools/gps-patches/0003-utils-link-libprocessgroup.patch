@@ -1,0 +1,18 @@
+Subject: [PATCH] utils: link libprocessgroup
+
+MsgTask::prerun() calls set_sched_policy(). Android 10 moved it out of libcutils
+into libprocessgroup, and the link of libgps.utils fails with "undefined symbol:
+set_sched_policy". The header is still reachable as <cutils/sched_policy.h>.
+---
+--- a/utils/Android.mk
++++ b/utils/Android.mk
+@@ -9,7 +9,8 @@
+ LOCAL_SHARED_LIBRARIES := \
+     libutils \
+     libcutils \
+-    liblog
++    liblog \
++    libprocessgroup
+ 
+ LOCAL_SRC_FILES += \
+     loc_log.cpp \
