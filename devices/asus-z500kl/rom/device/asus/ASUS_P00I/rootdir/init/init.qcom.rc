@@ -43,11 +43,10 @@ on early-init
     # region, which is reserved for it anyway.
     write /sys/kernel/debug/msm_vidc/firmware_unload_delay 4294967295
 
-    # Mount points for the partitions fstab.qcom adds beyond AOSP's. The root
-    # filesystem is still writable here; it is remounted read-only in post-fs.
-    mkdir /firmware 0771 system system
-    mkdir /persist 0771 system system
-    mkdir /dsp 0771 media media
+    # The mount points for the partitions fstab.qcom adds beyond AOSP's (/firmware,
+    # /persist, /dsp) are not made here any more. The root directory is the system
+    # image now and is read-only from the start, so a mkdir fails: they are in the
+    # image, from BOARD_ROOT_EXTRA_FOLDERS.
 
 on init
     # Every path in fstab.qcom goes through /dev/block/bootdevice. Nougat's init made

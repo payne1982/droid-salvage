@@ -1,0 +1,17 @@
+# adbd as root from the start, on builds made with WITH_ADB_INSECURE and on no other.
+#
+# `adb root` is not enough while a port is being brought up. On LineageOS adbd asks the
+# adbroot_service binder service whether root is allowed, the answer is a switch in the
+# developer options, and neither exists on a system that stops before zygote: adbd
+# waits for the service and the connection drops. This tablet has a locked bootloader
+# and no fastboot flash, so a root shell is the only way to repair anything, and it has
+# to be there exactly when the system does not start.
+#
+# service.adb.root=1 is what `adb root` itself sets; adbd reads it when it starts and,
+# on a debuggable build, keeps its privileges (should_drop_privileges). ro.adb.secure
+# is 0 only with WITH_ADB_INSECURE, which a release is never built with.
+#
+# Installed in /system/etc/init, not /vendor/etc/init: there the commands run as
+# vendor_init, which may not set this property.
+on init && property:ro.adb.secure=0
+    setprop service.adb.root 1

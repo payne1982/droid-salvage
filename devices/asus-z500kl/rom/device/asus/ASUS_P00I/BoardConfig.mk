@@ -167,6 +167,13 @@ BOARD_KERNEL_CMDLINE += earlyprintk
 # on userdebug builds. It comes out again when the denials have been read and answered.
 BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
 
+# Mount points in the root directory, for the three partitions fstab.qcom mounts there.
+# The root is the system image and nothing can be created in it at boot. Without them
+# mount_all fails on the first of the three, init never learns that /data is not
+# encrypted, and the boot stays on the logo with zygote not started (first boot of this
+# version). fs_mgr also answers a failed mount by running e2fsck -y on the partition.
+BOARD_ROOT_EXTRA_FOLDERS := firmware persist dsp
+
 # Partitions, straight from the GPT (backup/gpt_primary.bin):
 #   p41 boot 64 MiB, p43 recovery 64 MiB, p44 system 3700 MiB,
 #   p36 cache 250 MiB, p45 userdata 112 GiB.

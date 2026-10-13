@@ -45,6 +45,19 @@ PRODUCT_CHARACTERISTICS := tablet
 PRODUCT_AAPT_CONFIG := normal
 PRODUCT_AAPT_PREF_CONFIG := xhdpi
 
+# Android 13's SurfaceFlinger wants the density as a build property and says so in the
+# log when it is missing ("ro.sf.lcd_density must be defined as a build property").
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.sf.lcd_density=320
+
+# SurfaceFlinger compiles its Skia shaders ahead of time when it starts, and one of the
+# sample textures it draws for that is RGBA_FP16. The Adreno 510 driver of 2017 does
+# not make a texture of it ("Failed to create a valid texture ... format:22"), the
+# render engine aborts, and SurfaceFlinger takes zygote down with it every 18 seconds.
+# Without the priming the shaders are compiled when first used.
+PRODUCT_PROPERTY_OVERRIDES += \
+    service.sf.prime_shader_cache=0
+
 # ---------------------------------------------------------------------------------
 # rootdir
 # ---------------------------------------------------------------------------------
@@ -84,6 +97,10 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += \
     $(DEVICE_PATH)/rootdir/init/init.qcom.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.qcom.rc \
     $(DEVICE_PATH)/rootdir/init/init.qcom.usb.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.qcom.usb.rc
+
+# Bring-up builds only do anything with this one: see the file.
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/rootdir/init/init.p00i.bringup.rc:$(TARGET_COPY_OUT_SYSTEM)/etc/init/init.p00i.bringup.rc
 
 # ueventd.qcom.rc is the one ASUS file installed as it is: a plain table of device node
 # owners and modes (kgsl, camera, video, audio, sensors...), no commands, nothing that
