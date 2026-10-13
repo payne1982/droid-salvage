@@ -245,6 +245,12 @@ BUILD_FINGERPRINT := asus/lineage_ASUS_P00I/ASUS_P00I:13/TQ3A.230901.001/$(P00I_
 # The HIDL manifest: every HAL this device provides. See the file for why it matters
 # even on a non-Treble device.
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
+# And it is the whole truth: a HAL that is not in it does not exist. Without this, a
+# build for a device that launched before Treble looks for any HAL "the legacy way"
+# too, and Android 13's libhidl sleeps one second in every getService because that way
+# has a race in it (system/libhidl/transport/ServiceManagement.cpp). The Bluetooth
+# stack asks for IBluetoothHci 1.1 before 1.0 and aborts if the two take over 500 ms.
+PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE := true
 
 # Audio: audio-caf/msm8952 from source. The optional AUDIO_FEATURE_ENABLED_* switches
 # (offload, fluence, speaker protection, HFP...) stay off until the base path plays,

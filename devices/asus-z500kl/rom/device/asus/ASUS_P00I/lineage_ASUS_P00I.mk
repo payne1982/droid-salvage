@@ -11,7 +11,8 @@
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_64_bit.mk)
 # The tablet shipped with Android 6.0. Saying so (PRODUCT_SHIPPING_API_LEVEL 23) keeps
 # Android 13 from applying what it requires only of devices that launched with a recent
-# version: a vendor partition, VINTF enforcement, property namespaces.
+# version: a vendor partition, property namespaces. (VINTF enforcement would be one
+# more; BoardConfig.mk turns that one on and says why.)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/product_launched_with_m.mk)
 # aosp_base and not full_base_telephony: that one is aosp_base plus AOSP's telephony.mk,
 # which brings the Phone app. device.mk lists the telephony packages this tablet wants;
