@@ -116,6 +116,13 @@ same goal as M3 on 16, observability and nothing more. Written to `boot` and `sy
 only. The recovery is not touched, and going back to `payne_31` is a Format Data and
 an install from TWRP.
 
+**Done, 13 October 2026.** The third boot reaches the LineageOS setup wizard and stays
+there, SELinux permissive, 1536x2048 at 320 dpi, with a root `adb`. The first stayed on
+the bootloader logo and the second completed the boot and lost `system_server` a second
+later; what each asked for is in [`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md), and
+one of the answers is a kernel patch (`kernel/patches/0015`). The recovery partition
+has the hash it had before. Nothing has been tried beyond seeing the first screen.
+
 ### L3 — the HALs, one at a time
 Display and GPU first, because nothing else can be judged without a screen; then
 audio, Wi-Fi, Bluetooth, sensors, the modem (data and SMS, as on 16), the video

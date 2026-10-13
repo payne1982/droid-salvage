@@ -1,8 +1,9 @@
 # Building LineageOS 20 for ASUS_P00I
 
-Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L1.
-The tree builds and `mka bacon` produces a flashable zip. **That image has never been
-booted.** Nothing below says it works on the tablet; installing it is milestone L2, and
+Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2.
+The tree builds, `mka bacon` produces a flashable zip, and on the tablet that image
+starts and shows the LineageOS setup wizard. **Nothing else has been tried**: no HAL
+has been looked at, SELinux is permissive, and two vendor daemons crash in a loop.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
 ## What the host needs
@@ -42,7 +43,7 @@ repo sync -c -j4 --no-clone-bundle
 # 2. this device tree
 rsync -a devices/asus-z500kl/rom/device/ <tree>/device/
 
-# 3. the kernel: the same sources and patches as for 16, plus patches/0014
+# 3. the kernel: the same sources and patches as for 16, plus patches/0014 and 0015
 devices/asus-z500kl/kernel/tools/setup-kernel.sh      # KERNEL_TREE=<tree>/kernel/asus/msm8956
 
 # 4. the vendor blobs and ASUS' init scripts, and the GPS HAL source
@@ -90,6 +91,27 @@ the SELinux label of the device node.
 - SELinux policy is the one written for 16 and compiles. Nobody has seen what it denies
   on 13, so the kernel command line carries `androidboot.selinux=permissive` for now:
   this image does not enforce it.
+
+## What the first boots asked for
+
+13 October 2026, three boots. Each is a commit on this branch.
+
+| What happened | What was done |
+|---|---|
+| Bootloader logo, nothing more. `mount_all` failed: `/firmware`, `/persist` and `/dsp` do not exist and cannot be made in a root directory that is now the system image. init never learned that `/data` is not encrypted and never started zygote | `BOARD_ROOT_EXTRA_FOLDERS` |
+| `adb root` hangs on a system in that state: it waits for a binder service that starts with the rest of Android | `rootdir/init/init.p00i.bringup.rc`, on builds made with `WITH_ADB_INSECURE` |
+| SurfaceFlinger aborts every 18 seconds, priming its shader cache on a texture format the Adreno driver of 2017 does not make | `service.sf.prime_shader_cache=0` |
+| Boot completed, then `system_server` dies in a loop: keystore2 gets no SELinux context for its callers from the kernel's binder | `kernel/patches/0015` |
+
+A warning that comes with the first row. When a mount fails, fs_mgr runs `e2fsck -y` on
+the partition, whether or not the fstab asks for a check. On that first boot it did so
+on `persist` and `dsp` and changed both (the padding of the inode bitmap, nothing else).
+`persist` holds what cannot be had again; a copy of it belongs among the backups before
+an image of this kind is started for the first time.
+
+Still crashing in a loop on the third boot, and not looked at yet: `pm-proxy` (stack
+corruption detected) and the Bluetooth application. The radio daemon does not start: a
+Qualcomm library wants `AudioSystem::setErrorCallback`, which Android 13 no longer has.
 
 ## What had to change to get here
 

@@ -261,6 +261,15 @@ Checked on the tablet with a 6 GB exFAT image handed to vold as its virtual disk
 checked and mounted by Android itself, a 4.2 GB file written and read back, Unicode
 names, and a clean `fsck` after unmounting.
 
+`patches/0014` and `patches/0015` are for LineageOS 20. Neither should matter to 16, which
+asks for nothing they add, but 16 has not been run on a kernel that has 0015. 0014
+lets `make O=dir` create its output directory, which the Android 13 build expects. 0015
+makes binder hand a server the SELinux context of its caller
+(`FLAT_BINDER_FLAG_TXN_SECURITY_CTX`, Linux 5.0): Android 12 and later ask for it, and
+without it keystore2 answers nobody and `system_server` dies a second after the boot
+completes. It is two commits from the 3.10 kernel of the Galaxy Tab S2 (MSM8976), with
+one hunk rewritten for this tree; the patch says which.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 
