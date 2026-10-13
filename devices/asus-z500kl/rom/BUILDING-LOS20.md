@@ -44,7 +44,7 @@ repo sync -c -j4 --no-clone-bundle
 # 2. this device tree
 rsync -a devices/asus-z500kl/rom/device/ <tree>/device/
 
-# 3. the kernel: the same sources and patches as for 16, plus patches/0014 and 0015
+# 3. the kernel: the same sources and patches as for 16, plus patches/0014 to 0016
 devices/asus-z500kl/kernel/tools/setup-kernel.sh      # KERNEL_TREE=<tree>/kernel/asus/msm8956
 
 # 4. the vendor blobs and ASUS' init scripts, and the GPS HAL source
@@ -160,3 +160,4 @@ In the order the build asked for it. Each is a commit on this branch.
 | Eleven vendor executables fail the check on their `DT_NEEDED` entries | `BUILD_BROKEN_PREBUILT_ELF_FILES` |
 | GPS: `set_sched_policy` undefined | `tools/gps-patches/0003` |
 | Six applications do not compile against a framework of April 2025 | `tools/merge-lineage.sh` |
+| Nothing stops, but the kernel modules go into the image unsigned and seven of fifteen not at all: the 3.10 kernel signs them with a perl script, and the perl LineageOS builds with has no `Getopt::Std` | `tree-patches/prebuilts/tools-lineage/0001`; `kernel/patches/0016` is what lets the kernel then load them |
