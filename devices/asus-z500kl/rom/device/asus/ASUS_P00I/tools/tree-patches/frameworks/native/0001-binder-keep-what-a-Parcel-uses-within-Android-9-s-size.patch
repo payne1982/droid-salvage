@@ -1,0 +1,90 @@
+diff --git a/libs/binder/Parcel.cpp b/libs/binder/Parcel.cpp
+index acf262a..e27ddd6 100644
+--- a/libs/binder/Parcel.cpp
++++ b/libs/binder/Parcel.cpp
+@@ -305,6 +305,13 @@ status_t Parcel::unflattenBinder(sp<IBinder>* out) const
+ 
+ Parcel::Parcel()
+ {
++    // What is used of a Parcel has to fit in what code built against the header of
++    // Android 9 and earlier reserves for one; Parcel.h says who does.
++#ifdef __LP64__
++    static_assert(sizeof(Parcel) - sizeof(mUnused) <= 104);
++#else
++    static_assert(sizeof(Parcel) - sizeof(mUnused) <= 52);
++#endif
+     LOG_ALLOC("Parcel %p: constructing", this);
+     initState();
+ }
+diff --git a/libs/binder/include/binder/Parcel.h b/libs/binder/include/binder/Parcel.h
+index 1b3b6f7..8bf83a5 100644
+--- a/libs/binder/include/binder/Parcel.h
++++ b/libs/binder/include/binder/Parcel.h
+@@ -1246,7 +1246,36 @@ private:
+     //-----------------------------------------------------------------------------
+     private:
+ 
++    // The members are laid out so that everything the library reads or writes is in
++    // the first 96 bytes of a Parcel in a 64-bit process and the first 52 in a 32-bit
++    // one, while the Parcel itself stays the size upstream gives it, 120 and 60.
++    //
++    // Code that keeps a Parcel on its stack reserves the size its own header said.
++    // Up to Android 9 that was 104 and 52 bytes, and the constructor of today's
++    // Parcel, as upstream lays it out, writes past them. Two of the vendor files of
++    // 2017 on the ASUS Z500KL are caught by that: Qualcomm's peripheral manager
++    // client (libperipheral_client.so, 64-bit), where the write lands on the stack
++    // protector and pm-proxy aborts every five seconds, and the camera HAL
++    // (camera.msm8952.so, 32-bit), in two functions that call the display service.
++    // With this layout both kinds of caller are served: the old ones reserve at least
++    // what is used, the ones compiled against this header reserve what they always did.
++    // Nothing outside libbinder reads the members, so their order concerns nobody else.
++    //
++    // The six flags take the four bytes after mError: three as plain bool (mHasFds
++    // has its address taken) and three as one-bit fields in the fourth byte. What was
++    // mReserved is part of mUnused, the tail, which is never read or written.
+     status_t            mError;
++    mutable bool        mHasFds;
++    bool                mAllowFds;
++
++    // if this parcelable is involved in a secure transaction, force the
++    // data to be overridden with zero when deallocated
++    mutable bool        mDeallocZero;
++
++    mutable bool        mObjectsSorted : 1;
++    mutable bool        mRequestHeaderPresent : 1;
++    mutable bool        mFdsKnown : 1;
++
+     uint8_t*            mData;
+     size_t              mDataSize;
+     size_t              mDataCapacity;
+@@ -1255,24 +1284,18 @@ private:
+     size_t              mObjectsSize;
+     size_t              mObjectsCapacity;
+     mutable size_t      mNextObjectHint;
+-    mutable bool        mObjectsSorted;
+-
+-    mutable bool        mRequestHeaderPresent;
+ 
+     mutable size_t      mWorkSourceRequestHeaderPosition;
+ 
+-    mutable bool        mFdsKnown;
+-    mutable bool        mHasFds;
+-    bool                mAllowFds;
+-
+-    // if this parcelable is involved in a secure transaction, force the
+-    // data to be overridden with zero when deallocated
+-    mutable bool        mDeallocZero;
+-
+     release_func        mOwner;
+ 
+     sp<RpcSession> mSession;
+-    size_t mReserved;
++
++#ifdef __LP64__
++    uint8_t mUnused[24];
++#else
++    uint8_t mUnused[8];
++#endif
+ 
+     class Blob {
+     public:

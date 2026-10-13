@@ -1,9 +1,10 @@
 # Building LineageOS 20 for ASUS_P00I
 
-Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2.
-The tree builds, `mka bacon` produces a flashable zip, and on the tablet that image
-starts and shows the LineageOS setup wizard. **Nothing else has been tried**: no HAL
-has been looked at, SELinux is permissive, and two vendor daemons crash in a loop.
+Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2
+reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on the
+tablet that image starts and shows the LineageOS setup wizard. **Nothing has been used
+beyond that**: the HALs start, none has been tried, Bluetooth crashes in a loop and
+SELinux is permissive.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
 ## What the host needs
@@ -94,7 +95,7 @@ the SELinux label of the device node.
 
 ## What the first boots asked for
 
-13 October 2026, three boots. Each is a commit on this branch.
+13 October 2026, three boots. Each row is a commit on this branch.
 
 | What happened | What was done |
 |---|---|
@@ -109,9 +110,24 @@ on `persist` and `dsp` and changed both (the padding of the inode bitmap, nothin
 `persist` holds what cannot be had again; a copy of it belongs among the backups before
 an image of this kind is started for the first time.
 
-Still crashing in a loop on the third boot, and not looked at yet: `pm-proxy` (stack
-corruption detected) and the Bluetooth application. The radio daemon does not start: a
-Qualcomm library wants `AudioSystem::setErrorCallback`, which Android 13 no longer has.
+The fourth boot, the same day, had three more, each for something the third one showed
+crashing or not starting:
+
+| What happened | What was done |
+|---|---|
+| `pm-proxy`, Qualcomm's peripheral manager client, dies with *stack corruption detected*. Its library of 2017 keeps `Parcel` objects on the stack and reserves 104 bytes for each; Android 13's are 120. The camera HAL does the same in 32 bits, 52 against 60 | `tools/tree-patches/frameworks/native/0001` |
+| The radio daemon does not load: `libril-qc-qmi-1.so` wants `AudioSystem::setErrorCallback`, which Android 13 replaced | `shims/ril` |
+| The Bluetooth application aborts on its first timer: no thread may become real-time | `CONFIG_RT_GROUP_SCHED` off, [`../kernel/README.md`](../kernel/README.md) |
+
+With these the radio daemon reads the modem's version and reports no SIM (there was
+none in the tablet), `pm-proxy` stays up, and the sensor, camera, audio and Wi-Fi HALs
+register. That is as far as any of them has been taken: none has been used. Bluetooth
+still aborts, later: every HIDL `getService` sleeps one second on a build that does not
+enforce its VINTF manifest, and the Bluetooth stack gives its HAL half a second.
+
+`tools/missing-symbols.py` lists what the blobs import that the image does not have,
+all at once instead of one failed `dlopen` per boot. On this image it finds 38 symbols
+in 13 files; only the radio one has been dealt with.
 
 ## What had to change to get here
 
