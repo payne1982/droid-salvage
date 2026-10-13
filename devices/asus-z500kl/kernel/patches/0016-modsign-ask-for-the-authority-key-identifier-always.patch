@@ -1,0 +1,27 @@
+Subject: [PATCH] modsign: ask for the authority key identifier always
+
+The kernel signs its modules with a key pair it makes at build time, and loads the
+certificate at boot. This kernel accepts a certificate only if it has both the
+subject and the authority key identifier
+(crypto/asymmetric_keys/x509_public_key.c). The request written to x509.genkey says
+"authorityKeyIdentifier=keyid", and a current OpenSSL (3.5.7 where this was seen)
+leaves that extension out of a self-signed certificate unless it is told "always".
+Every boot then logs
+
+    X.509: Cert for 'Magrathea: Glacier signing key' must have SubjKeyId and AuthKeyId extensions
+    Problem loading in-kernel X.509 certificate (-129)
+
+and with CONFIG_MODULE_SIG_FORCE no module can be loaded, signed or not.
+
+An output directory that already has x509.genkey and signing_key.* keeps them: they
+have to be removed for the new request to be used.
+---
+--- kernel/Makefile
++++ kernel/Makefile
+@@ -214,5 +214,5 @@
+ 	@echo >>x509.genkey "basicConstraints=critical,CA:FALSE"
+ 	@echo >>x509.genkey "keyUsage=digitalSignature"
+ 	@echo >>x509.genkey "subjectKeyIdentifier=hash"
+-	@echo >>x509.genkey "authorityKeyIdentifier=keyid"
++	@echo >>x509.genkey "authorityKeyIdentifier=keyid:always"
+ endif

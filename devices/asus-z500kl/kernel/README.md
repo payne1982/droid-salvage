@@ -270,6 +270,18 @@ not permitted`). Android's own base kernel configuration has the option off
 (`kernel/configs/*/android-base.config`). LineageOS 16 ran with it on, and has not been
 run on a kernel built without it.
 
+`patches/0016` is about the modules the configuration builds (test and debug drivers,
+nothing this tablet loads). The kernel signs them with a key pair it makes at build
+time and only loads signed ones, and it accepts its own certificate at boot only if it
+carries two extensions; a current OpenSSL writes one of them into a self-signed
+certificate only when asked "always". Without the patch every boot logs *Problem
+loading in-kernel X.509 certificate (-129)* and no module can be loaded at all. Every
+boot log kept of a kernel built from here has that line, LineageOS 16's and TWRP's
+among them; `payne_31` was built the same way, so it is in the same state.
+With it, on the tablet under LineageOS 20, the certificate loads and a module from
+the image goes in and out with `insmod` and `rmmod`. An output directory from before
+the patch keeps its old key until `x509.genkey` and `signing_key.*` are removed from it.
+
 `patches/0014` and `patches/0015` are for LineageOS 20. Neither should matter to 16, which
 asks for nothing they add, but 16 has not been run on a kernel that has 0015. 0014
 lets `make O=dir` create its output directory, which the Android 13 build expects. 0015
