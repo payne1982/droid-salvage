@@ -261,6 +261,15 @@ Checked on the tablet with a 6 GB exFAT image handed to vold as its virtual disk
 checked and mounted by Android itself, a 4.2 GB file written and read back, Unicode
 names, and a clean `fsck` after unmounting.
 
+`CONFIG_RT_GROUP_SCHED` is off, which stock had on. With it a thread may be made
+real-time only if its cpu cgroup has a real-time budget. Android 13's init gives none
+to the groups it makes, each of them reads 0 in `cpu.rt_runtime_us`, and every request
+fails with EPERM: SurfaceFlinger logs it and goes on, the Bluetooth stack aborts on
+its first timer (`timer_create_internal unable to create timer with clock 7: Operation
+not permitted`). Android's own base kernel configuration has the option off
+(`kernel/configs/*/android-base.config`). LineageOS 16 ran with it on, and has not been
+run on a kernel built without it.
+
 `patches/0014` and `patches/0015` are for LineageOS 20. Neither should matter to 16, which
 asks for nothing they add, but 16 has not been run on a kernel that has 0015. 0014
 lets `make O=dir` create its output directory, which the Android 13 build expects. 0015
