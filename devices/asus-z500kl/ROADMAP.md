@@ -129,6 +129,11 @@ audio, Wi-Fi, Bluetooth, sensors, the modem (data and SMS, as on 16), the video
 codecs, GPS, the cameras, keymaster and gatekeeper, DRM. `rom/HARDWARE.md` is the map
 of what each one needed on 16.
 
+**Begun, 13 October 2026.** What stopped them from starting is dealt with: six changes,
+listed in [`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md). They all start, Bluetooth
+and Wi-Fi switch on, the boot takes 47 seconds. None has been used yet, which is what
+this milestone is about.
+
 ### L4 — what a release has
 SELinux enforcing, secure adb, the signed boot image, the fixed fingerprint. Each of
 these exists on 16 and has to be redone, not copied.

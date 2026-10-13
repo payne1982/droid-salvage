@@ -366,6 +366,14 @@ PRODUCT_PROPERTY_OVERRIDES += \
     ro.qualcomm.bt.hci_transport=smd \
     ro.bt.bdaddr_path=/data/vendor/bluetooth/bdaddr
 
+# The core says it filters advertisements, and Android 13 then asks it which extended
+# filter features it has (LE_ADV_FILTER, opcode 0xfd57). The firmware of 2017 does not
+# know the question and answers with opcode 0x0157; the stack asserts on the mismatch
+# and the Bluetooth application dies in a loop. The stack in this tree has a property
+# to not ask.
+PRODUCT_PROPERTY_OVERRIDES += \
+    bluetooth.le.disable_apcf_extended_features=1
+
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.0-impl \
     android.hardware.bluetooth@1.0-service \

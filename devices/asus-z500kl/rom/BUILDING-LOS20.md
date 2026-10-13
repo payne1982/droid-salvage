@@ -3,8 +3,8 @@
 Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2
 reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on the
 tablet that image starts and shows the LineageOS setup wizard. **Nothing has been used
-beyond that**: the HALs start, none has been tried, Bluetooth crashes in a loop and
-SELinux is permissive.
+beyond that**: the HALs start and Bluetooth and Wi-Fi switch on, nobody has gone past
+the first screen, and SELinux is permissive.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
 ## What the host needs
@@ -120,10 +120,25 @@ crashing or not starting:
 | The Bluetooth application aborts on its first timer: no thread may become real-time | `CONFIG_RT_GROUP_SCHED` off, [`../kernel/README.md`](../kernel/README.md) |
 
 With these the radio daemon reads the modem's version and reports no SIM (there was
-none in the tablet), `pm-proxy` stays up, and the sensor, camera, audio and Wi-Fi HALs
-register. That is as far as any of them has been taken: none has been used. Bluetooth
-still aborts, later: every HIDL `getService` sleeps one second on a build that does not
-enforce its VINTF manifest, and the Bluetooth stack gives its HAL half a second.
+none in the tablet) and `pm-proxy` stays up. The fifth and sixth boots:
+
+| What happened | What was done |
+|---|---|
+| Bluetooth still aborts: *Unable to get a Bluetooth service after 500ms*. On a build that does not enforce its VINTF manifest every HIDL `getService` sleeps one second, 291 times in that boot, and the stack asks for a HAL version this tablet does not have before the one it has | `PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE` |
+| Wi-Fi never comes on, and `system_server` waits forever for the supplicant: Android 13 asks init for whoever declares the AIDL interface, and the service still declared the HIDL ones | `rootdir/init/init.qcom.rc` |
+| Bluetooth aborts once more, on the answer to a vendor command Android 13 added: *Waiting for 0xfd57 (LE_ADV_FILTER), got 0x157* | `bluetooth.le.disable_apcf_extended_features` |
+
+The first of these also took the boot from 160 seconds to 47.
+
+Where that leaves the hardware, 14 October: Bluetooth and Wi-Fi switch on, and a Wi-Fi
+scan lists networks; nothing has been paired or connected. The sensor, camera, audio,
+GPS and radio HALs register, the accelerometer gives readings, the hardware H.264
+encoder encodes the screen. None of this is use: no picture taken, no sound played, no
+fix, no SIM.
+
+Not looked at yet: netd on a kernel without eBPF. The forks this tree uses tolerate the
+missing maps, but the log is full of them, and the iptables rules that refer to eBPF
+programs (data usage limits, data saver) are not installed.
 
 `tools/missing-symbols.py` lists what the blobs import that the image does not have,
 all at once instead of one failed `dlopen` per boot. On this image it finds 38 symbols
