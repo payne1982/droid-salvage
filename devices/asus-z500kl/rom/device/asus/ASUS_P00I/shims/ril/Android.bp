@@ -1,0 +1,8 @@
+// A symbol Qualcomm's Nougat RIL (libril-qc-qmi-1.so) needs and Android 13 no longer
+// exports. Loaded into rild through TARGET_LD_SHIM_LIBS (BoardConfig.mk).
+cc_library_shared {
+    name: "libshim_ril",
+    srcs: ["audiosystem.cpp"],
+    shared_libs: ["libaudioclient", "libutils"],
+    compile_multilib: "64",
+}

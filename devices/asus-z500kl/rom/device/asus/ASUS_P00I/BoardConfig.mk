@@ -311,6 +311,8 @@ TARGET_NO_RPC := true
 # The HAL needs one symbol Pie's libui no longer exports; the shim provides it, loaded
 # into whatever process loads the HAL.
 TARGET_LD_SHIM_LIBS := /system/lib/hw/camera.msm8952.so|libshim_camera.so
+# And the RIL one that Android 13's AudioSystem no longer has.
+TARGET_LD_SHIM_LIBS := $(TARGET_LD_SHIM_LIBS):/system/vendor/lib64/libril-qc-qmi-1.so|libshim_ril.so
 
 # Init: ASUS' bootloader calls an ordinary boot androidboot.mode=main, which Pie's USB
 # service takes for a factory mode; init/init_ASUS_P00I.cpp says what that breaks.

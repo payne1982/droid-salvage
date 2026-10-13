@@ -387,6 +387,10 @@ PRODUCT_PACKAGES += \
     librilutils \
     rild
 
+# One symbol qcril wants from AudioSystem that Android 13 dropped; shims/ril says which.
+PRODUCT_PACKAGES += \
+    libshim_ril
+
 # The apps and the feature that go with a SIM. This is AOSP's telephony.mk without the
 # two packages that are about calls, Dialer and CallLogBackup: the modem does data and
 # SMS and refuses voice calls in both directions, as ASUS sold it (overlay/ has the
