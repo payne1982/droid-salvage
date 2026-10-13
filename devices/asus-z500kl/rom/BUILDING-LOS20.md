@@ -88,8 +88,8 @@ the SELinux label of the device node.
   by `boot_signer` as on 16; Android 13 still has the tool, and the 1320-byte trailer
   is there. That the bootloader accepts it has not been tried.
 - SELinux policy is the one written for 16 and compiles. Nobody has seen what it denies
-  on 13, and the kernel command line asks for enforcing: a first boot will want
-  `androidboot.selinux=permissive` there.
+  on 13, so the kernel command line carries `androidboot.selinux=permissive` for now:
+  this image does not enforce it.
 
 ## What had to change to get here
 
