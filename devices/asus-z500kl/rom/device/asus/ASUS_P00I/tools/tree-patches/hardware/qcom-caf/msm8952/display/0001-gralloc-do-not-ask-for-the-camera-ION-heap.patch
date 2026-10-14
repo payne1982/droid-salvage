@@ -1,0 +1,28 @@
+Subject: [PATCH] gralloc: do not ask for the camera ION heap
+
+0x00400000 is GRALLOC_USAGE_PRIVATE_CAMERA_HEAP to this gralloc and, since Android 8,
+BufferUsage::VIDEO_DECODER to the framework, which sets it on the output buffers of a
+hardware video decoder. This tablet's kernel has no camera ION heap (the heaps are
+audio, mm, qsecom and system), so every such allocation failed: "ION_IOC_ALLOC failed
+with error - No such device", heap 0x100000, and the decoder stopped before its first
+frame. That is how VP9 video in the browser stayed still with no sound.
+
+With no camera heap in the kernel, asking for it can only fail. So the bit no longer
+selects a heap, and the buffer comes from the heaps the other bits name, or from the
+system heap.
+
+diff --git a/libgralloc/alloc_controller.cpp b/libgralloc/alloc_controller.cpp
+--- a/libgralloc/alloc_controller.cpp
++++ b/libgralloc/alloc_controller.cpp
+@@ -448,8 +448,9 @@
+         ionHeapId |= ION_HEAP(ION_SYSTEM_HEAP_ID);
+     }
+ 
+-    if(usage & GRALLOC_USAGE_PRIVATE_CAMERA_HEAP)
+-        ionHeapId |= ION_HEAP(ION_CAMERA_HEAP_ID);
++    // GRALLOC_USAGE_PRIVATE_CAMERA_HEAP is BufferUsage::VIDEO_DECODER to the
++    // framework, and the kernel has no camera heap: it no longer selects one.
++    // tools/tree-patches/hardware/qcom-caf/msm8952/display/0001 says more.
+ 
+     if(usage & GRALLOC_USAGE_PRIVATE_ADSP_HEAP)
+         ionHeapId |= ION_HEAP(ION_ADSP_HEAP_ID);
