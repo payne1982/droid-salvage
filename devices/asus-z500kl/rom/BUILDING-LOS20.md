@@ -3,7 +3,7 @@
 Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2
 reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on the
 tablet that image starts and gets through the LineageOS setup wizard. **Little has been
-used beyond that**: Wi-Fi connects and the browser works, the camera shows a preview,
+used beyond that**: Wi-Fi connects and the browser works, the camera takes photos and video,
 Bluetooth switches on, and SELinux is permissive.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
@@ -144,10 +144,13 @@ Wi-Fi and a web page:
 |---|---|
 | At the end of the wizard the notification shade does not come down, and home and recents do nothing. The wizard's last activity is recreated when the taskbar goes away, runs its exit twice and crashes on the second (*Receiver not registered*); a second copy of the wizard is left holding the status bar disabled | `tools/tree-patches/packages/apps/SetupWizard/0001` |
 | The camera application stops as it opens: cameraserver refuses the stream configuration, *Parcel data not fully consumed, unread size: 24*. LineageOS-UL put the native camera service back to Android 12 for HAL1 devices and left the Java side on Android 13 | `local_manifests/lineage-20-camera.xml`, `tools/tree-patches/frameworks/base/0001` |
+| With the preview running, taking a photo, recording or closing the camera kills the camera HAL's process, in gralloc. The HAL of 2017 allocates 8 bytes for an `android::Fence`, Nougat's size; Android 13's has a vtable and is 12, and its constructor writes the fence's fd past the end of the HAL's allocation. Found with GWP-ASan on the provider process | `shims/camera`: the HAL gets every `Fence` function it imports, with Nougat's layout |
 
-The second fix has been tried: the preview runs. The first one only acts at the end of
-a setup wizard, and no wizard has been run since; on the tablet the copy left over was
-stopped by hand.
+The second and third fixes have been tried: photos from both cameras and a 1080p
+video with sound, and malloc debug, which counted 27 writes into freed memory in a few
+seconds of preview before the third, finds none after it. The first one only acts at
+the end of a setup wizard, and no wizard has been run since; on the tablet the copy left
+over was stopped by hand.
 
 Not looked at yet: netd on a kernel without eBPF. The forks this tree uses tolerate the
 missing maps, but the log is full of them, and the iptables rules that refer to eBPF
