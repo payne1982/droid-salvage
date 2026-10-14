@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     LineageOS-UL's frameworks/av puts the camera service back to its Android 12 state, to
+     bring back camera HAL1 for the devices it was made for. Its Java side, in
+     frameworks/base, was only partly reverted, so the two no longer agree on what goes
+     through binder: a camera2 application cannot even configure a stream (cameraserver
+     answers "Parcel data not fully consumed").
+
+     This tablet's camera is HAL3, its audio HAL is 6.0, and nothing else in that fork
+     concerns a kernel without eBPF. So frameworks/av is LineageOS' own, and
+     tools/tree-patches/frameworks/base/0001 puts the camera code of frameworks/base back
+     as LineageOS has it. Copy this file to .repo/local_manifests/ with the others.
+-->
+<manifest>
+  <remove-project name="LineageOS-UL/android_frameworks_av" />
+  <project path="frameworks/av" name="LineageOS/android_frameworks_av" groups="pdk" />
+</manifest>

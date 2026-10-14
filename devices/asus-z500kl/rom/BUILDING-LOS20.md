@@ -2,9 +2,9 @@
 
 Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2
 reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on the
-tablet that image starts and shows the LineageOS setup wizard. **Nothing has been used
-beyond that**: the HALs start and Bluetooth and Wi-Fi switch on, nobody has gone past
-the first screen, and SELinux is permissive.
+tablet that image starts and gets through the LineageOS setup wizard. **Little has been
+used beyond that**: Wi-Fi connects and the browser works, the camera shows a preview,
+Bluetooth switches on, and SELinux is permissive.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
 ## What the host needs
@@ -30,10 +30,11 @@ the first screen, and SELinux is permissive.
 #    kernel without eBPF
 repo init -u https://github.com/LineageOS-UL/android.git -b lineage-20.0 --depth=1
 
-# 1b. two local manifests. lineage-20-forks.xml moves 17 projects to LineageOS' forks:
+# 1b. three local manifests. lineage-20-forks.xml moves 17 projects to LineageOS' forks:
 #     the LineageOS-UL manifest stopped in April 2025 and still points them at AOSP.
-#     asus-p00i-lineage-20.xml adds the MSM8952 audio, display and media HALs, which
-#     LineageOS 20 no longer carries.
+#     lineage-20-camera.xml takes frameworks/av from LineageOS instead of UL (the file
+#     says why). asus-p00i-lineage-20.xml adds the MSM8952 audio, display and media
+#     HALs, which LineageOS 20 no longer carries.
 mkdir -p .repo/local_manifests
 cp devices/asus-z500kl/rom/local_manifests/*.xml <tree>/.repo/local_manifests/
 repo sync -c -j4 --no-clone-bundle
@@ -130,11 +131,23 @@ none in the tablet) and `pm-proxy` stays up. The fifth and sixth boots:
 
 The first of these also took the boot from 160 seconds to 47.
 
-Where that leaves the hardware, 14 October: Bluetooth and Wi-Fi switch on, and a Wi-Fi
-scan lists networks; nothing has been paired or connected. The sensor, camera, audio,
-GPS and radio HALs register, the accelerometer gives readings, the hardware H.264
-encoder encodes the screen. None of this is use: no picture taken, no sound played, no
-fix, no SIM.
+Where that left the hardware early on 14 October, before anyone used it: Bluetooth and
+Wi-Fi switch on, and a Wi-Fi scan lists networks; nothing had been paired or connected.
+The sensor, camera, audio, GPS and radio HALs register, the accelerometer gives
+readings, the hardware H.264 encoder encodes the screen. None of this is use: no
+picture taken, no sound played, no fix, no SIM.
+
+The first time someone used it, 14 October, through the setup wizard to a connected
+Wi-Fi and a web page:
+
+| What happened | What was done |
+|---|---|
+| At the end of the wizard the notification shade does not come down, and home and recents do nothing. The wizard's last activity is recreated when the taskbar goes away, runs its exit twice and crashes on the second (*Receiver not registered*); a second copy of the wizard is left holding the status bar disabled | `tools/tree-patches/packages/apps/SetupWizard/0001` |
+| The camera application stops as it opens: cameraserver refuses the stream configuration, *Parcel data not fully consumed, unread size: 24*. LineageOS-UL put the native camera service back to Android 12 for HAL1 devices and left the Java side on Android 13 | `local_manifests/lineage-20-camera.xml`, `tools/tree-patches/frameworks/base/0001` |
+
+The second fix has been tried: the preview runs. The first one only acts at the end of
+a setup wizard, and no wizard has been run since; on the tablet the copy left over was
+stopped by hand.
 
 Not looked at yet: netd on a kernel without eBPF. The forks this tree uses tolerate the
 missing maps, but the log is full of them, and the iptables rules that refer to eBPF
