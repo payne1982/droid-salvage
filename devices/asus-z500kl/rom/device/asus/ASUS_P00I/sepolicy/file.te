@@ -3,3 +3,10 @@
 type sysfs_wcnss_mac_addr, fs_type, sysfs_type;
 type proc_camera_otp, fs_type, proc_type;
 type debugfs_msm_vidc, fs_type, debugfs_type;
+
+# The ADSP's partition (/dsp, ext4), which fs_mgr checks with e2fsck before mounting it.
+type dsp_block_device, dev_type;
+
+# The TCP settings the WiFi HAL writes when WiFi comes up: the small queues limit,
+# the window scale and Qualcomm's tcp_use_userconfig.
+type proc_wifi_tcp_tuning, fs_type, proc_type;

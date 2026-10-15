@@ -1,0 +1,21 @@
+# Platform properties the vendor HALs read, seen as denials on a permissive boot.
+
+# The camera HAL reads service.bootanim.exit and, with the sensors HAL, persist.debug.*
+# switches (the names are in the blobs).
+get_prop(hal_camera_default, bootanim_system_prop)
+get_prop({ hal_camera_default hal_sensors_default }, persist_debug_prop)
+
+# The audio HAL reads one of the platform's audio properties; the denial does not say
+# which, and no name of that label is written in the vendor files.
+get_prop(hal_audio_default, audio_prop)
+
+# hwcomposer reads sys.hwc.* and persist.sys.actionsafe.*; the GPS HAL reads some
+# system property too (seen as a denial, name not known).
+get_prop({ hal_graphics_composer_default hal_gnss_default }, system_prop)
+
+# The GPS HAL reads the mobile data configuration (property.te).
+get_prop(hal_gnss_default, vendor_qcom_data_prop)
+
+# mediacodec looks for the AIDL allocator first, which this device does not have, and
+# falls back to the HIDL one.
+dontaudit mediacodec default_android_vndservice:service_manager find;

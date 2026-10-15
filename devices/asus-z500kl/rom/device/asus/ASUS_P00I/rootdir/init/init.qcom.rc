@@ -56,14 +56,10 @@ on init
     # mount_all waits 20 s for each partition and skips them all (second M3 attempt).
     symlink /dev/block/platform/soc.0/${ro.boot.bootdevice} /dev/block/bootdevice
 
-    # What two scripts in /system/etc/init say under triggers that have gone by when init
-    # reads them (see trace_marker above), and that has an effect on this tablet.
-    # logd.rc, "on fs": the file logd publishes its event tags in. Without it there is
-    # only the static list in /system/etc.
-    write /dev/event-log-tags "# content owned by logd
-"
-    chown logd logd /dev/event-log-tags
-    chmod 0644 /dev/event-log-tags
+    # What a script in /system/etc/init said under a trigger that had gone by when Pie's
+    # init read it (see trace_marker above). On Android 13 the first stage mounts
+    # /system and init reads those scripts before any trigger; logd.rc makes
+    # /dev/event-log-tags itself, so the copy of that here went.
     # lineage-system.rc, "on init": without TERMINFO the terminal programs LineageOS
     # ships (nano, htop, vim) do not know the terminal they are in.
     export ANDROID_CACHE /cache
@@ -233,22 +229,26 @@ service irsc_util /system/vendor/bin/irsc_util "/etc/sec_config"
     user root
     oneshot
 
-service per_mgr /system/vendor/bin/pm-service
+# The two services named under vendor.: a trigger in this file may only use a property
+# vendor_init can read, and on Android 13 that holds for init.svc.vendor.* and not for
+# the state of a service with a plain name. Without the prefix SELinux drops the
+# trigger, and per_proxy never starts.
+service vendor.per_mgr /system/vendor/bin/pm-service
     class core
     user system
     group system net_raw
 
-service per_proxy /system/vendor/bin/pm-proxy
+service vendor.per_proxy /system/vendor/bin/pm-proxy
     class core
     user system
     group system
     disabled
 
-on property:init.svc.per_mgr=running
-    start per_proxy
+on property:init.svc.vendor.per_mgr=running
+    start vendor.per_proxy
 
 on property:sys.shutdown.requested=*
-    stop per_proxy
+    stop vendor.per_proxy
 
 service qmuxd /system/vendor/bin/qmuxd
     class main
@@ -266,7 +266,8 @@ service netmgrd /system/vendor/bin/netmgrd
 # "sensors" user by name; Pie has no such user, so it ends up as nobody and the IPC
 # router refuses its messages ("xport_send: Sendto failed", no sensors at all). Given
 # the group number here, as a supplementary group, it keeps it.
-service sensors /system/vendor/bin/sensors.qcom
+# Named under vendor. for the trigger below, as per_mgr above.
+service vendor.sensors /system/vendor/bin/sensors.qcom
     class late_start
     user root
     group root 3011
@@ -277,7 +278,7 @@ service sensors /system/vendor/bin/sensors.qcom
 # "No Sensors on the device", no rotation, no light sensor. (In Nougat the HAL lived
 # in system_server and loaded long after the daemon.) So it is started again once the
 # daemon's socket exists; system_server reads the list a good ten seconds later.
-on property:init.svc.sensors=running
+on property:init.svc.vendor.sensors=running
     wait /dev/socket/sensor_ctl_socket 5
     restart vendor.sensors-hal-1-0
 

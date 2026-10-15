@@ -4,6 +4,9 @@
 allow qti_init_shell sysfs_wcnss_mac_addr:file w_file_perms;
 allow qti_init_shell bluetooth_data_file:dir rw_dir_perms;
 allow qti_init_shell bluetooth_data_file:file create_file_perms;
+# When /persist has no usable address, the script makes a stable one from
+# ro.serialno.
+get_prop(qti_init_shell, serialno_prop)
 
 # Both our scripts (init.macaddr.sh here, init.bt.sh as bluetooth_loader) are
 # #!/system/bin/sh and use toybox for od, sed, setprop, log and the like.

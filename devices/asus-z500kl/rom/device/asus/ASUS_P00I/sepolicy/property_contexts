@@ -1,0 +1,5 @@
+# See property.te.
+sys.listeners.registered        u:object_r:vendor_qsee_prop:s0 exact bool
+sys.keymaster.loaded            u:object_r:vendor_qsee_prop:s0 exact bool
+persist.data.                   u:object_r:vendor_qcom_data_prop:s0
+ro.use_data_netmgrd             u:object_r:vendor_qcom_data_prop:s0 exact bool

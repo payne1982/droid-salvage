@@ -1,0 +1,12 @@
+# Properties the Nougat blobs read and write under their old names, which Android 13
+# would label as the platform's (sys.) or not at all (persist.data.). Labelled in
+# property_contexts.
+
+# qseecomd sets these once its listeners are registered and the keymaster trustlet is
+# loaded; the keymaster and gatekeeper HALs wait for them before they talk to the
+# TrustZone. As system_prop, the HALs could not read them, and neither could unlock
+# the device.
+vendor_internal_prop(vendor_qsee_prop)
+
+# Mobile data configuration in system.prop, read by netmgrd, qmuxd, qcril and the GPS HAL.
+vendor_internal_prop(vendor_qcom_data_prop)

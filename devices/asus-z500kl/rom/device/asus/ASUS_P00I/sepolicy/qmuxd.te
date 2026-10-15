@@ -1,0 +1,3 @@
+get_prop(qmuxd, vendor_qcom_data_prop)
+# gsm.ril.modem_reset
+get_prop(qmuxd, radio_prop)

@@ -1,0 +1,2 @@
+# e2fsck on the ADSP's partition, before fs_mgr mounts /dsp.
+allow fsck dsp_block_device:blk_file rw_file_perms;

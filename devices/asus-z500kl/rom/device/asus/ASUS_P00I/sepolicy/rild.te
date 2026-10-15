@@ -1,0 +1,6 @@
+# rild finds qcril through vendor.rild.libpath (system.prop).
+get_prop(rild, vendor_rild_libpath_prop)
+get_prop(rild, vendor_qcom_data_prop)
+
+# qcril looks at /data/data, for nothing it needs.
+dontaudit rild system_data_file:dir getattr;

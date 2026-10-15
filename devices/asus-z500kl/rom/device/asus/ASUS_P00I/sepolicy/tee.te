@@ -1,0 +1,3 @@
+# qseecomd (sepolicy-legacy runs it as tee). See property.te.
+set_prop(tee, vendor_qsee_prop)
+get_prop({ hal_keymaster_default hal_gatekeeper_default }, vendor_qsee_prop)

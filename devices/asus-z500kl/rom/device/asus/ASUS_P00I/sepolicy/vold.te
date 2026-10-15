@@ -1,17 +1,23 @@
 # mount.ntfs (ntfs-3g) runs in vold's domain and does the same walk through the mount
 # table as fsck.ntfs, down to the block device behind each mount, to make sure the card
 # is not mounted already. vold may stat userdata's and no other; these are the rest of
-# what is mounted here (system, cache, persist, and the modem and dsp partitions, which
-# carry the generic label). NTFS cards mount regardless, so the denials are silenced.
+# what is mounted here (system, cache, persist, dsp, and the modem partition, which
+# carries the generic label). NTFS cards mount regardless, so the denials are silenced.
 dontaudit vold {
     block_device
     cache_block_device
     persist_block_device
     system_block_device
+    dsp_block_device
 }:blk_file getattr;
 
 # The periodic trim (and the one right after a first boot) goes through every writable
 # ext4 mount in the fstab, /dsp among them: 16 MB of DSP firmware that nothing writes
 # to. vold is refused there and trims the rest; the refusal is not worth a line in the
 # log each time.
-dontaudit vold adsprpcd_file:dir read;
+dontaudit vold adsprpcd_file:dir { ioctl open read };
+# The read-ahead of the eMMC's queue (sysfs_devices_block, genfs_contexts) and of its
+# bdi, which sepolicy-legacy labels sysfs_mmc_host.
+allow vold sysfs_mmc_host:file w_file_perms;
+# vold asks for the boot control HAL, which a device without A/B slots does not have.
+dontaudit vold hal_bootctl_hwservice:hwservice_manager find;

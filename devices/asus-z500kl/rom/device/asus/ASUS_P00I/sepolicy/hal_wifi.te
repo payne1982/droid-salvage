@@ -1,0 +1,2 @@
+# See file.te.
+allow hal_wifi_default proc_wifi_tcp_tuning:file rw_file_perms;

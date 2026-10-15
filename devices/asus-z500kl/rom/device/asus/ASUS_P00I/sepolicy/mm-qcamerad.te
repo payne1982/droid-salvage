@@ -1,6 +1,6 @@
 # ASUS' DIT framework opens its ISP parameter database read-only but takes a lock on
 # it (sqlite), in /system/lib/DataSet.
-allow mm-qcamerad system_file:file lock;
+allow mm-qcamerad { system_file system_lib_file }:file lock;
 
 # Module OTP data the AF and AWB algorithms read from ASUS' camera driver.
 allow mm-qcamerad proc_camera_otp:file r_file_perms;
@@ -14,9 +14,9 @@ allow mm-qcamerad camera_data_file:sock_file { create unlink write };
 # Debug leftovers in ASUS' blobs, not needed to take a picture: a log written straight
 # into /data/data, and the DIT framework's network debug socket, TCP and unix
 # (DITNetworkFile, also in /data).
-dontaudit mm-qcamerad system_data_file:dir { add_name remove_name write };
+dontaudit mm-qcamerad system_data_file:dir { add_name remove_name search write };
 dontaudit mm-qcamerad system_data_file:file { append getattr open read write create };
-dontaudit mm-qcamerad system_data_file:sock_file { create unlink };
+dontaudit mm-qcamerad { system_data_file system_data_root_file }:sock_file { create unlink };
 dontaudit mm-qcamerad self:tcp_socket { create bind setopt };
 
 # It finds its V4L2 subdevices by reading their names, across /sys/class/video4linux.
