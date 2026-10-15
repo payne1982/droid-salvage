@@ -349,6 +349,7 @@ PRODUCT_PACKAGES += \
     android.hardware.wifi@1.0-service \
     hostapd \
     libwpa_client \
+    P00IWifiOverlay \
     wcnss_service \
     wificond \
     wpa_supplicant \

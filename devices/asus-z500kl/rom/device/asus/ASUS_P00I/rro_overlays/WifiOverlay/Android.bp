@@ -1,0 +1,8 @@
+// Wi-Fi settings. Android 13 reads them from the Wi-Fi module's own resources
+// (com.android.wifi.resources), which an overlay of frameworks/base does not reach.
+runtime_resource_overlay {
+    name: "P00IWifiOverlay",
+    resource_dirs: ["res"],
+    vendor: true,
+    sdk_version: "current",
+}

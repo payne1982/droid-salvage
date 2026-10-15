@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- What lets Android hand the search for a known network to the chip while the
+         tablet sleeps (PNO, a scheduled scan in prima). Without it every such request
+         is refused as "not supported"; after five the framework gives up, and with
+         the screen off a dropped connection came back only when a 20-minute watchdog
+         ran an ordinary scan (21 minutes, measured). On Pie it was in framework-res,
+         where Android 13 no longer looks for it. -->
+    <bool name="config_wifi_background_scan_support">true</bool>
+
+    <!-- The chip does 5 GHz (wificond lists 5180-5240 and the DFS channels). The name
+         Android 13 gives Pie's config_wifi_dual_band_support. -->
+    <bool name="config_wifi5ghzSupport">true</bool>
+</resources>
