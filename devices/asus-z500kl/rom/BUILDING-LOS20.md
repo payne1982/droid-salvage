@@ -45,7 +45,7 @@ repo sync -c -j4 --no-clone-bundle
 # 2. this device tree
 rsync -a devices/asus-z500kl/rom/device/ <tree>/device/
 
-# 3. the kernel: the same sources and patches as for 16, plus patches/0014 to 0016
+# 3. the kernel: the same sources and patches as for 16, plus patches/0014 to 0017
 devices/asus-z500kl/kernel/tools/setup-kernel.sh      # KERNEL_TREE=<tree>/kernel/asus/msm8956
 
 # 4. the vendor blobs and ASUS' init scripts, and the GPS HAL source
@@ -161,6 +161,22 @@ programs (data usage limits, data saver) are not installed.
 `tools/missing-symbols.py` lists what the blobs import that the image does not have,
 all at once instead of one failed `dlopen` per boot. On this image it finds 38 symbols
 in 13 files; only the radio one has been dealt with.
+
+15 October, a day of use with the tablet on the desk, one HAL at a time:
+
+| What happened | What was done |
+|---|---|
+| Every process that ends costs about 200 ms (*Failed to kill ... 1 processes remain*), and `system_server` cannot move apps between cpusets (*AddTidToCgroup failed ... Permission denied*). Android 13 keeps each process in a cgroup of its own in the cgroup v2 hierarchy; a 3.10 kernel has no cgroup v2, and the groups were plain directories in a tmpfs | `tools/tree-patches/system/core/0001` mounts a v1 hierarchy (cpuacct) in its place, `configs/cgroups/cgroups.json`, `kernel/patches/0017` |
+| qcril keeps its database in `/data/misc/radio`, a path written into its library, which Android 13 keeps from vendor code | `tools/extract-files.sh` rewrites it to `/data/vendor/ril`, `rootdir/init/init.qcom.rc`, `sepolicy/file_contexts` |
+| What the policy of 16 is denied on 13: `init.qcom.rc` runs as `vendor_init`, its triggers on plain service names are dropped (`per_proxy` never started), and the QSEE, radio and data daemons share properties that were `default_prop` | `sepolicy/`, `rootdir/init/init.qcom.rc` |
+| With the screen off, a dropped Wi-Fi connection comes back after 21 minutes: the chip's background scan (PNO) is refused as *not supported*. Android 13 reads that setting from the Wi-Fi module's resources, not from framework-res | `rro_overlays/WifiOverlay` |
+| No XTRA file is downloaded, so a first fix takes about ten minutes; once one is named, the modem refuses it. Android 13 reads only `LONGTERM_PSDS_SERVER_*`, and the servers in ASUS' `gps.conf` now give XTRA2 files under the name of the XTRA3 ones, which this modem does not take | `tools/tree-patches/frameworks/base/0002`: Qualcomm's xtracloud.net servers |
+
+All five have been tried. Processes are killed in 0 to 5 ms and neither error comes
+back; qcril creates its database in the new place; with the policy switched to
+enforcing on the running system, Wi-Fi, sensors, camera, audio and GNSS work with no
+denial; Wi-Fi turned off and on with the screen off is connected again after 10 s; the
+XTRA file is taken by the modem about 40 s after boot.
 
 ## What had to change to get here
 

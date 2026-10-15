@@ -291,6 +291,14 @@ without it keystore2 answers nobody and `system_server` dies a second after the 
 completes. It is two commits from the 3.10 kernel of the Galaxy Tab S2 (MSM8976), with
 one hunk rewritten for this tree; the patch says which.
 
+`patches/0017` is for LineageOS 20 as well. With no cgroup v2 in this kernel, Android
+13's per-process groups go into a cgroup v1 hierarchy (cpuacct), and there moving
+another user's task into a group needs every controller of the hierarchy to allow it.
+Only `cpu` did, for a process with `CAP_SYS_NICE`; the patch gives `cpuset` and
+`cpuacct` the same rule, so that `system_server` can move apps between cpusets and
+create the process groups of WebView and app zygote children. For 16 it can only
+allow more than before; 16 has not been run on a kernel that has it.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 
