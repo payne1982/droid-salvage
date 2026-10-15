@@ -1,0 +1,33 @@
+Subject: [PATCH] gnss: download XTRA3 from the xtracloud servers
+
+Android 13 downloads the XTRA file (long-term PSDS) only from the servers named by
+LONGTERM_PSDS_SERVER_* in /etc/gps_debug.conf or in the carrier config. The XTRA_SERVER_*
+lines of the vendor gps.conf are not read any more, and the carrier config without a
+SIM has none, so without these lines nothing is downloaded at all ("No Long-Term PSDS
+servers were specified").
+
+The server matters too. The modem of this tablet takes XTRA3 only (gps.conf has
+XTRA_VERSION_CHECK=3). Byte 6 of an XTRA file is its version. On 15 October 2026
+xtrapath1 and xtrapath3.izatcloud.net, the servers in ASUS' gps.conf, gave XTRA2 files
+under the name xtra3grc.bin (27504 and 34335 bytes); the modem refused them every time,
+"inject_pos_ind.status = UNKNOWN", or eQMI_LOC_INVALID_PARAMETER_V02 with the version
+check off. xtrapath2 gave XTRA3, and path1, path2 and path3.xtracloud.net gave XTRA3 for
+every name tried; the modem took those, 39 s after boot as well as later.
+
+This is a device change in a shared file: the file is installed by frameworks/base, and
+a second copy of it from the device tree would collide with that module.
+---
+--- a/services/core/java/com/android/server/location/gnss/gps_debug.conf
++++ b/services/core/java/com/android/server/location/gnss/gps_debug.conf
+@@ -59,3 +59,11 @@
+ # true: Enable periodic PSDS download
+ # false: Disable periodic PSDS download
+ #ENABLE_PSDS_PERIODIC_DOWNLOAD=false
++
++# Where the long-term PSDS (XTRA) file is downloaded from. The modem of the ASUS
++# ZenPad 3S 10 LTE (MSM8956) takes XTRA3 only. xtrapath1 and xtrapath3.izatcloud.net,
++# the servers in its gps.conf, now give XTRA2 files under the name xtra3grc.bin, and
++# the modem refuses them; Qualcomm's xtracloud.net servers give XTRA3.
++LONGTERM_PSDS_SERVER_1=https://path1.xtracloud.net/xtra3grc.bin
++LONGTERM_PSDS_SERVER_2=https://path2.xtracloud.net/xtra3grc.bin
++LONGTERM_PSDS_SERVER_3=https://path3.xtracloud.net/xtra3grc.bin
