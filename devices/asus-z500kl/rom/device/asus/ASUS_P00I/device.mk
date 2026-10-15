@@ -111,6 +111,16 @@ PRODUCT_COPY_FILES += \
 PRODUCT_COPY_FILES += $(foreach f,$(wildcard $(DEVICE_PATH)/rootdir/etc/ueventd.qcom.rc), \
     $(f):$(TARGET_COPY_OUT_VENDOR)/ueventd.rc)
 
+# Process groups. Android 13 keeps one cgroup per app process (uid_*/pid_*) in the
+# cgroup v2 hierarchy, and kills an app by killing what its cgroup.procs lists. A 3.10
+# kernel has no cgroup v2: tools/tree-patches/system/core/0001 mounts a v1 hierarchy
+# (cpuacct, as /acct was in Android 9) in its place. LineageOS-UL's cgroups.json
+# gives that directory mode 0600 and root, as it held only BPF programs there; this
+# replaces the entry with what AOSP gives /sys/fs/cgroup, so that system_server can
+# read and remove the groups.
+PRODUCT_COPY_FILES += \
+    $(DEVICE_PATH)/configs/cgroups/cgroups.json:$(TARGET_COPY_OUT_VENDOR)/etc/cgroups.json
+
 # ---------------------------------------------------------------------------------
 # Boot image signature
 # ---------------------------------------------------------------------------------

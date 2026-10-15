@@ -1,0 +1,49 @@
+Subject: [PATCH] libprocessgroup: with no cgroup v2, mount a v1 hierarchy in its place
+
+Android 13 keeps a cgroup for every app process, uid_<uid>/pid_<pid> in the cgroup v2
+hierarchy, and kills an app by signalling everything its cgroup.procs lists until the
+list is empty: that is how an app's children go with it. A 3.10 kernel has no cgroup2
+(it came with 4.5), the mount fails, and LineageOS-UL marks the hierarchy optional, so
+nothing stops. But the path stays in use: zygote makes the uid_*/pid_* directories on
+the tmpfs of /dev, and cgroup.procs in each is a plain file holding the one pid that
+was written into it. Killing an app then waits about 205 ms for a list that never
+empties ("Failed to kill process cgroup ... 1 processes remain", hundreds of times in
+a day of logs), and a child of the app is not in any list.
+
+A cgroup v1 hierarchy does the same job with the same files (cgroup.procs,
+uid_*/pid_* directories removed when empty), and the kernel has the cpuacct
+controller, enabled and not mounted. So when cgroup2 is not a filesystem this kernel
+knows (ENODEV), mount cpuacct there instead. Anything that needs cgroup2 itself, such
+as attaching BPF programs, fails as it did before: this kernel has no eBPF either.
+
+The device's /vendor/etc/cgroups.json gives the directory the owner and mode AOSP
+gives /sys/fs/cgroup, so that system_server can read and remove the groups.
+
+diff --git a/libprocessgroup/setup/cgroup_map_write.cpp b/libprocessgroup/setup/cgroup_map_write.cpp
+index 3831ef2..ec2b52e 100644
+--- a/libprocessgroup/setup/cgroup_map_write.cpp
++++ b/libprocessgroup/setup/cgroup_map_write.cpp
+@@ -277,7 +277,22 @@ static bool SetupCgroup(const CgroupDescriptor& descriptor) {
+                 LOG(INFO) << "Mounting memcg with memory_recursiveprot failed. Retrying without.";
+                 if (mount("none", controller->path(), "cgroup2", MS_NODEV | MS_NOEXEC | MS_NOSUID,
+                           nullptr) < 0) {
+-                    PLOG(ERROR) << "Failed to mount cgroup v2";
++                    int saved_errno = errno;
++                    // A kernel older than 4.5 has no cgroup2 (ENODEV). What this hierarchy
++                    // carries without controllers, the uid_*/pid_* process groups that
++                    // killProcessGroup() reads, works the same in a v1 one: Android 9 kept
++                    // them in /acct, a cgroup v1 with the cpuacct controller. Mount that
++                    // here, so that the groups are real cgroups and not plain directories
++                    // that only look like them.
++                    if (saved_errno == ENODEV &&
++                        mount("none", controller->path(), "cgroup",
++                              MS_NODEV | MS_NOEXEC | MS_NOSUID, "cpuacct") == 0) {
++                        LOG(INFO) << "No cgroup v2 in this kernel: cgroup v1 (cpuacct) mounted"
++                                  << " at " << controller->path() << " for process groups";
++                    } else {
++                        errno = saved_errno;
++                        PLOG(ERROR) << "Failed to mount cgroup v2";
++                    }
+                 }
+             }
+ 
