@@ -1,0 +1,7 @@
+# Bluetooth audio (audio.a2dp.default, loaded by the audio HAL) hands its stream to the
+# Bluetooth stack over two sockets the stack makes in /data/misc/bluedroid, .a2dp_ctrl
+# and .a2dp_data (bluetooth_socket). Without the connection the stream never opens:
+# headphones connect, the tablet stays silent, and after a few seconds the sound comes
+# out of the speakers.
+allow hal_audio_default bluetooth_socket:sock_file write;
+allow hal_audio_default bluetooth:unix_stream_socket connectto;

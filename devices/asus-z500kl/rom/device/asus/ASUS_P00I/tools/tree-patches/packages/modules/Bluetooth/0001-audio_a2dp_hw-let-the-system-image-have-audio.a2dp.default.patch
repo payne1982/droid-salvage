@@ -1,0 +1,95 @@
+Subject: [PATCH] audio_a2dp_hw: let the system image have audio.a2dp.default
+
+audio.a2dp.default is the "a2dp" module of an audio policy: the audio HAL loads it
+and hands it the Bluetooth stream, which it passes to the stack over the sockets in
+/data/misc/bluedroid. Android 13 still has that path, for an audio HAL that knows no
+Bluetooth Audio HAL; the ASUS ZenPad 3S 10 (MSM8956) has one such HAL. But the
+module is available only to the Bluetooth APEX, and a product that installs it in
+the system image fails the platform availability check.
+
+Its one obstacle was libosi, which is APEX-only together with most of the stack it
+links. The module used four functions from it. It now compiles the three libosi
+sources that hold them (hash_map_utils, properties, socket_local_client), through a
+filegroup, and, instead of libosi's allocator, which goes through the allocation
+tracker and with it the stack's logging, three libc-backed functions of its own: in
+the audio HAL the tracker is never switched on, so they are the same. With no libosi
+it can be "//apex_available:platform" as well.
+---
+diff --git a/system/audio_a2dp_hw/Android.bp b/system/audio_a2dp_hw/Android.bp
+index 408c49f..6c2eb97 100644
+--- a/system/audio_a2dp_hw/Android.bp
++++ b/system/audio_a2dp_hw/Android.bp
+@@ -27,15 +27,17 @@ cc_library {
+     srcs: [
+         "src/audio_a2dp_hw.cc",
+         "src/audio_a2dp_hw_utils.cc",
++        "src/osi_allocator.cc",
++        ":OsiAudioA2dpHwSources",
+     ],
+     apex_available: [
++        "//apex_available:platform",
+         "com.android.bluetooth",
+     ],
+     shared_libs: [
+         "liblog",
+         "libcutils",
+     ],
+-    static_libs: ["libosi"],
+ }
+ 
+ cc_library_static {
+diff --git a/system/audio_a2dp_hw/src/osi_allocator.cc b/system/audio_a2dp_hw/src/osi_allocator.cc
+new file mode 100644
+index 0000000..5459146
+--- /dev/null
++++ b/system/audio_a2dp_hw/src/osi_allocator.cc
+@@ -0,0 +1,26 @@
++/*
++ * The three allocation functions of libosi that hash_map_utils.cc, compiled into
++ * audio.a2dp.default from libosi's sources, calls. libosi's allocator.cc passes them
++ * through its allocation tracker, which is switched on only in the Bluetooth
++ * process and brings the stack's logging with it; in the audio HAL it is never on,
++ * and then they are libc's.
++ */
++
++#include <stdlib.h>
++#include <string.h>
++
++#include "osi/include/allocator.h"
++
++char* osi_strdup(const char* str) {
++  char* copy = strdup(str);
++  if (copy == NULL) abort();
++  return copy;
++}
++
++char* osi_strndup(const char* str, size_t len) {
++  char* copy = strndup(str, len);
++  if (copy == NULL) abort();
++  return copy;
++}
++
++void osi_free(void* ptr) { free(ptr); }
+diff --git a/system/osi/Android.bp b/system/osi/Android.bp
+index bcbac81..d63d138 100644
+--- a/system/osi/Android.bp
++++ b/system/osi/Android.bp
+@@ -52,6 +52,18 @@ filegroup {
+   ],
+ }
+ 
++// The parts of libosi that audio.a2dp.default uses. It is installed in the system
++// image for devices whose audio HAL still loads it, and libosi, with all it links,
++// is only available to the Bluetooth APEX.
++filegroup {
++  name: "OsiAudioA2dpHwSources",
++  srcs: [
++    "src/hash_map_utils.cc",
++    "src/properties.cc",
++    "src/socket_utils/socket_local_client.cc",
++  ],
++}
++
+ // libosi static library for target
+ cc_library_static {
+     name: "libosi",

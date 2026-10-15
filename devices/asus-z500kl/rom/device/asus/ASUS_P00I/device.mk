@@ -310,6 +310,7 @@ PRODUCT_PACKAGES += \
     android.hardware.audio.service \
     android.hardware.audio@6.0-impl \
     android.hardware.audio.effect@6.0-impl \
+    audio.a2dp.default \
     audio.primary.msm8952 \
     audio.r_submix.default \
     audio.usb.default \
@@ -320,11 +321,17 @@ PRODUCT_PACKAGES += \
     tinymix
 
 # The policy is the CAF tree's, which describes the outputs this HAL implements;
-# ASUS' describes their own HAL. The effects are AOSP's: ASUS' audio_effects.conf
-# loads Dolby and MaxxAudio libraries that are not here.
+# ASUS' describes their own HAL. configs/audio has it with one port Android 13 cannot
+# read, which made it throw the whole file away (the file says which). The effects are
+# AOSP's: ASUS' audio_effects.conf loads Dolby and MaxxAudio libraries that are not
+# here.
+#
+# audio.a2dp.default is the "a2dp" module of that policy: Bluetooth audio, handed to
+# the Bluetooth stack over its sockets in /data/misc/bluedroid. Pie's base product
+# installed it; Android 13's does not.
 AUDIO_POLICY_CONFIG_DIR := frameworks/av/services/audiopolicy/config
 PRODUCT_COPY_FILES += \
-    hardware/qcom-caf/msm8952/audio/configs/common/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
+    $(DEVICE_PATH)/configs/audio/audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/a2dp_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/a2dp_audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/r_submix_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/r_submix_audio_policy_configuration.xml \
     $(AUDIO_POLICY_CONFIG_DIR)/usb_audio_policy_configuration.xml:$(TARGET_COPY_OUT_VENDOR)/etc/usb_audio_policy_configuration.xml \
@@ -384,6 +391,32 @@ PRODUCT_PROPERTY_OVERRIDES += \
 # to not ask.
 PRODUCT_PROPERTY_OVERRIDES += \
     bluetooth.le.disable_apcf_extended_features=1
+
+# The profiles the Bluetooth stack offers. Up to Pie each was on unless an overlay
+# turned it off; on Android 13 each is off unless a property turns it on, and with
+# none set the stack offered GATT alone: headphones paired, and the tablet closed the
+# connection a few seconds later. These are the classic profiles; the LE Audio
+# ones need a controller newer than this one.
+PRODUCT_PROPERTY_OVERRIDES += \
+    bluetooth.profile.a2dp.source.enabled=true \
+    bluetooth.profile.avrcp.target.enabled=true \
+    bluetooth.profile.gatt.enabled=true \
+    bluetooth.profile.hfp.ag.enabled=true \
+    bluetooth.profile.hid.device.enabled=true \
+    bluetooth.profile.hid.host.enabled=true \
+    bluetooth.profile.map.server.enabled=true \
+    bluetooth.profile.opp.enabled=true \
+    bluetooth.profile.pan.nap.enabled=true \
+    bluetooth.profile.pan.panu.enabled=true \
+    bluetooth.profile.pbap.server.enabled=true
+
+# Audio and video in step over Bluetooth. With the headphones' delay report, the A2DP
+# module (audio.a2dp.default) told players about 650 ms of latency for earbuds that
+# report 179 ms, and in the browser the sound ran 0.3 to 1 s ahead of the picture.
+# With reports off it uses its own estimate (its buffer plus 200 ms), and the two were
+# in step to the eye. Why the figure with reports was that high is not worked out.
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.bluetooth.disabledelayreports=true
 
 PRODUCT_PACKAGES += \
     android.hardware.bluetooth@1.0-impl \
