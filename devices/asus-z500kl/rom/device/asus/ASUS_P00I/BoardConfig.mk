@@ -161,11 +161,10 @@ BOARD_KERNEL_CMDLINE += androidboot.hardware=qcom msm_rtb.filter=0x237 ehci-hcd.
 BOARD_KERNEL_CMDLINE += androidboot.bootdevice=7824900.sdhci lpm_levels.sleep_disabled=1
 BOARD_KERNEL_CMDLINE += earlyprintk
 
-# SELinux permissive, for the first boots of this version. sepolicy/ is the policy
-# written for LineageOS 16, where the same line came out once every daemon had its
-# domain; nobody has yet seen what it denies on Android 13. init honours the argument
-# on userdebug builds. It comes out again when the denials have been read and answered.
-BOARD_KERNEL_CMDLINE += androidboot.selinux=permissive
+# SELinux enforcing. The first boots of this version were permissive, until the
+# denials of Android 13 had been read and answered in sepolicy/. To look at a new
+# daemon, androidboot.selinux=permissive here puts it back: init honours it on
+# userdebug builds.
 
 # Mount points in the root directory, for the three partitions fstab.qcom mounts there.
 # The root is the system image and nothing can be created in it at boot. Without them

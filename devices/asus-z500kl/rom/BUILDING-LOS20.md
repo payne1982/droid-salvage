@@ -3,8 +3,9 @@
 Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2
 reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on the
 tablet that image starts and gets through the LineageOS setup wizard. **Little has been
-used beyond that**: Wi-Fi connects, the browser plays video, the camera takes photos
-and video, Bluetooth switches on, and SELinux is permissive.
+used beyond that**: Wi-Fi connects, also again with the screen off, the browser plays
+video, the camera takes photos and video, Bluetooth switches on, the GPS has had a fix
+at a window, and SELinux is enforcing.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
 ## What the host needs
@@ -90,9 +91,13 @@ the SELinux label of the device node.
 - The boot image carries the signature the bootloader of this tablet checks, appended
   by `boot_signer` as on 16; Android 13 still has the tool, and the 1320-byte trailer
   is there. That the bootloader accepts it has not been tried.
-- SELinux policy is the one written for 16 and compiles. Nobody has seen what it denies
-  on 13, so the kernel command line carries `androidboot.selinux=permissive` for now:
-  this image does not enforce it.
+- SELinux is enforcing from boot since 15 October. What it still denies is vendor
+  processes reading properties labelled `default_prop` (the media codecs, the
+  sensors, camera, composer and GNSS HALs, the radio daemons), plus two reads of the
+  same kind by audioserver and system_server. None of the `default_prop`
+  properties set on the tablet is read by vendor code, so these change nothing; they
+  are not silenced either. Bluetooth audio, a SIM and mobile data have not been tried
+  under enforcing.
 
 ## What the first boots asked for
 
