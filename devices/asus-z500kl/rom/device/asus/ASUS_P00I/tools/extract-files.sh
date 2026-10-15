@@ -208,6 +208,22 @@ if [ -f "$vendor_dir/proprietary/$hal" ] &&
     printf '    %s: open_legacy returns -ENOSYS\n' "$hal"
 fi
 
+# qcril keeps its database (a copy of vendor/qcril.db) and its state files in
+# /data/misc/radio, a path written into libril-qc-qmi-1 thirteen times. Android 13
+# labels that directory radio_core_data_file, for the platform's own radio code, and
+# its policy forbids vendor code to touch it. The path becomes /data/vendor/ril, the
+# same length, so the strings keep their places; init.qcom.rc makes the directory and
+# sepolicy/file_contexts labels it. Same safeguards as above.
+ril=vendor/lib64/libril-qc-qmi-1.so
+ril_sha=428a6866447583edaa636505131a8a29704a59878b6bfedf274ccfd75a511e65
+if [ -f "$vendor_dir/proprietary/$ril" ] &&
+   [ "$(sha256sum "$vendor_dir/proprietary/$ril" | cut -d' ' -f1)" = "$ril_sha" ]; then
+    LC_ALL=C sed -i 's|/data/misc/radio|/data/vendor/ril|g' "$vendor_dir/proprietary/$ril"
+    ! LC_ALL=C grep -q '/data/misc/radio' "$vendor_dir/proprietary/$ril" ||
+        { printf 'error: %s still names /data/misc/radio\n' "$ril" >&2; exit 1; }
+    printf '    %s: /data/misc/radio -> /data/vendor/ril\n' "$ril"
+fi
+
 mp=vendor/etc/media_profiles_V1_0.xml
 if [ -f "$vendor_dir/proprietary/$mp" ] && grep -q 'quality="\(timelapse\)\{0,1\}vga"' "$vendor_dir/proprietary/$mp"; then
     awk '/<EncoderProfile quality="(timelapse)?vga"/ { skip = 1 }

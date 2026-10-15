@@ -13,5 +13,11 @@
 # /data/misc/netmgr (made by init.qcom.rc), not in sepolicy-legacy's /data/vendor/netmgr.
 /data/misc/netmgr(/.*)?                         u:object_r:netmgrd_data_file:s0
 
+# qcril's database and state. Stock's libril-qc-qmi-1 has /data/misc/radio written in,
+# which Android 13 labels radio_core_data_file and keeps from vendor code;
+# extract-files.sh rewrites the path to /data/vendor/ril, made by init.qcom.rc, and it
+# gets the label sepolicy-legacy gives /data/vendor/radio, with the rules that go with it.
+/data/vendor/ril(/.*)?                          u:object_r:vendor_radio_data_file:s0
+
 # The health HAL built in health/, into the domain of AOSP's generic one.
 /(vendor|system/vendor)/bin/hw/android\.hardware\.health@2\.0-service\.ASUS_P00I   u:object_r:hal_health_default_exec:s0

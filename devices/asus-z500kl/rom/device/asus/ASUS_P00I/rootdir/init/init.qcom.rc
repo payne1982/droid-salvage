@@ -106,18 +106,21 @@ on post-fs-data
 
 on post-fs-data
     # qcril's working files. It copies the prebuilt vendor/qcril.db here once
-    # prebuilt_db_support says it may, and keeps its own state alongside.
-    mkdir /data/misc/radio 0770 system radio
-    mkdir /data/misc/radio/modem_config 0770 radio radio
-    write /data/misc/radio/copy_complete 0
-    chown radio radio /data/misc/radio/copy_complete
-    chmod 0660 /data/misc/radio/copy_complete
-    write /data/misc/radio/prebuilt_db_support 1
-    chown radio radio /data/misc/radio/prebuilt_db_support
-    chmod 0400 /data/misc/radio/prebuilt_db_support
-    write /data/misc/radio/db_check_done 0
-    chown radio radio /data/misc/radio/db_check_done
-    chmod 0660 /data/misc/radio/db_check_done
+    # prebuilt_db_support says it may, and keeps its own state alongside. Stock kept
+    # them in /data/misc/radio, which Android 13 reserves to the platform's own radio
+    # code; extract-files.sh points libril-qc-qmi-1 at /data/vendor/ril instead (same
+    # length), and sepolicy/file_contexts labels it as the vendor's radio data.
+    mkdir /data/vendor/ril 0770 system radio
+    mkdir /data/vendor/ril/modem_config 0770 radio radio
+    write /data/vendor/ril/copy_complete 0
+    chown radio radio /data/vendor/ril/copy_complete
+    chmod 0660 /data/vendor/ril/copy_complete
+    write /data/vendor/ril/prebuilt_db_support 1
+    chown radio radio /data/vendor/ril/prebuilt_db_support
+    chmod 0400 /data/vendor/ril/prebuilt_db_support
+    write /data/vendor/ril/db_check_done 0
+    chown radio radio /data/vendor/ril/db_check_done
+    chmod 0660 /data/vendor/ril/db_check_done
     mkdir /data/misc/netmgr 0770 radio radio
 
 on post-fs-data
