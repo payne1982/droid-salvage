@@ -70,6 +70,17 @@ on init
     export ANDROID_CACHE /cache
     export TERMINFO /system/etc/terminfo
 
+    # A cable plugged in after the boot. ASUS' charger driver holds every insertion
+    # until it is told that HVDCP 3 (Quick Charge 3) is supported, and retries the
+    # waiting one only on the path a cable present at power-on takes: one plugged in
+    # later is set aside and never comes back, so no charging and no USB. On stock
+    # Qualcomm's hvdcp_opti said so at every start (10 is
+    # POWER_SUPPLY_DP_DM_HVDCP3_SUPPORTED); it is not in this build, and this write
+    # says the same. Its other job, stepping a Quick Charge 3 adapter's voltage, is
+    # not done here, so such an adapter may charge more slowly than on stock (not
+    # tried).
+    write /sys/class/power_supply/battery/dp_dm 10
+
 on fs
     wait /dev/block/bootdevice
     mount_all /fstab.qcom

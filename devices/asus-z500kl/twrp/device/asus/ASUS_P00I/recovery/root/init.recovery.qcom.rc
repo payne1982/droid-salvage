@@ -15,6 +15,13 @@ on early-init
     # ask it for the legacy read/write path.
     setprop sys.usb.ffs.aio_compat true
 
+    # A cable plugged in after the boot. ASUS' charger driver holds every insertion
+    # until it is told that HVDCP 3 (Quick Charge 3) is supported, which on stock
+    # Qualcomm's hvdcp_opti did at every start and nothing does here: a cable plugged
+    # in once the recovery was up gave no charging and no adb. 10 is
+    # POWER_SUPPLY_DP_DM_HVDCP3_SUPPORTED. See the system's init.qcom.rc.
+    write /sys/class/power_supply/battery/dp_dm 10
+
 on fs
     # qseecomd drops to uid 1000 (setuid(1000) before its fork), so it can only open
     # these if the ownership matches - a chmod alone is not enough. These two lines
