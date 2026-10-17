@@ -76,6 +76,12 @@ on init
     # tried).
     write /sys/class/power_supply/battery/dp_dm 10
 
+    # prng_seeder seeds BoringSSL in other processes from /dev/hw_random. It starts in
+    # early-init, a tenth of a second before ueventd has made that node here, finds
+    # nothing to open and hangs for the rest of the boot ("Unable to open hwrng").
+    # By "on init" the cold boot is done; a restart then finds the node.
+    restart prng_seeder
+
 on fs
     wait /dev/block/bootdevice
     mount_all /vendor/etc/fstab.qcom
