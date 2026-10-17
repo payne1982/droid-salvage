@@ -305,6 +305,17 @@ else
     done
 fi
 
+# The hardware random number generator. Stock's ueventd.qcom.rc keeps /dev/hw_random
+# for root alone; Android 13's prng_seeder, which reads it to seed BoringSSL in other
+# processes, runs as its own user and gave up at every boot ("Unable to open hwrng
+# /dev/hw_random"). The line becomes AOSP's own (system/core/rootdir/ueventd.rc),
+# which the vendor file would otherwise override.
+u=$here/rootdir/etc/ueventd.qcom.rc
+if [ -f "$u" ] && grep -q '^/dev/hw_random[[:space:]]*0600[[:space:]]*root[[:space:]]*root' "$u"; then
+    sed -i 's|^/dev/hw_random[[:space:]].*|/dev/hw_random            0400   prng_seeder prng_seeder|' "$u"
+    printf '    ueventd.qcom.rc: /dev/hw_random for prng_seeder\n'
+fi
+
 printf '\n'
 say "done"
 cat <<'NOTE'
