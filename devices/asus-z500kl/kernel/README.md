@@ -270,6 +270,17 @@ not permitted`). Android's own base kernel configuration has the option off
 (`kernel/configs/*/android-base.config`). LineageOS 16 ran with it on, and has not been
 run on a kernel built without it.
 
+`CONFIG_FIPS_ENABLE` is off, which stock had on. In this tree it takes the Qualcomm
+random number generator (`msm_rng`) and crypto engine drivers (`qcrypto`, `qcedev`)
+out of the build, expecting certified binaries ASUS did not publish, so there was no
+`/dev/hw_random` and the kernel's entropy came from interrupts alone. Android 13 runs
+BoringSSL's self-test early in the boot, and it waits until the kernel's random pool is
+ready: usually under a second, but one morning, started with no USB cable, 152 s on the
+ASUS logo. With the option off, the generator registers and the tree's hwrng thread
+feeds the pool from it; the same boot without a cable then took 0.1 s there.
+Samsung's kernel for the MSM8976 has it off as well. LineageOS 16 has not been run on a
+kernel built without it.
+
 `patches/0016` is about the modules the configuration builds (test and debug drivers,
 nothing this tablet loads). The kernel signs them with a key pair it makes at build
 time and only loads signed ones, and it accepts its own certificate at boot only if it
