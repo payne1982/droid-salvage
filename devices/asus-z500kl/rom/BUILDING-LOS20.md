@@ -4,8 +4,8 @@ Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: miles
 reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on the
 tablet that image starts and gets through the LineageOS setup wizard. **Little has been
 used beyond that**: Wi-Fi connects, also again with the screen off, the browser plays
-video, the camera takes photos and video, Bluetooth switches on, the GPS has had a fix
-at a window, and SELinux is enforcing.
+video, the camera takes photos and video, Bluetooth headphones connect and play, the
+GPS has had a fix at a window, and SELinux is enforcing.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
 ## What the host needs
@@ -59,6 +59,9 @@ cd <tree>/device/asus/ASUS_P00I
 ./tools/merge-lineage.sh
 ./tools/apply-tree-patches.sh
 
+# 5b. SQLite 3.44.5 in place of 3.42.1 (the script says why)
+./tools/setup-sqlite.sh
+
 # 6. build. WITH_ADB_INSECURE is for bring-up: adb on from the first boot and with no
 #    key to accept on the screen, so that a system that starts halfway still gives a
 #    root shell. Not for an image meant to be used.
@@ -66,8 +69,8 @@ cd <tree> && source build/envsetup.sh && lunch lineage_ASUS_P00I-userdebug
 WITH_ADB_INSECURE=true SOONG_GOGC=25 mka bacon
 ```
 
-After a `repo sync`, steps 5 again: the sync puts the projects they change back as the
-manifest has them.
+After a `repo sync`, steps 5 and 5b again: the sync puts the projects they change back
+as the manifest has them.
 
 The result is `out/target/product/ASUS_P00I/lineage-20.0-<date>-UNOFFICIAL-ASUS_P00I.zip`.
 Its install script writes `system` and `boot` and nothing else. The zip also carries a
@@ -96,8 +99,12 @@ the SELinux label of the device node.
   sensors, camera, composer and GNSS HALs, the radio daemons), plus two reads of the
   same kind by audioserver and system_server. None of the `default_prop`
   properties set on the tablet is read by vendor code, so these change nothing; they
-  are not silenced either. Bluetooth audio, a SIM and mobile data have not been tried
-  under enforcing.
+  are not silenced either. A SIM and mobile data have not been tried under enforcing.
+- Photos taken with the tablet held in landscape are saved turned by 90 degrees in
+  Aperture, LineageOS' camera application: it asks the camera for the rotation of a
+  tablet held upright, whatever the accelerometer says, and its buttons do not turn
+  either. Open Camera, on the same system, saves them the right way up, so the sensor
+  and the camera HAL do their part. Why Aperture does not is not found.
 
 ## What the first boots asked for
 
@@ -182,6 +189,26 @@ back; qcril creates its database in the new place; with the policy switched to
 enforcing on the running system, Wi-Fi, sensors, camera, audio and GNSS work with no
 denial; Wi-Fi turned off and on with the screen off is connected again after 10 s; the
 XTRA file is taken by the modem about 40 s after boot.
+
+15 to 17 October, Bluetooth headphones, a slow start, a cable and a search:
+
+| What happened | What was done |
+|---|---|
+| Headphones pair and are dropped at once. Android 13 starts a Bluetooth profile only if a property says so, and none did but GATT | `bluetooth.profile.*.enabled` in `device.mk` |
+| Connected, they stay silent and the sound comes from the speakers. The audio policy file named a device type Android 13 does not know (`AUDIO_DEVICE_OUT_ALL_SCO`), and the whole file was thrown away for it: only the primary output was left, with no A2DP and no USB. The A2DP module, `audio.a2dp.default`, was not in the image, LineageOS 20 building it only for the Bluetooth APEX, and the audio HAL was not allowed to reach the Bluetooth stack's sockets | `configs/audio/audio_policy_configuration.xml`, `tools/tree-patches/packages/modules/Bluetooth/0001`, `sepolicy/hal_audio.te` |
+| The sound runs 0.3 to 1 s ahead of the picture. With the headphones' delay report the module told players of about 650 ms of latency, for headphones that report 179 | `persist.bluetooth.disabledelayreports` |
+| Five minutes on the ASUS logo, on a start with no USB cable. BoringSSL's self-test waits for the kernel's random pool, which here filled from interrupts alone: the kernel was built without the chip's random number generator | `CONFIG_FIPS_ENABLE` off, [`../kernel/README.md`](../kernel/README.md) |
+| `prng_seeder` gives up at every boot: ASUS' `ueventd.qcom.rc` keeps `/dev/hw_random` for root, and the daemon starts before the node exists | `tools/extract-files.sh`, `rootdir/init/init.qcom.rc` |
+| A USB cable plugged in after the start gives neither charging nor USB. ASUS' charger driver holds every insertion until told that Quick Charge 3 is supported, which Qualcomm's `hvdcp_opti` did on stock and nothing did here | `rootdir/init/init.qcom.rc` |
+| F-Droid's search looks hung: 88 s for "gp". The query planner of SQLite 3.42.1, the version Android 13 has, runs a full-text match once for every app in a join | `tools/setup-sqlite.sh`: SQLite 3.44.5, from LineageOS 22.2 |
+
+All have been tried, under enforcing: headphones play AAC, in step with the picture
+with the delay-report property set by hand (the image has it since, and with it the
+headphones have not been tried again); on a start without a cable the self-test waits
+0.1 s where it had waited 152; `prng_seeder` holds `/dev/hw_random` open; a cable
+unplugged and plugged back is charged from and seen by the computer; the same F-Droid
+search takes 0.13 s, and in a round of use nothing else looked different. Charging
+from a Quick Charge 3 adapter has not been tried.
 
 ## What had to change to get here
 
