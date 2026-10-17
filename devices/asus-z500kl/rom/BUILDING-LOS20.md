@@ -171,8 +171,11 @@ missing maps, but the log is full of them, and the iptables rules that refer to 
 programs (data usage limits, data saver) are not installed.
 
 `tools/missing-symbols.py` lists what the blobs import that the image does not have,
-all at once instead of one failed `dlopen` per boot. On this image it finds 38 symbols
-in 13 files; only the radio one has been dealt with.
+all at once instead of one failed `dlopen` per boot. On this image it found 38 symbols
+in 13 files. The radio one has been dealt with; the other 37 belong to libraries
+nothing here loads or that fail the same way on 16 (Adreno's RenderScript driver,
+which Android 13 loads only when asked by name, so RenderScript runs on the CPU;
+TrustZone's secure display; parts of IMS), and are left as they are.
 
 15 October, a day of use with the tablet on the desk, one HAL at a time:
 
@@ -209,6 +212,11 @@ headphones have not been tried again); on a start without a cable the self-test 
 unplugged and plugged back is charged from and seen by the computer; the same F-Droid
 search takes 0.13 s, and in a round of use nothing else looked different. Charging
 from a Quick Charge 3 adapter has not been tried.
+
+17 October, what had not been used yet, with nothing changed for it: a first GPS fix
+outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
+hardware at 30 frames a second; the microphone; the light sensor; Widevine at L3,
+provisioned by Google's server, as on 16.
 
 ## What had to change to get here
 
