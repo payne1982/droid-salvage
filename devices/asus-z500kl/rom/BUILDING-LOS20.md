@@ -245,7 +245,10 @@ at the end; the camera takes a photo and records a video.
 17 October, what had not been used yet, with nothing changed for it: a first GPS fix
 outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
 hardware at 30 frames a second; the microphone; the light sensor; Widevine at L3,
-provisioned by Google's server, as on 16.
+provisioned by Google's server, as on 16. The same day, on the tablet: a PIN on the
+lock screen, asked for again after a restart; wired headphones, with their
+microphone; file transfer (MTP) to a Windows PC; the cover's magnet switching the
+screen off.
 
 ## What had to change to get here
 

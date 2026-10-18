@@ -136,10 +136,10 @@ and Wi-Fi switch on, the boot takes 47 seconds.
 **In use, 17 October 2026.** Under enforcing: Wi-Fi, Bluetooth headphones, audio,
 sensors, the video codecs, GPS, the cameras, the microphone, Widevine at L3, a USB
 cable plugged in at any time; and since 18 October charging from a Quick Charge 3
-adapter at 9 V and with the system off. What each needed is in
-[`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md). Not tried yet: the modem with a SIM,
-keymaster and gatekeeper behind a PIN, wired headphones, MTP, a microSD card, a night
-on standby.
+adapter at 9 V and with the system off; with nothing changed for them, a PIN across a
+restart (keymaster and gatekeeper), wired headphones, MTP and the cover's magnet. What
+each needed is in [`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md). Not tried yet: the
+modem with a SIM, a microSD card, a night on standby.
 
 ### L4 — what a release has
 SELinux enforcing, secure adb, the signed boot image, the fixed fingerprint. Each of
