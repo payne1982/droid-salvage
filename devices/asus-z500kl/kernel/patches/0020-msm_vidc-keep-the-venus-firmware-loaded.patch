@@ -1,0 +1,30 @@
+Subject: [PATCH] msm_vidc: keep the Venus firmware loaded
+
+msm_vidc unloads the video core's firmware 15 s after the last session and loads it
+again at the next one, into a 5 MB CMA region (venus_mem) that it needs whole. Early
+on that works; after a while in use, pages in the region can no longer be moved out
+("venus: Failed to allocate relocatable region of size 500000"), and every hardware
+codec fails from then on, the camera's video encoder among them. Loaded while the
+region is still clean and never unloaded, the firmware never has to be placed again.
+An idle core is power-collapsed either way (qcom,sw-power-collapse); unloading only
+gives back the region, which is reserved for it anyway.
+
+The delay stays in debugfs (msm_vidc/firmware_unload_delay) as before; only its
+default changes. LineageOS 20 used to set it from init, which needed debugfs, its own
+SELinux label and a rule for init.
+---
+--- drivers/media/platform/msm/vidc/msm_vidc_debug.c
++++ drivers/media/platform/msm/vidc/msm_vidc_debug.c
+@@ -28,7 +28,11 @@
+ int msm_vidc_dec_dcvs_mode = 0x1;
+ int msm_vidc_enc_dcvs_mode = 0x1;
+ int msm_vidc_sys_idle_indicator = 0x0;
+-u32 msm_vidc_firmware_unload_delay = 15000;
++/*
++ * Never unload the firmware: loading it again needs venus_mem whole, which after a
++ * while in use the kernel can no longer free.
++ */
++u32 msm_vidc_firmware_unload_delay = UINT_MAX;
+ int msm_vidc_thermal_mitigation_disabled = 0x0;
+ 
+ struct debug_buffer {

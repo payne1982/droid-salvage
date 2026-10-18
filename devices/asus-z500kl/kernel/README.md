@@ -326,6 +326,17 @@ it took the status for unknown and stopped showing that the tablet was charging.
 fuel gauge, which is told the same status, looks for Charging too. Charging is now
 reported as Charging, as ASUS' engineering builds did.
 
+`patches/0020` is for both. The video driver unloads the Venus firmware 15 s after the
+last session and loads it again into a 5 MB CMA region it needs whole, which after a
+while in use the kernel can no longer free: from then on every hardware codec failed.
+The firmware now stays loaded. 16 and the first LineageOS 20 builds set the same from
+init, through debugfs.
+
+`patches/0021` is for LineageOS 20. Android 13 marks the output buffers of a hardware
+video decoder with a usage bit this platform's gralloc reads as "take them from the
+camera ION heap", which this kernel did not have: VP9 in the browser stopped on the
+first frame. The heap is now declared, as plain system memory.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 

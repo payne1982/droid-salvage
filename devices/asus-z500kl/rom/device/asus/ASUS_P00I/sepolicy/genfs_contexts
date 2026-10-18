@@ -6,9 +6,6 @@ genfscon proc /sys/kernel/power_aware_timer_migration               u:object_r:p
 genfscon sysfs /devices/soc.0/qcom,cpubw.49/devfreq                  u:object_r:sysfs_devfreq:s0
 genfscon sysfs /devices/soc.0/qcom,mincpubw.50/devfreq               u:object_r:sysfs_devfreq:s0
 
-# msm_vidc's firmware unload delay, raised by init.qcom.rc so Venus stays loaded.
-genfscon debugfs /msm_vidc                                           u:object_r:debugfs_msm_vidc:s0
-
 # Where init.macaddr.sh hands the WCNSS core the factory WiFi address.
 genfscon sysfs /devices/soc.0/a000000.qcom,wcnss-wlan/wcnss_mac_addr u:object_r:sysfs_wcnss_mac_addr:s0
 

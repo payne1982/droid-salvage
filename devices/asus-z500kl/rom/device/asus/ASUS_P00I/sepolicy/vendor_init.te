@@ -1,9 +1,7 @@
 # On Android 13 init.qcom.rc is in /vendor, and init runs its commands as vendor_init.
 
-# The HMP scheduler knobs (genfs_contexts) and msm_vidc's firmware unload delay.
+# The HMP scheduler knobs (genfs_contexts).
 allow vendor_init proc_sched:file w_file_perms;
-allow vendor_init debugfs_msm_vidc:dir search;
-allow vendor_init debugfs_msm_vidc:file w_file_perms;
 
 # Writing 1 to /sys/kernel/boot_adsp/boot makes the kernel load the ADSP firmware from
 # /system/etc/firmware, and on this kernel the file is read with the writer's

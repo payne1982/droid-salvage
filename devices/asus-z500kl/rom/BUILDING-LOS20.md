@@ -158,7 +158,7 @@ Wi-Fi and a web page:
 | At the end of the wizard the notification shade does not come down, and home and recents do nothing. The wizard's last activity is recreated when the taskbar goes away, runs its exit twice and crashes on the second (*Receiver not registered*); a second copy of the wizard is left holding the status bar disabled | `tools/tree-patches/packages/apps/SetupWizard/0001` |
 | The camera application stops as it opens: cameraserver refuses the stream configuration, *Parcel data not fully consumed, unread size: 24*. LineageOS-UL put the native camera service back to Android 12 for HAL1 devices and left the Java side on Android 13 | `local_manifests/lineage-20-camera.xml`, `tools/tree-patches/frameworks/base/0001` |
 | With the preview running, taking a photo, recording or closing the camera kills the camera HAL's process, in gralloc. The HAL of 2017 allocates 8 bytes for an `android::Fence`, Nougat's size; Android 13's has a vtable and is 12, and its constructor writes the fence's fd past the end of the HAL's allocation. Found with GWP-ASan on the provider process | `shims/camera`: the HAL gets every `Fence` function it imports, with Nougat's layout |
-| YouTube in the browser stops on the first frame, with no sound: the hardware VP9 decoder gets no output buffers. Android 13 marks them `VIDEO_DECODER` (0x00400000), which this gralloc reads as "take them from the camera ION heap", and the kernel has no such heap (*ION_IOC_ALLOC failed with error - No such device*). The same was found on the Galaxy Tab S2 | `tools/tree-patches/hardware/qcom-caf/msm8952/display/0001` |
+| YouTube in the browser stops on the first frame, with no sound: the hardware VP9 decoder gets no output buffers. Android 13 marks them `VIDEO_DECODER` (0x00400000), which this gralloc reads as "take them from the camera ION heap", and the kernel has no such heap (*ION_IOC_ALLOC failed with error - No such device*). The same was found on the Galaxy Tab S2 | [`../kernel/patches/0021`](../kernel/README.md) declares the heap, as system memory; at first a tree patch to gralloc stopped it asking for the heap |
 
 The second and third fixes have been tried: photos from both cameras and a 1080p
 video with sound, and malloc debug, which counted 27 writes into freed memory in a few
@@ -233,6 +233,14 @@ Android when the key is held. The lock screen says "charging slowly" on a
 computer, and with the time to full on the Raspberry Pi's port (900 mA at 5 V); on
 the Xiaomi "slowly" for the first seconds, then "rapidly" once it is at 9 V; with
 `patches/0019` that stays when the driver takes the adapter for ASUS'.
+
+The same day two workarounds went from Android to the kernel, where their causes
+are: [`../kernel/patches/0020`](../kernel/README.md) keeps the Venus firmware loaded,
+which `init.qcom.rc` had done through debugfs, and `patches/0021` gives the kernel the
+camera heap the decoders ask for, which a tree patch to gralloc had stopped them
+asking for. Tried on build L3zb: VP9 and H.264 at 1080p play in hardware, 181 frames
+at 30 fps, the VP9 decoder taking its 15 MB from the new heap and giving them back
+at the end; the camera takes a photo and records a video.
 
 17 October, what had not been used yet, with nothing changed for it: a first GPS fix
 outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
