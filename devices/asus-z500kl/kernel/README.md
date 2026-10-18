@@ -310,6 +310,22 @@ Only `cpu` did, for a process with `CAP_SYS_NICE`; the patch gives `cpuset` and
 create the process groups of WebView and app zygote children. For 16 it can only
 allow more than before; 16 has not been run on a kernel that has it.
 
+`patches/0018` is for both. ASUS' charger driver sets every cable insertion aside
+until Qualcomm's `hvdcp_opti` says that Quick Charge 3 is supported, and retries only
+for a cable present at power-on: a cable plugged in later gave neither charging nor
+USB until the daemon had run. On stock it ran within seconds of every start. Without
+the wait the insertion is handled at once, whether the daemon has started or not; on
+LineageOS 20, with and without `hvdcp_opti` in the image, a cable unplugged and
+plugged back is charged from and seen by the computer. 16 has not been run on a kernel
+that has it.
+
+`patches/0019` is for both. With an adapter it takes for ASUS' own 9 V one, ASUS'
+charger driver reports the battery as "Quick charging", or "Not Quick charging" above
+70%, for the "+" that ASUS' system drew on the battery icon. Android knows neither:
+it took the status for unknown and stopped showing that the tablet was charging. The
+fuel gauge, which is told the same status, looks for Charging too. Charging is now
+reported as Charging, as ASUS' engineering builds did.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 
