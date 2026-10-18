@@ -88,8 +88,28 @@ the SELinux label of the device node.
 
 ## What is not done, or not verified
 
-- The image is signed with AOSP's test keys and is a `userdebug` build. `release-build.sh`
-  has not been moved to this version.
+- Development builds are signed with AOSP's test keys, and every build is `userdebug`.
+  A release is built with `tools/release-build.sh <name>`, moved to this version on 18
+  October: it gives the build its own fingerprint, the same in the nine property files
+  that carry one, and stops if adb is open or the build is signed with the test keys.
+  One test release went through it (dev-keys, adb closed); it has not been installed.
+
+  Signing works as on 16 (`README.md`, "Signing"), with more keys: `releasekey`,
+  `platform`, `shared`, `media`, `networkstack`, `bluetooth`, `sdk_sandbox`, `testkey`
+  and `testcert`, in `vendor/lineage-priv/keys/`. All can be RSA 4096: Android 13
+  checks updates against X.509 certificates, and the 2048-bit limit of 16's `dumpkey`
+  is gone. The APEXes are flattened here, so they need no keys of their own. To keep
+  development builds installable over a system that runs on the test keys, the
+  `keys.mk` used here signs only builds with a release name:
+
+  ```make
+  ifneq ($(filter-out dev,$(P00I_RELEASE)),)
+  PRODUCT_DEFAULT_DEV_CERTIFICATE := vendor/lineage-priv/keys/releasekey
+  endif
+  ```
+
+  A release then goes on after *Format Data*, or after the migration of
+  `packages.xml` described for 16.
 - `/data` is not encrypted. Android 13 removed full-disk encryption, which 16 uses
   here, and the file-based kind needs kernel support a 3.10 does not have.
 - The boot image carries the signature the bootloader of this tablet checks, appended
@@ -105,7 +125,11 @@ the SELinux label of the device node.
   Aperture, LineageOS' camera application: it asks the camera for the rotation of a
   tablet held upright, whatever the accelerometer says, and its buttons do not turn
   either. Open Camera, on the same system, saves them the right way up, so the sensor
-  and the camera HAL do their part. Why Aperture does not is not found.
+  and the camera HAL do their part. Why Aperture does not is not found. On 18 October
+  a photo taken in landscape came out the right way up; before it, for some seconds,
+  neither Aperture's buttons nor the home screen followed the tablet, and they did
+  again after the cable was unplugged. Aperture's orientation listener was registered
+  and receiving the accelerometer. Not reproduced since.
 
 ## What the first boots asked for
 

@@ -8,20 +8,24 @@
 #
 # The fingerprint's build-number field is P00I_RELEASE (see BoardConfig.mk). Setting
 # it is not enough on an incremental tree: no property file depends on the
-# fingerprint, so build.prop, vendor/build.prop and default.prop would keep the old
-# value -- or worse, some would be regenerated for other reasons and some not, and the
-# two halves would disagree, which is the "internal problem with your device" dialog
-# the fixed fingerprint exists to prevent. So they are removed first, and the build
-# has to write all of them with the new name.
+# fingerprint, so the build.prop files would keep the old value -- or worse, some
+# would be regenerated for other reasons and some not, and the halves would disagree,
+# which is the "internal problem with your device" dialog the fixed fingerprint exists
+# to prevent. So they are removed first, and the build has to write all of them with
+# the new name. On Android 13 there are nine that carry the fingerprint (system,
+# system_ext, vendor and the empty odm and dlkm ones, the first-stage ramdisk's, the
+# recovery's).
 set -euo pipefail
 release=${1:?usage: $0 <release name, e.g. payne_17>}
 case $release in *[!A-Za-z0-9_.-]*|dev) echo "error: bad release name: $release" >&2; exit 2 ;; esac
 [ -n "${ANDROID_PRODUCT_OUT:-}" ] || { echo "error: run lunch first" >&2; exit 2; }
 out=$ANDROID_PRODUCT_OUT
 
-for f in system/build.prop system/vendor/build.prop system/product/build.prop \
-         root/default.prop recovery/root/default.prop \
-         obj/ETC/system_build_prop_intermediates/build.prop; do
+props="system/build.prop system/system_ext/etc/build.prop system/vendor/build.prop
+       system/vendor/odm/etc/build.prop system/vendor/vendor_dlkm/etc/build.prop
+       system/vendor/odm_dlkm/etc/build.prop system/system_dlkm/etc/build.prop
+       ramdisk/system/etc/ramdisk/build.prop recovery/root/prop.default"
+for f in $props system/product/etc/build.prop; do
     rm -f "${out:?}/$f"
 done
 
@@ -46,21 +50,33 @@ status=$?
 set -eu
 [ "$status" -eq 0 ] || { echo "error: the build failed ($status)" >&2; exit 1; }
 
+files=
+for f in $props; do
+    [ -f "$out/$f" ] || { echo "error: the build did not write $f" >&2; exit 1; }
+    files="$files $out/$f"
+done
 echo "fingerprints in the result:"
-grep -h 'build.fingerprint=' "$out/system/build.prop" "$out/system/vendor/build.prop" "$out/root/default.prop"
-if [ "$(grep -h 'build.fingerprint=' "$out/system/build.prop" "$out/system/vendor/build.prop" "$out/root/default.prop" | sed 's/^[^=]*=//' | sort -u | wc -l)" -ne 1 ]; then
+# shellcheck disable=SC2086
+grep -h 'build.fingerprint=' $files | sort | uniq -c
+# shellcheck disable=SC2086
+if [ "$(grep -h 'build.fingerprint=' $files | sed 's/^[^=]*=//' | sort -u | wc -l)" -ne 1 ]; then
     echo "error: the fingerprints differ" >&2
     exit 1
 fi
 
+# A release is signed with private keys (rom/README.md, "Signing"): with AOSP's public
+# ones anybody could sign an app with the platform key and get the system's permissions.
 echo "signed with:"
 grep -h '^ro.build.tags=' "$out/system/build.prop"
+grep -qx 'ro.build.tags=dev-keys' "$out/system/build.prop" ||
+    { echo "error: not signed with private keys" >&2; exit 1; }
 
+# Android 13 writes both into system/build.prop; the vendor one could add the second.
 echo "adb in the result:"
-grep -h -E '^(ro.adb.secure|persist.sys.usb.config)=' "$out/root/default.prop"
-grep -qx 'ro.adb.secure=1' "$out/root/default.prop" ||
+grep -h -E '^(ro.adb.secure|persist.sys.usb.config)=' "$out/system/build.prop" "$out/system/vendor/build.prop" || true
+grep -qx 'ro.adb.secure=1' "$out/system/build.prop" ||
     { echo "error: ro.adb.secure is not 1" >&2; exit 1; }
-if grep -h '^persist.sys.usb.config=' "$out/root/default.prop" "$out/system/build.prop" | grep -q adb; then
+if grep -h '^persist.sys.usb.config=' "$out/system/build.prop" "$out/system/vendor/build.prop" | grep -q adb; then
     echo "error: adb is on by default" >&2
     exit 1
 fi
