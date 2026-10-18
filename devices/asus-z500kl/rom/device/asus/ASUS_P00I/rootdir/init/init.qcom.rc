@@ -65,17 +65,6 @@ on init
     export ANDROID_CACHE /cache
     export TERMINFO /system/etc/terminfo
 
-    # A cable plugged in after the boot. ASUS' charger driver holds every insertion
-    # until it is told that HVDCP 3 (Quick Charge 3) is supported, and retries the
-    # waiting one only on the path a cable present at power-on takes: one plugged in
-    # later is set aside and never comes back, so no charging and no USB. On stock
-    # Qualcomm's hvdcp_opti said so at every start (10 is
-    # POWER_SUPPLY_DP_DM_HVDCP3_SUPPORTED); it is not in this build, and this write
-    # says the same. Its other job, stepping a Quick Charge 3 adapter's voltage, is
-    # not done here, so such an adapter may charge more slowly than on stock (not
-    # tried).
-    write /sys/class/power_supply/battery/dp_dm 10
-
     # prng_seeder seeds BoringSSL in other processes from /dev/hw_random. It starts in
     # early-init, a tenth of a second before ueventd has made that node here, finds
     # nothing to open and hangs for the rest of the boot ("Unable to open hwrng").
@@ -179,6 +168,30 @@ service qseecomd /system/vendor/bin/qseecomd
     class core
     user root
     group root
+
+# Quick Charge 3 (proprietary-files.txt says what it does). Same definition as the
+# stock init.target.rc, which also started it for charging with the system off.
+service vendor.hvdcp_opti /system/vendor/bin/hvdcp_opti
+    class main
+    user root
+    group root
+
+# Charging with the system off: the bootloader shows its battery picture and starts
+# Android with androidboot.mode=charger, where init skips the rest of the boot and
+# starts class charger. Android 13 leaves that service to the device. AOSP's charger
+# draws LineageOS' animation from /product, turns the screen off after a few cycles,
+# shows it again at a press of the power key, and reboots into Android when the key is
+# held. No health 2.1 service is declared, so it reads the battery itself with the
+# defaults.
+service vendor.charger /system/bin/charger
+    class charger
+    user system
+    group system graphics input wakelock
+    capabilities SYS_BOOT
+    file /dev/kmsg w
+
+on charger
+    start vendor.hvdcp_opti
 
 # Opens /dev/wcnss_wlan, which is what powers the WCNSS core up and downloads its
 # firmware and NV calibration; prima refuses to start before that ("WCNSS driver not

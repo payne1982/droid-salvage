@@ -531,3 +531,11 @@ lib/DataSet/arch/DIT_List.cfg
 lib/DataSet/ditSCidGen/msgchk.db
 lib/DataSet/ispDB/ParameterDB.db
 etc/media_profiles_8956.xml:vendor/etc/media_profiles_V1_0.xml
+
+# Quick Charge 3. Qualcomm's daemon tells the charger driver that HVDCP 3 is supported
+# and then steps a Quick Charge 3 adapter's voltage up and down in pulses on D+ and D-,
+# watching VBUS and the input current limit as it goes. Without it the driver stays on
+# its Quick Charge 2 path, whose 9 V request ASUS' tree writes into the wrong bits, and
+# an adapter stays at 5 V. Only libc, libcutils, libutils and libc++ are needed; the
+# policy is sepolicy-legacy's hvdcp.te.
+bin/hvdcp_opti:vendor/bin/hvdcp_opti

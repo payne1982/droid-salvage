@@ -1,4 +1,5 @@
-// The health HAL with this board's healthd_board_init(); see HealthService.cpp.
+// The health HAL with this board's healthd_board_init() and battery update; see
+// HealthService.cpp.
 cc_binary {
     name: "android.hardware.health@2.0-service.ASUS_P00I",
     init_rc: ["android.hardware.health@2.0-service.ASUS_P00I.rc"],

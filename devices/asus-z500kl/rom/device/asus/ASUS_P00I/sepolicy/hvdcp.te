@@ -1,0 +1,15 @@
+# sepolicy-legacy gives hvdcp_opti the charger's files and the ADCs (genfs_contexts).
+# The rest is what stock's policy allowed it as well.
+
+# It starts as root and goes on as system keeping some capabilities, among them
+# dac_override, which it needs for the charger's files and /sys/power/wake_lock: they
+# belong to root and radio:wakelock.
+allow hvdcp self:capability dac_override;
+
+# The parallel charger (usb-parallel), which this device labels with the other power
+# supplies in genfs_contexts: its name and its input current.
+allow hvdcp sysfs_batteryinfo:dir r_dir_perms;
+allow hvdcp sysfs_batteryinfo:file r_file_perms;
+
+# The properties it reads at start (property.te).
+get_prop(hvdcp, vendor_hvdcp_prop)

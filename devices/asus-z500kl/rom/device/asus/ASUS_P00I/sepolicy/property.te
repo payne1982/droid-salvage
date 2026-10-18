@@ -10,3 +10,7 @@ vendor_internal_prop(vendor_qsee_prop)
 
 # Mobile data configuration in system.prop, read by netmgrd, qmuxd, qcril and the GPS HAL.
 vendor_internal_prop(vendor_qcom_data_prop)
+
+# hvdcp_opti's two switches, persist.hvdcp.log_level and persist.hvdcp.allow_opti.
+# Nothing sets them; the daemon reads them and keeps its defaults (hvdcp.te).
+vendor_internal_prop(vendor_hvdcp_prop)
