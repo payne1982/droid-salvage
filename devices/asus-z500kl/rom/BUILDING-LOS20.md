@@ -5,7 +5,8 @@ reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on
 tablet that image starts and gets through the LineageOS setup wizard. **Little has been
 used beyond that**: Wi-Fi connects, also again with the screen off, the browser plays
 video, the camera takes photos and video, Bluetooth headphones connect and play, the
-GPS has had a fix at a window, and SELinux is enforcing.
+GPS has had a fix at a window, it charges, from a Quick Charge 3 adapter at 9 V and
+with the system off too, and SELinux is enforcing.
 [`README.md`](README.md) still describes LineageOS 16, the release that does work.
 
 ## What the host needs
@@ -202,7 +203,7 @@ XTRA file is taken by the modem about 40 s after boot.
 | The sound runs 0.3 to 1 s ahead of the picture. With the headphones' delay report the module told players of about 650 ms of latency, for headphones that report 179 | `persist.bluetooth.disabledelayreports` |
 | Five minutes on the ASUS logo, on a start with no USB cable. BoringSSL's self-test waits for the kernel's random pool, which here filled from interrupts alone: the kernel was built without the chip's random number generator | `CONFIG_FIPS_ENABLE` off, [`../kernel/README.md`](../kernel/README.md) |
 | `prng_seeder` gives up at every boot: ASUS' `ueventd.qcom.rc` keeps `/dev/hw_random` for root, and the daemon starts before the node exists | `tools/extract-files.sh`, `rootdir/init/init.qcom.rc` |
-| A USB cable plugged in after the start gives neither charging nor USB. ASUS' charger driver holds every insertion until told that Quick Charge 3 is supported, which Qualcomm's `hvdcp_opti` did on stock and nothing did here | `rootdir/init/init.qcom.rc` |
+| A USB cable plugged in after the start gives neither charging nor USB. ASUS' charger driver holds every insertion until told that Quick Charge 3 is supported, which Qualcomm's `hvdcp_opti` did on stock and nothing did here | [`../kernel/patches/0018`](../kernel/README.md); at first `init.qcom.rc` told the driver itself, which kept Quick Charge adapters at 5 V (below) |
 | F-Droid's search looks hung: 88 s for "gp". The query planner of SQLite 3.42.1, the version Android 13 has, runs a full-text match once for every app in a join | `tools/setup-sqlite.sh`: SQLite 3.44.5, from LineageOS 22.2 |
 
 All have been tried, under enforcing: headphones play AAC, in step with the picture
@@ -210,8 +211,28 @@ with the delay-report property set by hand (the image has it since, and with it 
 headphones have not been tried again); on a start without a cable the self-test waits
 0.1 s where it had waited 152; `prng_seeder` holds `/dev/hw_random` open; a cable
 unplugged and plugged back is charged from and seen by the computer; the same F-Droid
-search takes 0.13 s, and in a round of use nothing else looked different. Charging
-from a Quick Charge 3 adapter has not been tried.
+search takes 0.13 s, and in a round of use nothing else looked different.
+
+18 October, charging:
+
+| What happened | What was done |
+|---|---|
+| Quick Charge adapters charge at 5 V. Telling the driver from init that Quick Charge 3 is supported, as was done for the cable above, also tells it to leave the voltage to `hvdcp_opti`, which was not there | `hvdcp_opti` from stock: `proprietary-files.txt`, `rootdir/init/init.qcom.rc`; the policy is sepolicy-legacy's, with what stock's allowed it besides in `sepolicy/hvdcp.te`, and labels for the ADCs and the parallel charger in `sepolicy/genfs_contexts`. Without the last one the daemon sleeps for good |
+| Plugged in with the system off, the tablet shows the bootloader's battery picture with the screen on for good. Android 13 leaves the charger service to the device, and there was none | `vendor.charger` in `rootdir/init/init.qcom.rc`: AOSP's charger with LineageOS' animation |
+| The lock screen says plain "charging" whatever is plugged in, a computer or a Quick Charge 3 adapter at 9 V. Android goes by the largest current_max times voltage_max among the supplies, and here those figures are the type-C port's, 1.5 A at 5 V, not the charger's | `health/HealthService.cpp`, `sepolicy/hal_health.te` |
+| On an adapter ASUS' driver takes for ASUS' own 9 V one, the lock screen stops saying the tablet is charging a few seconds after it goes in. The driver reports "Quick charging" or "Not Quick charging", values of its own that Android takes for an unknown status | [`../kernel/patches/0019`](../kernel/README.md) |
+
+Tried, under enforcing: a Xiaomi MDY-11-EZ (Quick Charge 3) goes from 5 to 8.5 V in
+the steps of `hvdcp_opti`, and the battery takes 1.2 to 1.4 A at 77% where it took
+0.8 to 1.1; the driver holds its input to 900 mA.
+ASUS' AD2068020 is a Quick Charge 2 adapter, and ASUS' driver asks it for 9 V in the
+wrong bits, so it stays at 5 V, with 1.6 to 1.9 A into the battery; that is ASUS'
+code and is left as it is. Off-mode charging shows the animation and the level,
+turns the screen off, shows them again at a press of the power key and starts
+Android when the key is held. The lock screen says "charging slowly" on a
+computer, and with the time to full on the Raspberry Pi's port (900 mA at 5 V); on
+the Xiaomi "slowly" for the first seconds, then "rapidly" once it is at 9 V; with
+`patches/0019` that stays when the driver takes the adapter for ASUS'.
 
 17 October, what had not been used yet, with nothing changed for it: a first GPS fix
 outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
