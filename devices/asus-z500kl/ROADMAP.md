@@ -135,7 +135,8 @@ and Wi-Fi switch on, the boot takes 47 seconds.
 
 **In use, 17 October 2026.** Under enforcing: Wi-Fi, Bluetooth headphones, audio,
 sensors, the video codecs, GPS, the cameras, the microphone, Widevine at L3, a USB
-cable plugged in at any time. What each needed is in
+cable plugged in at any time; and since 18 October charging from a Quick Charge 3
+adapter at 9 V and with the system off. What each needed is in
 [`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md). Not tried yet: the modem with a SIM,
 keymaster and gatekeeper behind a PIN, wired headphones, MTP, a microSD card, a night
 on standby.
