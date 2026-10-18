@@ -261,6 +261,18 @@ Checked on the tablet with a 6 GB exFAT image handed to vold as its virtual disk
 checked and mounted by Android itself, a 4.2 GB file written and read back, Unicode
 names, and a clean `fsck` after unmounting.
 
+`patches/0018` and `0019` are the two numbers they have on the LineageOS 20 branch,
+where they were found; the four before them are for 20 alone. ASUS' charger driver
+sets every cable insertion aside until Qualcomm's `hvdcp_opti` says that Quick
+Charge 3 is supported, and retries only for a cable present at power-on: a cable
+plugged in later gave neither charging nor USB. On stock the daemon ran within
+seconds of every start; this image does not ship it. 0018 handles the insertion at
+once. With an adapter it takes for ASUS' own 9 V one, the driver reports the battery
+as "Quick charging", or "Not Quick charging" above 70%, values only ASUS' system
+knew; Android takes them for an unknown status, and the fuel gauge, told the same,
+looks for Charging. 0019 reports Charging. Both were tried on LineageOS 20, with the
+same driver; on 16 neither has been run.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 
