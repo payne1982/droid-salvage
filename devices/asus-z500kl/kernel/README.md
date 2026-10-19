@@ -337,6 +337,13 @@ video decoder with a usage bit this platform's gralloc reads as "take them from 
 camera ION heap", which this kernel did not have: VP9 in the browser stopped on the
 first frame. The heap is now declared, as plain system memory.
 
+`patches/0022` is for LineageOS 20. The kernel looked for firmware files only under
+`/lib/firmware`, which Android does not have, and asked `ueventd` for every one. At
+each suspend the kernel caches again the firmware it has handed out, and those
+uevents aborted it: on a night on standby the tablet never suspended. It now looks in
+`/system/etc/firmware` too. On 16 it should change nothing but where the files are
+read from; it has not been tried there.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 

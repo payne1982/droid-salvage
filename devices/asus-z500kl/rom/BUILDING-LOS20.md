@@ -110,6 +110,12 @@ the SELinux label of the device node.
 
   A release then goes on after *Format Data*, or after the migration of
   `packages.xml` described for 16.
+- The tablet does not suspend. A night on standby, 18 to 19 October, took about 4% in
+  nine hours, but only because idle cores power down on their own: the kernel counted
+  581 attempts to suspend and none that went through. At each one it caches again the
+  firmware it has handed out, finds none of the files where it looks (`/lib/firmware`)
+  and asks `ueventd` for them, and the uevents abort the freezing of user space. Kernel
+  `patches/0022` makes it look in `/system/etc/firmware`; it is not built yet.
 - `/data` is not encrypted. Android 13 removed full-disk encryption, which 16 uses
   here, and the file-based kind needs kernel support a 3.10 does not have.
 - The boot image carries the signature the bootloader of this tablet checks, appended

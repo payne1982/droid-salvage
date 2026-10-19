@@ -1,0 +1,27 @@
+Subject: [PATCH] firmware_class: look in /system/etc/firmware
+
+The kernel looks for firmware files under /lib/firmware, which Android does not have;
+they are in /system/etc/firmware. So every file is asked of ueventd, with a uevent,
+and that matters at each suspend: on the way down the kernel caches again all the
+firmware it has handed out (the WiFi's, the video core's, the touch controller's).
+A process that waits for uevents with EPOLLWAKEUP (the health HAL does) holds a
+wakeup source from the moment one arrives until it has read it. Freezing user space then
+aborts, after about 5 ms, and suspend is tried again a minute later, with the same
+result: on LineageOS 20 the tablet never suspended, through a whole night.
+
+Read straight from /system/etc/firmware, the files need no uevent. ueventd stays the
+way for anything asked before /system is mounted.
+---
+--- drivers/base/firmware_class.c
++++ drivers/base/firmware_class.c
+@@ -298,7 +298,9 @@
+ 	"/lib/firmware/updates",
+ 	"/lib/firmware/" UTS_RELEASE,
+ 	"/lib/firmware",
+-	"/firmware/image"
++	"/firmware/image",
++	/* Android's, where the files are; /lib is not there at all. */
++	"/system/etc/firmware"
+ };
+ 
+ /*
