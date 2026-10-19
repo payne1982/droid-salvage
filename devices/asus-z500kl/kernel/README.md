@@ -341,8 +341,13 @@ first frame. The heap is now declared, as plain system memory.
 `/lib/firmware`, which Android does not have, and asked `ueventd` for every one. At
 each suspend the kernel caches again the firmware it has handed out, and those
 uevents aborted it: on a night on standby the tablet never suspended. It now looks in
-`/system/etc/firmware` too. On 16 it should change nothing but where the files are
-read from; it has not been tried there.
+`/system/etc/firmware` too. `patches/0023` goes with it: a driver often asks for its
+firmware on behalf of a process (the GPU's for the composer HAL, the WiFi's for the
+WiFi HAL), and the file was read as that process, which SELinux does not let read
+firmware. It is now read as the kernel, as upstream does since "firmware_loader: use
+kernel credentials when reading firmware". With both, the GPU's and the WiFi's
+firmware load straight from the file system, with nothing denied. On 16 they should
+change nothing but where the files are read from; they have not been tried there.
 
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.

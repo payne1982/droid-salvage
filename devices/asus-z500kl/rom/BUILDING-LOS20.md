@@ -115,7 +115,9 @@ the SELinux label of the device node.
   581 attempts to suspend and none that went through. At each one it caches again the
   firmware it has handed out, finds none of the files where it looks (`/lib/firmware`)
   and asks `ueventd` for them, and the uevents abort the freezing of user space. Kernel
-  `patches/0022` makes it look in `/system/etc/firmware`; it is not built yet.
+  `patches/0022` and `0023` make it look in `/system/etc/firmware` and read the files
+  as the kernel; with them the firmware loads with no uevent, as seen at boot on 19
+  October. Whether the tablet now suspends has not been tried.
 - `/data` is not encrypted. Android 13 removed full-disk encryption, which 16 uses
   here, and the file-based kind needs kernel support a 3.10 does not have.
 - The boot image carries the signature the bootloader of this tablet checks, appended
