@@ -32,8 +32,9 @@ with the system off too, and SELinux is enforcing.
 #    kernel without eBPF
 repo init -u https://github.com/LineageOS-UL/android.git -b lineage-20.0 --depth=1
 
-# 1b. three local manifests. lineage-20-forks.xml moves 17 projects to LineageOS' forks:
-#     the LineageOS-UL manifest stopped in April 2025 and still points them at AOSP.
+# 1b. three local manifests. lineage-20-forks.xml moves 17 projects to LineageOS' forks
+#     and adds vendor/apn: the LineageOS-UL manifest stopped in April 2025 and still
+#     points them at AOSP.
 #     lineage-20-camera.xml takes frameworks/av from LineageOS instead of UL (the file
 #     says why). asus-p00i-lineage-20.xml adds the MSM8952 audio, display and media
 #     HALs, which LineageOS 20 no longer carries.
@@ -55,8 +56,9 @@ cd <tree>/device/asus/ASUS_P00I
 ./tools/extract-files.sh --from-dumps /path/to/system.img /path/to/boot.img
 ./tools/setup-gps.sh
 
-# 5. bring frameworks/base up to LineageOS (the script says why), then the changes to
-#    the tree's own sources. In this order: the merge wants a clean project.
+# 5. bring ten of LineageOS-UL's forks up to LineageOS (the script and
+#    tools/lineage-merges.txt say why), then the changes to the tree's own sources. In
+#    this order: the merge wants a clean project.
 ./tools/merge-lineage.sh
 ./tools/apply-tree-patches.sh
 
