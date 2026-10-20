@@ -156,6 +156,13 @@ The setup wizard went through; on its Wi-Fi page the word "Internet" is cut shor
 The round `payne_31` passed, on a clean installation, then with Google apps. Only then
 the question whether this is worth publishing next to 16 or instead of it.
 
+**Begun, 20 October 2026.** The release `payne_32` went on after *Format Data* (see L4),
+then once more after another *Format Data*, this time followed by MindTheGapps
+13.0.0-arm64 (25 October 2023, the package LineageOS' wiki names for 20) before the
+first start. Google's setup wizard went through; the recovery partition was the same
+after each install. Not tried yet: the Play Store and whether it calls the device
+certified, the headphones paired again, and the wizard's options left switched off.
+
 **Before anything is published: bring the LineageOS-UL forks up to date ourselves.**
 They stopped on 4 April 2025, and LineageOS has kept patching `lineage-20.0` since. Measured
 on 11 October 2026, the fork of `frameworks/base` carries 59 changes of its own and lacks
