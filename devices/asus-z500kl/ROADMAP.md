@@ -146,6 +146,12 @@ a night unplugged took about 1%.
 SELinux enforcing, secure adb, the signed boot image, the fixed fingerprint. Each of
 these exists on 16 and has to be redone, not copied.
 
+**Done, 20 October 2026.** The release `payne_32`, signed with this version's own keys,
+went on after *Format Data*: enforcing, with no denial left from the vendor files and a
+few from Android's own; adb closed, the USB port answering as MTP without it; the boot
+image signed for the bootloader; the same fingerprint in the nine files that carry one.
+The setup wizard went through; on its Wi-Fi page the word "Internet" is cut short.
+
 ### L5 — the test round, and a decision
 The round `payne_31` passed, on a clean installation, then with Google apps. Only then
 the question whether this is worth publishing next to 16 or instead of it.

@@ -94,7 +94,11 @@ the SELinux label of the device node.
   A release is built with `tools/release-build.sh <name>`, moved to this version on 18
   October: it gives the build its own fingerprint, the same in the nine property files
   that carry one, and stops if adb is open or the build is signed with the test keys.
-  One test release went through it (dev-keys, adb closed); it has not been installed.
+  One test release went through it on 18 October and was not installed. The release
+  `payne_32` was, on 20 October, after *Format Data*: it starts, the setup wizard goes
+  through, adb stays closed until it is switched on in the developer options and the
+  computer's key accepted, and root over adb needs the developer option as well. With
+  adb off the USB port answers as MTP, which on 16 had needed a fix.
 
   Signing works as on 16 (`README.md`, "Signing"), with more keys: `releasekey`,
   `platform`, `shared`, `media`, `networkstack`, `bluetooth`, `sdk_sandbox`, `testkey`
@@ -121,8 +125,8 @@ the SELinux label of the device node.
 - The boot image carries the signature the bootloader of this tablet checks, appended
   by `boot_signer` as on 16; Android 13 still has the tool, and the 1320-byte trailer
   is there. The bootloader accepts it: every development build since 13 October was
-  installed from its zip, boot image included, and started. The test release of 18
-  October took the same signed image into its zip; it has not been installed.
+  installed from its zip, boot image included, and started, and so did the release
+  `payne_32`.
 - SELinux is enforcing from boot since 15 October. Until 20 October it also denied,
   some three hundred times a boot, the vendor processes looking up the Nougat blobs'
   own switches (the media codecs, the sensors, camera, composer and GNSS HALs, the
