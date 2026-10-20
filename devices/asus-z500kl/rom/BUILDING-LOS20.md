@@ -134,8 +134,6 @@ the SELinux label of the device node.
   (`ro.bootimage.build.fingerprint` by system_server, a LineageOS camera property by
   cameraserver, one by audioserver). A SIM and mobile data have not been tried under
   enforcing.
-- `screenrecord` records no frame: the hardware encoder rejects the buffers the
-  screen sends it. Recording from the camera works. Not looked into yet.
 - Photos taken with the tablet held in landscape are saved turned by 90 degrees in
   Aperture, LineageOS' camera application: it asks the camera for the rotation of a
   tablet held upright, whatever the accelerometer says, and its buttons do not turn
