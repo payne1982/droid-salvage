@@ -181,7 +181,10 @@ lack nothing, or are UL's own branches (the CAF ones, `sepolicy-legacy`) or fork
 projects LineageOS builds at AOSP's tag. `vendor/lineage` now takes its APNs from
 `vendor/apn`, a project LineageOS added in November 2025, which
 `rom/local_manifests/lineage-20-forks.xml` brings in. Build L3zg, with all of it, starts
-and works under enforcing: Wi-Fi, Bluetooth, the APNs, one known denial.
+and works under enforcing: Wi-Fi, Bluetooth, the APNs, one known denial. One of the
+Bluetooth fixes broke headphones: after pairing, the audio and call channels were never
+opened. `tools/tree-patches/packages/modules/Bluetooth/0002` says why and takes out the
+one line at fault; with it the Galaxy Buds pair, connect and play in AAC again.
 
 ## What could stop this
 
