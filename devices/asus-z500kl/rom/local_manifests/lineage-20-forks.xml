@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
      The LineageOS-UL manifest for lineage-20.0 was last updated in April 2025. Since then
-     LineageOS has forked these projects to keep applying security patches to Android 13,
-     and its other repositories, which this manifest follows at the branch head, now expect
-     the forks: with the AOSP tag still named there the tree does not get past the Soong
-     analysis (libdng_sdk wants a variant of libjpeg that only the fork has).
+     LineageOS has forked these projects to keep applying security patches to Android 13
+     (and added vendor/apn), and its other repositories, which this manifest follows at
+     the branch head, now expect the forks: with the AOSP tag still named there the tree
+     does not get past the Soong analysis (libdng_sdk wants a variant of libjpeg that only
+     the fork has).
 
      Each entry is the one in LineageOS' own lineage-20.0 manifest. Copy this file to
      .repo/local_manifests/ before the first sync.
@@ -44,4 +45,7 @@
   <project path="system/libufdt" name="LineageOS/android_system_libufdt" groups="pdk" />
   <remove-project name="platform/system/nfc" />
   <project path="system/nfc" name="LineageOS/android_system_nfc" groups="pdk" />
+  <!-- Added by LineageOS in November 2025: vendor/lineage, once merged into the fork
+       (tools/merge-lineage.sh), takes its APN list from here. -->
+  <project path="vendor/apn" name="LineageOS/android_vendor_apn" revision="main" />
 </manifest>

@@ -162,9 +162,20 @@ For `frameworks/base` it could not wait: the projects LineageOS-UL does not fork
 LineageOS, and six of them (ContactsProvider, Settings, Telephony, MmsService,
 IntentResolver, Trebuchet) stopped compiling against a framework of April 2025.
 `tools/merge-lineage.sh` merges LineageOS' branch into the fork at a fixed commit; the
-184 commits went in without a conflict. The other forks build as they are and wait
-until there is something worth publishing; each one is then a line in
-`tools/lineage-merges.txt`, if its merge is as clean.
+184 commits went in without a conflict.
+
+**20 October 2026: the other forks.** The tree takes 37 projects from LineageOS-UL.
+Measured against LineageOS' `lineage-20.0` on full histories: nine lacked LineageOS
+commits, `frameworks/native` (11), `packages/modules/Bluetooth` (20),
+`frameworks/opt/telephony` (6), `packages/apps/Nfc` (4), `vendor/lineage` (4),
+`packages/modules/adb` (3), `Connectivity` (2), `Wifi` (2) and `bionic` (1), mostly
+security fixes (Bluetooth's SDP, A2DP, AVRCP and SMP, binder's `Parcel`, adb's TLS). All
+nine merged without a conflict and are lines in `tools/lineage-merges.txt`. The others
+lack nothing, or are UL's own branches (the CAF ones, `sepolicy-legacy`) or forks of AOSP
+projects LineageOS builds at AOSP's tag. `vendor/lineage` now takes its APNs from
+`vendor/apn`, a project LineageOS added in November 2025, which
+`rom/local_manifests/lineage-20-forks.xml` brings in. Build L3zg, with all of it, starts
+and works under enforcing: Wi-Fi, Bluetooth, the APNs, one known denial.
 
 ## What could stop this
 

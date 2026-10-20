@@ -4,6 +4,21 @@
 #
 # The repository has the same name under github.com/LineageOS-UL and github.com/LineageOS.
 # The commit is the head of LineageOS' lineage-20.0 on the day it was tried here; the
-# date only has to be older than the fork's last merge of LineageOS (4 April 2025).
+# date only has to be older than the LineageOS commit the fork merged last.
+#
+# Measured on 20 October 2026, the other forks LineageOS also has lack nothing of
+# LineageOS' lineage-20.0, or are branches of UL's own (the CAF ones, sepolicy-legacy)
+# that LineageOS 20 does not have. The forks of AOSP projects LineageOS does not fork
+# (art, perfetto, system/bpf, NetworkStack and others) start from the AOSP tag
+# LineageOS builds as it is.
 
-frameworks/base  android_frameworks_base  3a5c19c7b673b0d5f1f811629750ae6d1526ce09  2024-12-01
+frameworks/base                android_frameworks_base                3a5c19c7b673b0d5f1f811629750ae6d1526ce09  2024-12-01
+frameworks/native              android_frameworks_native              915ad642e331e0f8ea107b5f5519f2c6f1e7e01c  2025-02-01
+frameworks/opt/telephony       android_frameworks_opt_telephony       2101b76c88a236afa7feabad44b88ea30fbb132d  2024-03-01
+packages/modules/Bluetooth     android_packages_modules_Bluetooth     f149c2c7cd36358454166f4c2c614e80922a6da5  2025-02-01
+packages/modules/Connectivity  android_packages_modules_Connectivity  205270f5728b3c1fda246ec413ee39e83a73df03  2023-06-01
+packages/modules/Wifi          android_packages_modules_Wifi          4b25fba7916185d55c4031e5019e020b8fdb8649  2024-10-01
+packages/modules/adb           android_packages_modules_adb           9b0be735145dfdb1517788da79d30981b96fbfb7  2023-04-01
+packages/apps/Nfc              android_packages_apps_Nfc              4b4a42756e62e386976890131cc6e06854e1d06a  2023-12-01
+bionic                         android_bionic                         998f94cdcddfd9b5134bbdaf4b0752156fd89ab4  2023-06-01
+vendor/lineage                 android_vendor_lineage                 e855b46998626f60c437e3db091f009ba6ec4252  2024-11-01
