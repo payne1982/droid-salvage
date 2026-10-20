@@ -14,3 +14,14 @@ vendor_internal_prop(vendor_qcom_data_prop)
 # hvdcp_opti's two switches, persist.hvdcp.log_level and persist.hvdcp.allow_opti.
 # Nothing sets them; the daemon reads them and keeps its defaults (hvdcp.te).
 vendor_internal_prop(vendor_hvdcp_prop)
+
+# Switches the Nougat blobs look up under names Android 13 leaves unlabelled
+# (default_prop, which vendor processes may not read): sensors, display, camera, video
+# and radio debug and tuning knobs. None is set; this only lets the lookups through,
+# and someone with root can set them again to debug a blob.
+vendor_internal_prop(vendor_nougat_prop)
+
+# Three of them are read in every process that draws, apps included: libgsl (Adreno's
+# driver) reads ro.graphics.memory and libqdutils (gralloc's) persist.hwc.*. Under the
+# label above those processes were refused instead; this one the system may read.
+vendor_restricted_prop(vendor_nougat_graphics_prop)

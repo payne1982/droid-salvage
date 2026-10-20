@@ -19,3 +19,13 @@ get_prop(hal_gnss_default, vendor_qcom_data_prop)
 # mediacodec looks for the AIDL allocator first, which this device does not have, and
 # falls back to the HIDL one.
 dontaudit mediacodec default_android_vndservice:service_manager find;
+
+# The Nougat blobs' own switches (property.te).
+get_prop({
+    hal_sensors_default sensors
+    hal_graphics_composer_default hal_graphics_allocator_default
+    hal_camera_default mm-qcamerad
+    mediacodec
+    rild netmgrd hal_gnss_default
+}, vendor_nougat_prop)
+get_prop(domain, vendor_nougat_graphics_prop)

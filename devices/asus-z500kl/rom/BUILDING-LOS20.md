@@ -118,13 +118,24 @@ the SELinux label of the device node.
   here, and the file-based kind needs kernel support a 3.10 does not have.
 - The boot image carries the signature the bootloader of this tablet checks, appended
   by `boot_signer` as on 16; Android 13 still has the tool, and the 1320-byte trailer
-  is there. That the bootloader accepts it has not been tried.
-- SELinux is enforcing from boot since 15 October. What it still denies is vendor
-  processes reading properties labelled `default_prop` (the media codecs, the
-  sensors, camera, composer and GNSS HALs, the radio daemons), plus two reads of the
-  same kind by audioserver and system_server. None of the `default_prop`
-  properties set on the tablet is read by vendor code, so these change nothing; they
-  are not silenced either. A SIM and mobile data have not been tried under enforcing.
+  is there. The bootloader accepts it: every development build since 13 October was
+  installed from its zip, boot image included, and started. The test release of 18
+  October took the same signed image into its zip; it has not been installed.
+- SELinux is enforcing from boot since 15 October. Until 20 October it also denied,
+  some three hundred times a boot, the vendor processes looking up the Nougat blobs'
+  own switches (the media codecs, the sensors, camera, composer and GNSS HALs, the
+  radio daemons): names Android 13 leaves unlabelled, which vendor code may not read.
+  None of them is set, so the denials changed nothing, but they buried any real one.
+  `sepolicy/property_contexts` labels them now, the names taken from the blobs and
+  from bionic's "Access denied finding property" lines; three that the graphics
+  libraries read inside every process that draws, apps included, have a label of
+  their own the system may read. What is left, on build L3zf after a boot, the
+  camera and the video encoder: three reads by Android's own processes
+  (`ro.bootimage.build.fingerprint` by system_server, a LineageOS camera property by
+  cameraserver, one by audioserver). A SIM and mobile data have not been tried under
+  enforcing.
+- `screenrecord` records no frame: the hardware encoder rejects the buffers the
+  screen sends it. Recording from the camera works. Not looked into yet.
 - Photos taken with the tablet held in landscape are saved turned by 90 degrees in
   Aperture, LineageOS' camera application: it asks the camera for the rotation of a
   tablet held upright, whatever the accelerometer says, and its buttons do not turn
