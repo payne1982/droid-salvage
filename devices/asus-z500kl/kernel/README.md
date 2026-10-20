@@ -346,7 +346,8 @@ firmware on behalf of a process (the GPU's for the composer HAL, the WiFi's for 
 WiFi HAL), and the file was read as that process, which SELinux does not let read
 firmware. It is now read as the kernel, as upstream does since "firmware_loader: use
 kernel credentials when reading firmware". With both, the GPU's and the WiFi's
-firmware load straight from the file system, with nothing denied. On 16 they should
+firmware load straight from the file system, with nothing denied, and the tablet
+suspends: a night on standby, 19 to 20 October, took about 1%. On 16 they should
 change nothing but where the files are read from; they have not been tried there.
 
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts

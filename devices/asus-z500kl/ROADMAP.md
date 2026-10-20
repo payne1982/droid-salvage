@@ -139,8 +139,8 @@ cable plugged in at any time; and since 18 October charging from a Quick Charge 
 adapter at 9 V and with the system off; with nothing changed for them, a PIN across a
 restart (keymaster and gatekeeper), wired headphones, MTP and the cover's magnet. What
 each needed is in [`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md). Not tried yet: the
-modem with a SIM and a microSD card. A night on standby cost little, but the tablet
-never suspended; the fix, in the kernel, is installed but not tried on standby yet.
+modem with a SIM and a microSD card. Since 20 October the tablet suspends on standby:
+a night unplugged took about 1%.
 
 ### L4 — what a release has
 SELinux enforcing, secure adb, the signed boot image, the fixed fingerprint. Each of

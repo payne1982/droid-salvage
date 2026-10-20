@@ -110,14 +110,10 @@ the SELinux label of the device node.
 
   A release then goes on after *Format Data*, or after the migration of
   `packages.xml` described for 16.
-- The tablet does not suspend. A night on standby, 18 to 19 October, took about 4% in
-  nine hours, but only because idle cores power down on their own: the kernel counted
-  581 attempts to suspend and none that went through. At each one it caches again the
-  firmware it has handed out, finds none of the files where it looks (`/lib/firmware`)
-  and asks `ueventd` for them, and the uevents abort the freezing of user space. Kernel
-  `patches/0022` and `0023` make it look in `/system/etc/firmware` and read the files
-  as the kernel; with them the firmware loads with no uevent, as seen at boot on 19
-  October. Whether the tablet now suspends has not been tried.
+- Once, on 19 October, the tablet could not suspend for a quarter of an hour after the
+  cable came out: every attempt stopped at the last step, because the PMI8950's voltage
+  ADC said a conversion was pending. It did not happen on the next try or in the night
+  that followed, and why it happened is not known.
 - `/data` is not encrypted. Android 13 removed full-disk encryption, which 16 uses
   here, and the file-based kind needs kernel support a 3.10 does not have.
 - The boot image carries the signature the bootloader of this tablet checks, appended
@@ -273,6 +269,17 @@ camera heap the decoders ask for, which a tree patch to gralloc had stopped them
 asking for. Tried on build L3zb: VP9 and H.264 at 1080p play in hardware, 181 frames
 at 30 fps, the VP9 decoder taking its 15 MB from the new heap and giving them back
 at the end; the camera takes a photo and records a video.
+
+19 October, standby. A night on standby, 18 to 19 October, had taken about 4% in nine
+hours, but only because idle cores power down on their own: the kernel counted 581
+attempts to suspend and none that went through. At each one it caches again the
+firmware it has handed out, found none of the files where it looked (`/lib/firmware`)
+and asked `ueventd` for them, and the uevents aborted the freezing of user space.
+[`../kernel/patches/0022` and `0023`](../kernel/README.md) make it look in
+`/system/etc/firmware` and read the files as the kernel. Tried on build L3zd, the
+night of 19 to 20 October, unplugged and with the screen off: in eight hours the
+tablet suspended 108 times, woken mostly by Android's alarms every ten minutes and by
+the modem, and the battery gave 82 mAh, about 1%.
 
 17 October, what had not been used yet, with nothing changed for it: a first GPS fix
 outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
