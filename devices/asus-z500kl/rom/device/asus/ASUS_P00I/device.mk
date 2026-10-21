@@ -57,6 +57,12 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.opengles.version=196610
 
+# The display hardware (MDP) composes the layers only when this is set, as stock did
+# (hwc_mdpcomp.cpp leaves it off otherwise). Without it SurfaceFlinger drew every layer
+# with the GPU on every frame, at 1536x2048, and scrolling dropped frames.
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.hwc.mdpcomp.enable=true
+
 # SurfaceFlinger compiles its Skia shaders ahead of time when it starts, and one of the
 # sample textures it draws for that is RGBA_FP16. The Adreno 510 driver of 2017 does
 # not make a texture of it ("Failed to create a valid texture ... format:22"), the
