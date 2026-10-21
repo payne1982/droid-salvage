@@ -160,8 +160,15 @@ the question whether this is worth publishing next to 16 or instead of it.
 then once more after another *Format Data*, this time followed by MindTheGapps
 13.0.0-arm64 (25 October 2023, the package LineageOS' wiki names for 20) before the
 first start. Google's setup wizard went through; the recovery partition was the same
-after each install. Not tried yet: the Play Store and whether it calls the device
-certified, the headphones paired again, and the wizard's options left switched off.
+after each install. The headphones connect, and the Assistant opens on a long press of
+*home*. The Play Store said the device was not certified, and after its ID was
+registered with Google it still called it incompatible with Chrome and YouTube, which it
+also left out of its search. The device tree had never set `ro.opengles.version`, so
+Android told apps of no OpenGL ES version at all; `payne_32` was built again with 3.2,
+stock's value (21 October), and installed over the previous one, the Google apps kept.
+With the Play Store's data cleared, it now offers apps at its first start, and those
+installed run. Scrolling is slow, in Android's own screens too; not measured yet. Not
+tried yet: the wizard's options left switched off.
 
 **Before anything is published: bring the LineageOS-UL forks up to date ourselves.**
 They stopped on 4 April 2025, and LineageOS has kept patching `lineage-20.0` since. Measured

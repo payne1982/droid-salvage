@@ -50,6 +50,13 @@ PRODUCT_AAPT_PREF_CONFIG := xhdpi
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.sf.lcd_density=320
 
+# The OpenGL ES version the GPU has, 3.2 (0x30002), stock's value. Without it Android
+# reports no version to apps (reqGlEsVersion 0), and the Play Store calls the device
+# incompatible with anything that asks for 2.0 or more, Chrome and YouTube among them,
+# and hides it from search.
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.opengles.version=196610
+
 # SurfaceFlinger compiles its Skia shaders ahead of time when it starts, and one of the
 # sample textures it draws for that is RGBA_FP16. The Adreno 510 driver of 2017 does
 # not make a texture of it ("Failed to create a valid texture ... format:22"), the
