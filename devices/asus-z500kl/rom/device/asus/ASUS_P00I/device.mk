@@ -124,6 +124,20 @@ PRODUCT_PACKAGES += \
     libtinyxml \
     memtrack.msm8952
 
+# The OpenGL ES version the GPU has, 3.2 (0x30002), stock's value. Without it Android
+# reports no version to apps (reqGlEsVersion 0), and the Play Store calls the device
+# incompatible with anything that asks for 2.0 or more. Found and tried on LineageOS 20,
+# where Chrome and YouTube could not be installed; not built or tried on 16.
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.opengles.version=196610
+
+# The display hardware (MDP) composes the layers only when this is set, as stock did
+# (hwc_mdpcomp.cpp leaves it off otherwise), and SurfaceFlinger drew every layer with
+# the GPU instead. Found and tried on LineageOS 20, where scrolling dropped frames;
+# not built or tried on 16.
+PRODUCT_PROPERTY_OVERRIDES += \
+    persist.hwc.mdpcomp.enable=true
+
 # ---------------------------------------------------------------------------------
 # Keymaster and gatekeeper -- the decryption path
 # ---------------------------------------------------------------------------------

@@ -273,6 +273,12 @@ knew; Android takes them for an unknown status, and the fuel gauge, told the sam
 looks for Charging. 0019 reports Charging. Both were tried on LineageOS 20, with the
 same driver; on 16 neither has been run.
 
+`patches/0025` also keeps its LineageOS 20 number. Every Qualcomm subsystem had the
+restart level SYSTEM, so a crash of the modem restarted the whole tablet; stock set
+the modem's to RELATED from user space (`ssr_setup`), and 0025 does it from the device
+tree when the modem registers. On LineageOS 20 the modem then reads RELATED and the others SYSTEM; on 16 it
+has not been run.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 
