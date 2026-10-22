@@ -350,6 +350,13 @@ firmware load straight from the file system, with nothing denied, and the tablet
 suspends: a night on standby, 19 to 20 October, took about 1%. On 16 they should
 change nothing but where the files are read from; they have not been tried there.
 
+`patches/0025` is for both. Every Qualcomm subsystem had the restart level SYSTEM, so
+a crash of the modem restarted the whole tablet. Stock set the modem's to RELATED from
+user space (`ssr_setup`); a property in the device tree now does it when the modem
+registers, and the audio DSP, WiFi and video cores stay at SYSTEM as on stock. On the
+tablet the modem's level reads RELATED and the others SYSTEM; a modem crash has not
+been provoked to see it restart.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 
