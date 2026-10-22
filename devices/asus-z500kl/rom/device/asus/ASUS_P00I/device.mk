@@ -309,8 +309,14 @@ PRODUCT_COPY_FILES += \
 # The HAL is audio-caf/msm8952 built from source, not ASUS' Nougat blob. From the
 # stock system come only the parts with no source: ASUS' mixer paths and platform
 # info, the ACDB calibration loader and its data, and the ADSP firmware (see
-# proprietary-files.txt). No optional HAL features yet (offload, fluence, speaker
-# protection...): BoardConfig.mk turns them on one at a time once the base plays.
+# proprietary-files.txt). No optional HAL features yet (fluence, speaker protection,
+# FLAC and other offload formats...): BoardConfig.mk turns them on one at a time.
+#
+# What saves power with music is in the base HAL already: the primary output is the
+# deep-buffer one (USECASE_AUDIO_PLAYBACK_PRIMARY), and MP3 and AAC go to the DSP
+# through the policy's compressed_offload output. Tried with an MP3 in Eleven:
+# AudioFlinger opened an OFFLOAD thread and the HAL fed the compress driver every two
+# seconds or so.
 #
 # This replaced a stub (audio.primary.default) that was there only so Pie could boot:
 # with no audio HAL, audioserver dies on a null DevicesFactoryHal and system_server

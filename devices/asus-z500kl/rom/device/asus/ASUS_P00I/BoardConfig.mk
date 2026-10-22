@@ -252,8 +252,8 @@ DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
 PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE := true
 
 # Audio: audio-caf/msm8952 from source. The optional AUDIO_FEATURE_ENABLED_* switches
-# (offload, fluence, speaker protection, HFP...) stay off until the base path plays,
-# and come in one at a time.
+# (fluence, speaker protection, HFP, offload of formats beyond MP3 and AAC...) stay off
+# and come in one at a time; MP3 and AAC offload is in the base HAL (see device.mk).
 #
 # Three are on because the HAL does not compile without them: with them off, what it
 # falls back on are unused static functions and variables, which -Werror stops on.
