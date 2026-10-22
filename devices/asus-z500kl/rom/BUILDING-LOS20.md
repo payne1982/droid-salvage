@@ -296,6 +296,23 @@ night of 19 to 20 October, unplugged and with the screen off: in eight hours the
 tablet suspended 108 times, woken mostly by Android's alarms every ten minutes and by
 the modem, and the battery gave 82 mAh, about 1%.
 
+21 and 22 October, with the Google apps, and what stock set that this tree did not:
+
+| What happened | What was done |
+|---|---|
+| The Play Store calls the tablet incompatible with Chrome, YouTube and most apps, and leaves them out of its search. Nothing set `ro.opengles.version`, so Android told apps of no OpenGL ES version at all | `ro.opengles.version` in `device.mk`, 3.2 as on stock |
+| Scrolling jumps, in Android's own screens too. SurfaceFlinger drew every layer with the GPU on every frame: the display HAL lets the display hardware compose only when `persist.hwc.mdpcomp.enable` is set | the property in `device.mk`, as on stock |
+| A crash of the modem would restart the whole tablet: every subsystem had the restart level SYSTEM. Stock set the modem's to RELATED with `ssr_setup` | [`../kernel/patches/0025`](../kernel/README.md) |
+| After a restart with no network the time is June 1978. The PMIC's clock may not be set; stock kept the time with Qualcomm's `time_daemon` and TimeService. A kernel that made the clock writable reset the tablet 25 to 30 s after every start, when the network gave the time and Android wrote it into the clock, and was withdrawn | `timekeep` and its receiver (`hardware/sony/timekeep`) in `device.mk`, `sepolicy/timekeep.te`, `sepolicy/system_app.te` |
+
+Tried on release `payne_32`, under enforcing: the Play Store offers apps at its first
+start, and those installed run; Android's screens scroll without jumping, the layers
+going to the display hardware (`mdpCount: 3`, none to the GPU); the modem reads
+RELATED and the other subsystems SYSTEM (a crash has not been provoked); with WiFi off
+and no mobile connection the time after a restart is right to the second, with nothing
+denied to `timekeep` or its receiver. Music already went to the DSP: an MP3 in Eleven
+played through an offload output, with nothing changed for it.
+
 17 October, what had not been used yet, with nothing changed for it: a first GPS fix
 outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
 hardware at 30 frames a second; the microphone; the light sensor; Widevine at L3,
