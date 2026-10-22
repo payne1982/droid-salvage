@@ -40,3 +40,7 @@ genfscon proc /sys/net/ipv4/tcp_use_userconfig                             u:obj
 # voltage it watches while it steps a Quick Charge 3 adapter (hvdcp.te in sepolicy-legacy).
 genfscon sysfs /devices/soc.0/qpnp-vadc-6                            u:object_r:sysfs_vadc_dev:s0
 genfscon sysfs /devices/soc.0/qpnp-vadc-15                           u:object_r:sysfs_vadc_dev:s0
+
+# The PMIC's clock, where /sys/class/rtc/rtc0 points: AOSP labels only the class
+# directory itself sysfs_rtc. timekeep and its receiver read since_epoch here.
+genfscon sysfs /devices/soc.0/qpnp-rtc-8/rtc                        u:object_r:sysfs_rtc:s0

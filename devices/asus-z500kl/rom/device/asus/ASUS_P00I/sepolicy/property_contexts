@@ -43,3 +43,6 @@ persist.data_netmgrd_mtu        u:object_r:vendor_nougat_prop:s0
 persist.asus.gcf.mode           u:object_r:vendor_nougat_prop:s0
 persist.env.spec                u:object_r:vendor_nougat_prop:s0
 persist.fci                     u:object_r:vendor_nougat_prop:s0
+
+# timekeep's stored time difference (property.te).
+persist.vendor.timeadjust       u:object_r:vendor_timekeep_prop:s0

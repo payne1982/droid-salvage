@@ -25,3 +25,7 @@ vendor_internal_prop(vendor_nougat_prop)
 # driver) reads ro.graphics.memory and libqdutils (gralloc's) persist.hwc.*. Under the
 # label above those processes were refused instead; this one the system may read.
 vendor_restricted_prop(vendor_nougat_graphics_prop)
+
+# persist.vendor.timeadjust: written by the TimeKeep receiver, which runs as system, read
+# by timekeep at the next start (timekeep.te).
+vendor_restricted_prop(vendor_timekeep_prop)

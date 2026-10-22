@@ -1,0 +1,23 @@
+# timekeep (hardware/sony/timekeep) puts the time back at every start: the PMIC's clock,
+# which Android may not set, plus the difference the TimeKeep receiver stored in
+# persist.vendor.timeadjust the last time the time was set. Stock did the same with
+# Qualcomm's time_daemon.
+type timekeep, domain;
+type timekeep_exec, exec_type, vendor_file_type, file_type;
+
+init_daemon_domain(timekeep)
+
+# settimeofday().
+allow timekeep self:capability sys_time;
+
+# The clock's seconds (/sys/class/rtc/rtc0/since_epoch, genfs_contexts).
+allow timekeep sysfs_rtc:dir search;
+allow timekeep sysfs_rtc:file r_file_perms;
+
+# The stored difference (property.te).
+get_prop(timekeep, vendor_timekeep_prop)
+
+# It also writes the difference into /data/vendor/time/ats_2, the file Qualcomm's time
+# services read. Nothing here reads it; allowed so that it does not fail.
+allow timekeep time_data_file:dir rw_dir_perms;
+allow timekeep time_data_file:file create_file_perms;

@@ -1,0 +1,8 @@
+# The TimeKeep receiver (hardware/sony/timekeep), which runs as system: at every change
+# of time or time zone, and at shutdown, it reads the PMIC's clock and stores the
+# difference from the time Android has (timekeep.te).
+allow system_app sysfs_rtc:dir search;
+allow system_app sysfs_rtc:file r_file_perms;
+set_prop(system_app, vendor_timekeep_prop)
+allow system_app time_data_file:dir rw_dir_perms;
+allow system_app time_data_file:file create_file_perms;

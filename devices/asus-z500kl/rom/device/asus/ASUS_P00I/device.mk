@@ -216,6 +216,19 @@ PRODUCT_PACKAGES += \
     android.hardware.health@2.0-service.ASUS_P00I
 
 # ---------------------------------------------------------------------------------
+# Time
+# ---------------------------------------------------------------------------------
+# The PMIC's clock keeps running when the tablet is off but may not be set: it says
+# 1978, and a kernel that let Android write it reset the tablet as soon as the network
+# gave the time. Stock kept the time with Qualcomm's time_daemon and TimeService.
+# LineageOS' timekeep does the same in the open: its receiver stores the difference
+# between Android's time and the clock whenever the time is set, and timekeep adds it
+# back to the clock at every start, network or not.
+PRODUCT_PACKAGES += \
+    timekeep \
+    TimeKeep
+
+# ---------------------------------------------------------------------------------
 # Lights and power
 # ---------------------------------------------------------------------------------
 PRODUCT_PACKAGES += \

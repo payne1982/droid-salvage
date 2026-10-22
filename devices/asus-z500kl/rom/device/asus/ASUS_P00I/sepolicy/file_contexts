@@ -24,3 +24,6 @@
 
 # The ADSP's partition, for fsck.te.
 /dev/block/platform/soc\.0/7824900\.sdhci/by-name/dsp   u:object_r:dsp_block_device:s0
+
+# timekeep (timekeep.te).
+/(vendor|system/vendor)/bin/timekeep            u:object_r:timekeep_exec:s0

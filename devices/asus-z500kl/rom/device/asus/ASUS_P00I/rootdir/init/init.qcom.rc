@@ -120,6 +120,10 @@ on post-fs-data
     # failed"). The HAL runs as gps.
     mkdir /data/misc/location 0770 gps gps
 
+    # timekeep's and its receiver's copy of the time difference (ats_2), where Qualcomm's
+    # time services keep it.
+    mkdir /data/vendor/time 0770 system system
+
 on boot
     # The QMI multiplexer's sockets and netmgrd's, created as stock did.
     mkdir /dev/socket/qmux_radio 0770 radio radio
