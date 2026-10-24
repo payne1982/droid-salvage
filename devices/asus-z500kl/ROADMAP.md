@@ -171,7 +171,10 @@ installed run. Scrolling jumped, in Android's own screens too: SurfaceFlinger dr
 every layer with the GPU on every frame, because the display hardware composes only
 when `persist.hwc.mdpcomp.enable` is set, as stock did and neither tree had. With it,
 scrolling stops jumping. Apps from the Play Store run uncompiled until Android compiles
-them overnight; Prime Video ran a little better once compiled by hand. Not tried yet: the wizard's options
+them overnight; Prime Video ran a little better once compiled by hand. Nothing was
+compiled while running either, because ART kept its JIT off on a kernel older than 3.12;
+with two kernel patches (24 October) it runs in every process, and scrolling in Prime
+Video and Google News shows no tearing or visible slowdowns. Not tried yet: the wizard's options
 left switched off.
 
 **Before anything is published: bring the LineageOS-UL forks up to date ourselves.**

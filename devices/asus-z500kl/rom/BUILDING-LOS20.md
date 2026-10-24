@@ -309,6 +309,19 @@ and no mobile connection the time after a restart is right to the second, with n
 denied to `timekeep` or its receiver. Music already went to the DSP: an MP3 in Eleven
 played through an offload output, with nothing changed for it.
 
+24 October, the JIT. An app deriving a key with PBKDF2 took 33 s on the tablet for
+what is nearly instant elsewhere: no process compiled anything while running.
+
+| What happened | What was done |
+|---|---|
+| ART turns its JIT off on kernels older than 3.12: before upstream commit db6f41063cbd an arm64 kernel took a fault on a cache-maintenance instruction for a write | [`../kernel/patches/0027`](../kernel/README.md), that one-line fix; `tree-patches/art/0001` lowers ART's minimum to 3.10 |
+| With the JIT allowed, system_server restarted in a loop: the JIT wants its code in memory from `memfd_create()`, a 3.17 system call, and system_server may not fall back to memory both writable and executable | [`../kernel/patches/0028`](../kernel/README.md), `memfd_create()` and file sealing from 3.17; `TARGET_HAS_MEMFD_BACKPORT` in `BoardConfig.mk` |
+
+Tried on release `payne_32i`: system_server, the system UI, the launcher and the
+Google services each have a JIT thread and its code cache, with no crash; the same key
+takes about 1 s. Scrolling in Prime Video and Google News is not perfectly smooth, but
+without tearing or visible slowdowns.
+
 17 October, what had not been used yet, with nothing changed for it: a first GPS fix
 outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
 hardware at 30 frames a second; the microphone; the light sensor; Widevine at L3,
