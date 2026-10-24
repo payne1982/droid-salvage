@@ -363,7 +363,8 @@ it unregistered the touchscreen and registered a new one afterwards. Android cop
 TWRP logged "Reloading input devices" and from then on ignored the touch, although the
 touches reached the new device. The input device now stays across that update. In
 TWRP `payne_17` the touchscreen registers once, at 1.2 s, the update at 16 s still runs,
-and TWRP no longer reloads its input devices.
+and TWRP no longer reloads its input devices. The touch kept working through a restart
+and twenty minutes in the recovery.
 
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
