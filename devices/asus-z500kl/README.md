@@ -67,7 +67,12 @@ Two things that are **not** this problem:
 ## What works
 
 - boots and runs, with a working **touchscreen** (a one-line fix in the touch driver —
-  see [kernel/](kernel/); earlier builds patched 3 bytes of the stock binary instead)
+  see [kernel/](kernel/); earlier builds patched 3 bytes of the stock binary instead).
+  Since `payne_17` the touch also stays alive: before, the driver re-registered the
+  touchscreen some 16 s after every start and TWRP could stop answering to it
+  (`kernel/patches/0026`)
+- a USB cable plugged in after the start charges the tablet and brings up adb (since
+  `payne_17`, `kernel/patches/0018`; before, only a cable present at power-on did)
 - mounts every partition: system, cache, data, persist, firmware, microSD, USB-OTG
 - **decrypts `/data`** (Qualcomm hardware FDE, `aes-xts`, PIN, keymaster-wrapped key)
 - backup and restore, including `/data` once decrypted
