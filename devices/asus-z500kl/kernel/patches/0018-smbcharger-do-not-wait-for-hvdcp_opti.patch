@@ -1,0 +1,30 @@
+Subject: [PATCH] qpnp-smbcharger: do not wait for hvdcp_opti on a cable insertion
+
+ASUS' handle_usb_insertion() sets every insertion aside until Qualcomm's hvdcp_opti
+has said that Quick Charge 3 is supported (POWER_SUPPLY_DP_DM_HVDCP3_SUPPORTED), and
+retries it a second later up to twenty times. The retry runs update_usb_status(),
+which calls the insertion again only for a cable present at power-on: a cable
+plugged in later is set aside once and never handled, so no charging and no USB.
+On stock hvdcp_opti made that announcement within seconds of every start, so nobody
+saw it. In the first LineageOS 20 builds the daemon was not shipped, and nothing
+made it.
+
+Without the wait the insertion is handled at once, whether hvdcp_opti has started
+yet or runs at all. The announcement still comes from the daemon when it does, and
+the daemon then steps a Quick Charge 3 adapter up; the driver's other uses of the
+flag are untouched.
+---
+--- drivers/power/qpnp-smbcharger.c
++++ drivers/power/qpnp-smbcharger.c
+@@ -5911,11 +5911,6 @@
+ 		ret.intval = 1;
+ 		chip->batt_psy.set_property(&chip->batt_psy,POWER_SUPPLY_PROP_ALLOW_HVDCP3, &ret);
+ 	}
+-	if (!chip->hvdcp3_supported && support_cnt < 20){
+-		queue_delayed_work(adapter_wq ,&chip_fg->usb_insertion_work, msecs_to_jiffies(1000));
+-		support_cnt ++;
+-		return;		
+-	}
+ 	g_cable_poweron = false;
+ 	complete_all(&chip->sdp_retry_complete_flag);
+ 	pr_smb(PR_STATUS, "complete_all sdp_retry_complete_flag\n");

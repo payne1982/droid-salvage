@@ -1,0 +1,38 @@
+Subject: [PATCH] cpuset, cpuacct: let a CAP_SYS_NICE process move other users' tasks
+
+A cgroup v1 lets a process move a task of another user only if every controller in
+the hierarchy allows it through allow_attach. In this kernel only the cpu controller
+has the hook (subsys_cgroup_allow_attach, which asks for CAP_SYS_NICE). Android's
+later common kernels have it on cpuset as well; this gives it to cpuset and cpuacct.
+
+cpuset: system_server, which runs as system and holds CAP_SYS_NICE, moves every app
+between /dev/cpuset/foreground, background, top-app and the rest as its state
+changes. Each move was refused ("AddTidToCgroup failed to write ...: Permission
+denied" on cgroup.procs, hundreds of times in a day of Android 13's logs), and apps
+stayed in the cpuset they started in.
+
+cpuacct: with no cgroup v2, the per-app process groups are a cpuacct hierarchy
+(rom/device/asus/ASUS_P00I/tools/tree-patches/system/core/0001). Zygote puts its
+children there while still root; for WebView's and the app zygotes' children,
+system_server does it, and without the hook it would be refused.
+---
+--- kernel/cpuset.c
++++ kernel/cpuset.c
+@@ -1969,6 +1969,7 @@
+ 	.css_offline = cpuset_css_offline,
+ 	.css_free = cpuset_css_free,
+ 	.can_attach = cpuset_can_attach,
++	.allow_attach = subsys_cgroup_allow_attach,
+ 	.cancel_attach = cpuset_cancel_attach,
+ 	.attach = cpuset_attach,
+ 	.subsys_id = cpuset_subsys_id,
+--- kernel/sched/cpuacct.c
++++ kernel/sched/cpuacct.c
+@@ -290,6 +290,7 @@
+ 	.name		= "cpuacct",
+ 	.css_alloc	= cpuacct_css_alloc,
+ 	.css_free	= cpuacct_css_free,
++	.allow_attach	= subsys_cgroup_allow_attach,
+ 	.subsys_id	= cpuacct_subsys_id,
+ 	.base_cftypes	= files,
+ 	.early_init	= 1,

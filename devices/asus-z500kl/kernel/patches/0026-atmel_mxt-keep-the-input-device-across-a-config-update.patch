@@ -1,0 +1,44 @@
+Subject: [PATCH] atmel_mxt: keep the input device across a configuration update
+
+Some 16 s after every start the driver writes its configuration file into the
+touch controller again (mxt_update_firmware_cfg -> mxt_self_update_cfg), even when
+the controller already has it: ASUS commented out the early return for a matching
+CRC. Before writing, it unregistered the touchscreen's input device, and afterwards
+it registered a new one. Android copes with a device going away and coming back;
+TWRP logs "Reloading input devices" and from then on ignores the touch, although
+the touches reach the kernel (getevent sees them on the new node).
+
+The input device now stays: mxt_self_update_cfg no longer frees it, and
+mxt_configure_objects makes one only when there is none, as at probe and after the
+explicit update paths (mxt_load_cfg, mxt_load_fw), which still free it first. The
+configuration file is the same at every start, so the axes the device was set up
+with at probe do not change.
+---
+--- drivers/input/touchscreen/atmel_z500/atmel_mxt_ts_1666t2.c
++++ drivers/input/touchscreen/atmel_z500/atmel_mxt_ts_1666t2.c
+@@ -3972,7 +3972,9 @@
+ 			LDBG("error2 %d updating config\n", error2);
+ 	}
+ 
+-	if (data->T9_reportid_min) {
++	if (data->input_dev) {
++		/* kept across a configuration update, see mxt_self_update_cfg() */
++	} else if (data->T9_reportid_min) {
+ 		error = mxt_initialize_t9_input_device(data);
+ 		if (error)
+ 			goto err_free_object_table;
+@@ -4584,8 +4586,12 @@
+ 		goto out;
+ 	}
+ 	data->updating_config = true;
+-	
+-	mxt_free_input_device(data);
++
++	/*
++	 * The input device stays: mxt_configure_objects() leaves an existing one
++	 * alone. A new one registered every boot, some 16 s in, and from then on
++	 * TWRP ignored the touch, although the touches reached the new device.
++	 */
+ 
+ 	if (data->suspended) {
+ 		if (data->use_regulator) {

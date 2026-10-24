@@ -1,0 +1,33 @@
+Subject: [PATCH] ion: a camera heap of system memory
+
+Since Android 8, the usage bit that this platform's gralloc reads as "allocate from
+the camera heap" (GRALLOC_USAGE_PRIVATE_CAMERA_HEAP, 0x00400000) is
+BufferUsage::VIDEO_DECODER to the framework, which sets it on every output buffer of
+a hardware video decoder. This tablet's heaps are system, system-contig, secure,
+qseecom and audio, with no camera heap (ION_CAMERA_HEAP_ID, 20), so each such
+allocation failed with "No such device" and the decoder stopped before its first
+frame: VP9 video in the browser stayed still with no sound.
+
+Heap 20 is now declared as one more system heap, as heap 25 is, so a buffer asked
+from it is plain paged memory. That is what the decoder got before, when LineageOS 20
+changed gralloc instead so that the bit no longer named a heap, and played VP9 with
+it; with this the platform's gralloc is used as it is.
+---
+--- arch/arm/boot/dts/qcom/msm8976-ion.dtsi
++++ arch/arm/boot/dts/qcom/msm8976-ion.dtsi
+@@ -21,6 +21,15 @@
+ 			qcom,ion-heap-type = "SYSTEM";
+ 		};
+ 
++		/*
++		 * The camera heap, as plain system memory: Android asks for it for the
++		 * buffers of hardware video decoders, and fails with no such heap.
++		 */
++		qcom,ion-heap@20 {
++			reg = <20>;
++			qcom,ion-heap-type = "SYSTEM";
++		};
++
+ 		qcom,ion-heap@21 {
+ 			reg = <21>;
+ 			qcom,ion-heap-type = "SYSTEM_CONTIG";

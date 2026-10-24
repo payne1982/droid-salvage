@@ -1,0 +1,50 @@
+Subject: [PATCH] qpnp-smbcharger: report quick charging as charging
+
+With an adapter it takes for ASUS' own 9 V one (ASUS_200K), the driver reports the
+battery's status as "Quick charging", or "Not Quick charging" above 70%, two values
+of its own (POWER_SUPPLY_STATUS_QC_V2_CHARGING and _NOT_QC_CHARGING) for the "+" that
+ASUS' system put on the battery icon. Android knows only Unknown, Charging,
+Discharging, Not charging and Full: it took the battery for unknown and stopped
+showing that it was charging, a few seconds after the adapter went in. The fuel
+gauge is told the same status and looks for Charging too, so for it the battery was
+not charging either. A Xiaomi Quick Charge 3 adapter is taken for ASUS' at times.
+
+Charging is now reported as Charging whatever the adapter, as ASUS' engineering
+builds already did, and the fuel gauge is no longer told "Quick charging" when such
+an adapter is found.
+---
+--- drivers/power/qpnp-smbcharger.c
++++ drivers/power/qpnp-smbcharger.c
+@@ -1119,22 +1119,7 @@
+ 	}
+ 	else
+ 	{
+-#if defined(ENG_BUILD)
+ 		status = POWER_SUPPLY_STATUS_CHARGING;
+-#else
+-		//if ((chip->charging_type == CHG_TYPE_DCP_QC_2) || (chip->charging_type == CHG_TYPE_DCP_QC_3))
+-		if(chip->charging_type == CHG_TYPE_DCP_QC_3){ // ASUS_750K(5V/2A) does not show QC icon "+"
+-			status = POWER_SUPPLY_STATUS_QC_V2_CHARGING;
+-#if defined(CONFIG_ZT500KL) || defined(CONFIG_Z500KL)
+-			if (chip_fg->fg_capacity > 70)
+-				status = POWER_SUPPLY_STATUS_NOT_QC_CHARGING;
+-#endif				
+-		}
+-		else if (chip->charging_type == CHG_TYPE_DCP_NOT_QC)
+-			status = POWER_SUPPLY_STATUS_NOT_QC_CHARGING;
+-		else
+-			status = POWER_SUPPLY_STATUS_CHARGING;
+-#endif
+ 	}
+ out:
+ 	pr_smb_rt(PR_MISC, "CHGR_STS = 0x%02x\n", reg);
+@@ -11210,9 +11195,6 @@
+ 	
+ 			/* HVDCP or ASUS_2A */
+ 			if (is_hvdcp_present(chip)){
+-				/* if ASUS_2A show + icon */
+-				if(dual_chg_flag == ASUS_2A)
+-					set_property_on_fg(chip, POWER_SUPPLY_PROP_STATUS,POWER_SUPPLY_STATUS_QC_V2_CHARGING);
+ 				chip->hvdcp_3_det_ignore_uv = true;
+ 				rerun_apsd(chip);
+ 				chip->hvdcp_3_det_ignore_uv = false;

@@ -261,6 +261,111 @@ Checked on the tablet with a 6 GB exFAT image handed to vold as its virtual disk
 checked and mounted by Android itself, a 4.2 GB file written and read back, Unicode
 names, and a clean `fsck` after unmounting.
 
+`CONFIG_RT_GROUP_SCHED` is off, which stock had on. With it a thread may be made
+real-time only if its cpu cgroup has a real-time budget. Android 13's init gives none
+to the groups it makes, each of them reads 0 in `cpu.rt_runtime_us`, and every request
+fails with EPERM: SurfaceFlinger logs it and goes on, the Bluetooth stack aborts on
+its first timer (`timer_create_internal unable to create timer with clock 7: Operation
+not permitted`). Android's own base kernel configuration has the option off
+(`kernel/configs/*/android-base.config`). LineageOS 16 ran with it on, and has not been
+run on a kernel built without it.
+
+`CONFIG_FIPS_ENABLE` is off, which stock had on. In this tree it takes the Qualcomm
+random number generator (`msm_rng`) and crypto engine drivers (`qcrypto`, `qcedev`)
+out of the build, expecting certified binaries ASUS did not publish, so there was no
+`/dev/hw_random` and the kernel's entropy came from interrupts alone. Android 13 runs
+BoringSSL's self-test early in the boot, and it waits until the kernel's random pool is
+ready: usually under a second, but one morning, started with no USB cable, 152 s on the
+ASUS logo. With the option off, the generator registers and the tree's hwrng thread
+feeds the pool from it; the same boot without a cable then took 0.1 s there.
+Samsung's kernel for the MSM8976 has it off as well. LineageOS 16 has not been run on a
+kernel built without it.
+
+`patches/0016` is about the modules the configuration builds (test and debug drivers,
+nothing this tablet loads). The kernel signs them with a key pair it makes at build
+time and only loads signed ones, and it accepts its own certificate at boot only if it
+carries two extensions; a current OpenSSL writes one of them into a self-signed
+certificate only when asked "always". Without the patch every boot logs *Problem
+loading in-kernel X.509 certificate (-129)* and no module can be loaded at all. Every
+boot log kept of a kernel built from here has that line, LineageOS 16's and TWRP's
+among them; `payne_31` was built the same way, so it is in the same state.
+With it, on the tablet under LineageOS 20, the certificate loads and a module from
+the image goes in and out with `insmod` and `rmmod`. An output directory from before
+the patch keeps its old key until `x509.genkey` and `signing_key.*` are removed from it.
+
+`patches/0014` and `patches/0015` are for LineageOS 20. Neither should matter to 16, which
+asks for nothing they add, but 16 has not been run on a kernel that has 0015. 0014
+lets `make O=dir` create its output directory, which the Android 13 build expects. 0015
+makes binder hand a server the SELinux context of its caller
+(`FLAT_BINDER_FLAG_TXN_SECURITY_CTX`, Linux 5.0): Android 12 and later ask for it, and
+without it keystore2 answers nobody and `system_server` dies a second after the boot
+completes. It is two commits from the 3.10 kernel of the Galaxy Tab S2 (MSM8976), with
+one hunk rewritten for this tree; the patch says which.
+
+`patches/0017` is for LineageOS 20 as well. With no cgroup v2 in this kernel, Android
+13's per-process groups go into a cgroup v1 hierarchy (cpuacct), and there moving
+another user's task into a group needs every controller of the hierarchy to allow it.
+Only `cpu` did, for a process with `CAP_SYS_NICE`; the patch gives `cpuset` and
+`cpuacct` the same rule, so that `system_server` can move apps between cpusets and
+create the process groups of WebView and app zygote children. For 16 it can only
+allow more than before; 16 has not been run on a kernel that has it.
+
+`patches/0018` is for both. ASUS' charger driver sets every cable insertion aside
+until Qualcomm's `hvdcp_opti` says that Quick Charge 3 is supported, and retries only
+for a cable present at power-on: a cable plugged in later gave neither charging nor
+USB until the daemon had run. On stock it ran within seconds of every start. Without
+the wait the insertion is handled at once, whether the daemon has started or not; on
+LineageOS 20, with and without `hvdcp_opti` in the image, a cable unplugged and
+plugged back is charged from and seen by the computer. 16 has not been run on a kernel
+that has it.
+
+`patches/0019` is for both. With an adapter it takes for ASUS' own 9 V one, ASUS'
+charger driver reports the battery as "Quick charging", or "Not Quick charging" above
+70%, for the "+" that ASUS' system drew on the battery icon. Android knows neither:
+it took the status for unknown and stopped showing that the tablet was charging. The
+fuel gauge, which is told the same status, looks for Charging too. Charging is now
+reported as Charging, as ASUS' engineering builds did.
+
+`patches/0020` is for both. The video driver unloads the Venus firmware 15 s after the
+last session and loads it again into a 5 MB CMA region it needs whole, which after a
+while in use the kernel can no longer free: from then on every hardware codec failed.
+The firmware now stays loaded. 16 and the first LineageOS 20 builds set the same from
+init, through debugfs.
+
+`patches/0021` is for LineageOS 20. Android 13 marks the output buffers of a hardware
+video decoder with a usage bit this platform's gralloc reads as "take them from the
+camera ION heap", which this kernel did not have: VP9 in the browser stopped on the
+first frame. The heap is now declared, as plain system memory.
+
+`patches/0022` is for LineageOS 20. The kernel looked for firmware files only under
+`/lib/firmware`, which Android does not have, and asked `ueventd` for every one. At
+each suspend the kernel caches again the firmware it has handed out, and those
+uevents aborted it: on a night on standby the tablet never suspended. It now looks in
+`/system/etc/firmware` too. `patches/0023` goes with it: a driver often asks for its
+firmware on behalf of a process (the GPU's for the composer HAL, the WiFi's for the
+WiFi HAL), and the file was read as that process, which SELinux does not let read
+firmware. It is now read as the kernel, as upstream does since "firmware_loader: use
+kernel credentials when reading firmware". With both, the GPU's and the WiFi's
+firmware load straight from the file system, with nothing denied, and the tablet
+suspends: a night on standby, 19 to 20 October, took about 1%. On 16 they should
+change nothing but where the files are read from; they have not been tried there.
+
+`patches/0025` is for both. Every Qualcomm subsystem had the restart level SYSTEM, so
+a crash of the modem restarted the whole tablet. Stock set the modem's to RELATED from
+user space (`ssr_setup`); a property in the device tree now does it when the modem
+registers, and the audio DSP, WiFi and video cores stay at SYSTEM as on stock. On the
+tablet the modem's level reads RELATED and the others SYSTEM; a modem crash has not
+been provoked to see it restart.
+
+`patches/0026` is for both, and for the recovery. Some 16 s after every start the
+touch driver writes its configuration into the controller again, and before doing so
+it unregistered the touchscreen and registered a new one afterwards. Android copes;
+TWRP logged "Reloading input devices" and from then on ignored the touch, although the
+touches reached the new device. The input device now stays across that update. In
+TWRP `payne_17` the touchscreen registers once, at 1.2 s, the update at 16 s still runs,
+and TWRP no longer reloads its input devices. The touch kept working through a restart
+and twenty minutes in the recovery.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 
