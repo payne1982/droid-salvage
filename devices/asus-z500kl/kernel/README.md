@@ -357,6 +357,14 @@ registers, and the audio DSP, WiFi and video cores stay at SYSTEM as on stock. O
 tablet the modem's level reads RELATED and the others SYSTEM; a modem crash has not
 been provoked to see it restart.
 
+`patches/0026` is for both, and for the recovery. Some 16 s after every start the
+touch driver writes its configuration into the controller again, and before doing so
+it unregistered the touchscreen and registered a new one afterwards. Android copes;
+TWRP logged "Reloading input devices" and from then on ignored the touch, although the
+touches reached the new device. The input device now stays across that update. In
+TWRP `payne_17` the touchscreen registers once, at 1.2 s, the update at 16 s still runs,
+and TWRP no longer reloads its input devices.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 

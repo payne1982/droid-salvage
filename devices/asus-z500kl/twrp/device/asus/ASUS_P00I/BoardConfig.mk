@@ -31,8 +31,10 @@ TARGET_NO_BOOTLOADER := true
 TARGET_BOARD_PLATFORM := msm8952
 TARGET_OTA_ASSERT_DEVICE := ASUS_P00I,P00I,Z500KL
 
-# Kernel: stock Image.gz-dtb (no QCDT section) with the entry_mode needle patched
-# by tools/patch-kernel.py so the ASUS touch driver stays enabled in recovery.
+# Kernel: an Image.gz-dtb (no QCDT section) in prebuilt/kernel, built from the
+# sources in ../../../kernel (the digitiser fix is patches/0002 there), or the stock
+# one with the entry_mode needle patched by tools/patch-kernel.py so the ASUS touch
+# driver stays enabled in recovery. See README.md.
 BOARD_KERNEL_BASE := 0x80000000
 BOARD_KERNEL_CMDLINE := console=ttyHSL0,115200,n8 androidboot.console=ttyHSL0 androidboot.hardware=qcom msm_rtb.filter=0x237 ehci-hcd.park=3 androidboot.bootdevice=7824900.sdhci lpm_levels.sleep_disabled=1 earlyprintk build_version=3
 BOARD_KERNEL_PAGESIZE := 2048
@@ -86,7 +88,7 @@ TW_EXCLUDE_TWRPAPP := true
 TW_EXCLUDE_MTP := true
 TWRP_INCLUDE_LOGCAT := true
 TARGET_USES_LOGD := true
-TW_DEVICE_VERSION := payne_16
+TW_DEVICE_VERSION := payne_17
 
 # Encryption: FDE with the master key wrapped by QSEE/keymaster
 # (stock has libcryptfs_hw.so, /system/bin/qseecomd, keystore.msm8952.so).
