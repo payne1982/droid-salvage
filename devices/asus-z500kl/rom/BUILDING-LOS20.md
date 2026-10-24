@@ -140,15 +140,11 @@ the SELinux label of the device node.
   (`ro.bootimage.build.fingerprint` by system_server, a LineageOS camera property by
   cameraserver, one by audioserver). A SIM and mobile data have not been tried under
   enforcing.
-- Photos taken with the tablet held in landscape are saved turned by 90 degrees in
-  Aperture, LineageOS' camera application: it asks the camera for the rotation of a
-  tablet held upright, whatever the accelerometer says, and its buttons do not turn
-  either. Open Camera, on the same system, saves them the right way up, so the sensor
-  and the camera HAL do their part. Why Aperture does not is not found. On 18 October
-  a photo taken in landscape came out the right way up; before it, for some seconds,
-  neither Aperture's buttons nor the home screen followed the tablet, and they did
-  again after the cable was unplugged. Aperture's orientation listener was registered
-  and receiving the accelerometer. Not reproduced since.
+- Photos taken in Aperture, LineageOS' camera application, came out turned by 90
+  degrees when the screen's rotation was locked in landscape: Aperture then seems to
+  take the orientation from the screen, not the accelerometer. With rotation left
+  automatic and the tablet turned normally, they come out the right way up. Open
+  Camera saved them the right way up either way.
 
 ## What the first boots asked for
 
