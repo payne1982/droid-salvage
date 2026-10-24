@@ -1,0 +1,27 @@
+Subject: [PATCH] arm64: do not treat cache maintenance faults as writes
+
+A cache maintenance instruction run by user space (dc cvau, which a JIT uses to
+make new code visible to the instruction cache) on a page it may read but not
+write raises a fault with both the write bit and the cache-maintenance bit (CM)
+set in ESR. This kernel took it for a write and killed the process with SIGSEGV.
+Upstream fixed it in Linux 3.11, "arm64: Do not report cache maintenance faults
+as writes" (db6f41063cbd); this is that commit's one line. ESR_EL1_CM was
+already defined here.
+
+Android's runtime knows of the bug: on any arm64 kernel older than 3.12 it
+assumes the fault and does not create the JIT of the 64-bit zygote ("Zygote
+memory only works with dual mappings"), so no 64-bit app, system_server or
+SystemUI has a JIT and code not compiled ahead of time is only interpreted.
+tools/tree-patches/art/0001 tells it that this kernel has the fix.
+---
+--- arch/arm64/mm/fault.c
++++ arch/arm64/mm/fault.c
+@@ -223,7 +223,7 @@
+ 
+ 	if (esr & ESR_LNX_EXEC) {
+ 		vm_flags = VM_EXEC;
+-	} else if (esr & ESR_EL1_WRITE) {
++	} else if ((esr & ESR_EL1_WRITE) && !(esr & ESR_EL1_CM)) {
+ 		vm_flags = VM_WRITE;
+ 		mm_flags |= FAULT_FLAG_WRITE;
+ 	}

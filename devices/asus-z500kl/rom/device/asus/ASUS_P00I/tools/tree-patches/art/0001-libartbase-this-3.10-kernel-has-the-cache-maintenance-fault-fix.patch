@@ -1,0 +1,33 @@
+Subject: [PATCH] libartbase: this 3.10 kernel has the cache maintenance fault fix
+
+The runtime creates the JIT of the 64-bit zygote only on a kernel of 3.12 or later:
+older arm64 kernels took a cache maintenance fault on a read-only page for a write
+and killed the process, which the zygote's dual-view JIT would hit. On this tablet
+the 64-bit zygote logged "Failed to create JIT Code Cache: Zygote memory only works
+with dual mappings" and "Missing code cache, cannot create JIT", and no 64-bit app,
+nor system_server or SystemUI, had a JIT: what was not compiled ahead of time ran in
+the interpreter only. A pure-Java loop took 52 s interpreted against 0.25 s with a
+JIT, and an app's PBKDF2 of 210 000 rounds made it stop answering.
+
+The kernel this device is built with has the upstream fix (kernel/patches/0027), so
+the minimum version is lowered to 3.10 here. The 32-bit zygote was not affected: the
+check is for arm64 only.
+---
+diff --git a/libartbase/base/utils.cc b/libartbase/base/utils.cc
+index ba62f30..0d3907e 100644
+--- a/libartbase/base/utils.cc
++++ b/libartbase/base/utils.cc
+@@ -167,8 +167,12 @@ bool CacheOperationsMaySegFault() {
+   //
+   // This behaviour means we should avoid the dual view JIT on the device. This is just
+   // an issue when running tests on devices that have an old kernel.
++  //
++  // ASUS_P00I: its 3.10 kernel carries that commit (kernel/patches/0027), so 3.10 is
++  // enough here. Without it the 64-bit zygote has no JIT, and neither has anything it
++  // forks.
+   static constexpr int kRequiredMajor = 3;
+-  static constexpr int kRequiredMinor = 12;
++  static constexpr int kRequiredMinor = 10;
+   struct utsname uts;
+   int major, minor;
+   if (uname(&uts) != 0 ||

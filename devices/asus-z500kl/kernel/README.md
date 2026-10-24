@@ -366,6 +366,24 @@ TWRP `payne_17` the touchscreen registers once, at 1.2 s, the update at 16 s sti
 and TWRP no longer reloads its input devices. The touch kept working through a restart
 and twenty minutes in the recovery.
 
+`patches/0027` and `0028` are for LineageOS 20, and give its runtime a JIT in every
+process. Android 13 creates the JIT of the 64-bit zygote only on a kernel of 3.12 or
+later, because older arm64 kernels took a cache maintenance fault on a read-only page
+for a write and killed the process; this one did ("Zygote memory only works with dual
+mappings"). Without it no 64-bit app, nor system_server or SystemUI, had a JIT, and
+code not compiled ahead of time ran in the interpreter: a pure-Java loop took 52 s
+where it takes 0.25 s with a JIT. 0027 is the upstream fix, one line ("arm64: Do not
+report cache maintenance faults as writes", 3.11), and `rom/device/asus/ASUS_P00I/
+tools/tree-patches/art/0001` tells the runtime this 3.10 has it. With the zygote's JIT
+back, every process it forks needs a code region of its own, a memfd mapped twice;
+system_server may not fall back to writable and executable pages, and crashed at the
+first method compiled. 0028 is the series that added `memfd_create()` and shmem file
+sealing in 3.17, with two hunks of `mmap_region()` adapted to this older version of it
+and `cond_resched_rcu()` from 3.13; BoardConfig sets LineageOS'
+`TARGET_HAS_MEMFD_BACKPORT` so that the runtime uses it. On the tablet every process
+forked from the zygote then has its JIT thread and its `/memfd:jit-cache`, and
+system_server runs.
+
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.
 

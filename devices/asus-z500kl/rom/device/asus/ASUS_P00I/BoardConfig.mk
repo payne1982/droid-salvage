@@ -119,6 +119,11 @@ TARGET_KERNEL_CONFIG := asus_P00I_defconfig
 TARGET_KERNEL_CLANG_COMPILE := false
 TARGET_KERNEL_ARCH := arm64
 
+# The kernel has memfd_create() (kernel/patches/0028, from 3.17). Without this LineageOS
+# switch the runtime refuses it on any kernel older than 3.17 by its version number, and
+# system_server's JIT has nowhere to put its code.
+TARGET_HAS_MEMFD_BACKPORT := true
+
 KERNEL_TOOLCHAIN_BIN := prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin
 TARGET_KERNEL_ADDITIONAL_FLAGS := TARGET_PROJECT=Z500KL
 TARGET_KERNEL_ADDITIONAL_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/real-aarch64-linux-android-gcc)
