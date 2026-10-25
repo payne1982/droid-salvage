@@ -82,6 +82,11 @@
          screen's emergency button, Contacts, Messaging. -->
     <bool name="config_voice_capable">false</bool>
 
+    <!-- The SIM slot takes a card while the tablet is on, as stock declared. Without
+         this the framework takes every change of the card's state for a swap and
+         asks for a restart with a dialog that has no other button. -->
+    <bool name="config_hotswapCapable">true</bool>
+
     <!-- GPS parameters. The framework reads these, not the HAL's /etc/gps.conf, and
          pushes them down to the HAL at start, overriding what gps.conf says; so they
          are ASUS' gps.conf values, not AOSP's defaults (which differ in SUPL_MODE and
