@@ -138,8 +138,8 @@ sensors, the video codecs, GPS, the cameras, the microphone, Widevine at L3, a U
 cable plugged in at any time; and since 18 October charging from a Quick Charge 3
 adapter at 9 V and with the system off; with nothing changed for them, a PIN across a
 restart (keymaster and gatekeeper), wired headphones, MTP and the cover's magnet. What
-each needed is in [`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md). Not tried yet: the
-modem with a SIM and a microSD card. Since 20 October the tablet suspends on standby:
+each needed is in [`rom/BUILDING-LOS20.md`](rom/BUILDING-LOS20.md). A 256 GB microSD
+card in exFAT works as portable storage (25 October). Not tried yet: the modem with a SIM. Since 20 October the tablet suspends on standby:
 a night unplugged took about 1%.
 
 ### L4 — what a release has

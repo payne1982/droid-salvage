@@ -259,7 +259,9 @@ It registers as `exfat`, the name LineageOS' vold looks for in `/proc/filesystem
 and takes vold's mount options; `fsck.exfat` and `mkfs.exfat` LineageOS already ships.
 Checked on the tablet with a 6 GB exFAT image handed to vold as its virtual disk:
 checked and mounted by Android itself, a 4.2 GB file written and read back, Unicode
-names, and a clean `fsck` after unmounting.
+names, and a clean `fsck` after unmounting. On 25 October, with LineageOS 20, a real
+256 GB card, sold in exFAT: mounted by Android as portable storage, files copied to it
+and read back.
 
 `CONFIG_RT_GROUP_SCHED` is off, which stock had on. With it a thread may be made
 real-time only if its cpu cgroup has a real-time budget. Android 13's init gives none
@@ -383,6 +385,13 @@ and `cond_resched_rcu()` from 3.13; BoardConfig sets LineageOS'
 `TARGET_HAS_MEMFD_BACKPORT` so that the runtime uses it. On the tablet every process
 forked from the zygote then has its JIT thread and its `/memfd:jit-cache`, and
 system_server runs.
+
+`patches/0029` gives SD cards a read-ahead of 512 KB instead of the 128 KB every block
+device starts with. Measured with that 256 GB card, its bus at UHS SDR104 and 160 MHz:
+40 MB/s read with 128 KB, from exFAT and from the raw device alike, 68 MB/s with 512 KB
+and no more with 2048 KB. Stock left it at 128 KB. The eMMC keeps 128 KB: Android reads
+the system and the apps in small scattered pieces, and a larger read-ahead there only
+reads more of what is not needed.
 
 NTFS needed no kernel work. Stock had Tuxera's `tntfs.ko` for it; LineageOS mounts
 NTFS with ntfs-3g over FUSE, which this kernel already has.

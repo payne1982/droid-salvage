@@ -1,0 +1,31 @@
+Subject: [PATCH] mmc: a larger read-ahead for SD cards
+
+Every block device starts with a read-ahead of 128 KB. With it a microSD card in
+this tablet reads at about 40 MB/s, from the filesystem or the raw device alike,
+while its bus runs UHS SDR104 at 160 MHz, some 80 MB/s. With 512 KB the same
+card reads at 68 MB/s; with 2048 KB no faster. Stock left it at 128 KB too.
+
+Only SD cards get it. The eMMC holds the system and the apps, which Android
+reads in small scattered pieces, page faults on mapped code included, and the
+read-ahead applies to those as well: there a larger one only reads more of what
+is not needed and fills memory with it. Userspace can still change either value
+through /sys/block/*/queue/read_ahead_kb.
+---
+--- drivers/mmc/card/queue.c
++++ drivers/mmc/card/queue.c
+@@ -413,6 +413,15 @@
+ 	if (!mq->queue)
+ 		return -ENOMEM;
+ 
++	/*
++	 * An SD card mostly holds large files, read from start to end, and the
++	 * default read-ahead of 128 KB left one at half the bus' speed. The eMMC
++	 * keeps the default: Android reads it in small, scattered pieces, and a
++	 * larger read-ahead there would only fill memory with pages nobody asked for.
++	 */
++	if (mmc_card_sd(card))
++		mq->queue->backing_dev_info.ra_pages = (512 * 1024) / PAGE_CACHE_SIZE;
++
+ 	if ((host->caps2 & MMC_CAP2_STOP_REQUEST) &&
+ 			host->ops->stop_request &&
+ 			mq->card->ext_csd.hpi_en)
