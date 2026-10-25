@@ -322,6 +322,19 @@ Google services each have a JIT thread and its code cache, with no crash; the sa
 takes about 1 s. Scrolling in Prime Video and Google News is not perfectly smooth, but
 without tearing or visible slowdowns.
 
+25 October, a SIM and a microSD card:
+
+| What happened | What was done |
+|---|---|
+| Leaving airplane mode brought up "SIM card added" and a dialog whose only button restarts the tablet. qcril powered the card down in airplane mode, it read absent, and the framework took its return for a new card. Stock kept it powered and declared the slot hot-swappable | `persist.radio.apm_sim_not_pwdn=1` in `system.prop`, `config_hotswapCapable` in the framework overlay |
+| A 256 GB microSD card read at 40 MB/s, from exFAT and from the raw device alike, on a bus at UHS SDR104 and 160 MHz. Every block device starts with a read-ahead of 128 KB; with 512 KB the card reads at 68 MB/s | [`../kernel/patches/0029`](../kernel/README.md), for SD cards only |
+| Bars and text fields flickered black for a frame, Messaging's toolbar and Chrome's address bar among them, with apps redrawing only what had changed | `debug.hwui.use_buffer_age=false` in `system.prop`: apps redraw their whole window |
+
+Tried on release `payne_32i`, with each property set by hand: the PIN, mobile data on
+LTE and SMS; airplane mode on and off with the card loaded throughout and LTE back in
+about 2.5 s, no dialog; the card mounted as portable storage, ejected, taken out and
+put back; no flicker in Messaging.
+
 17 October, what had not been used yet, with nothing changed for it: a first GPS fix
 outdoors in 15 s; H.264, HEVC (also at 3840x2160), MPEG-4, VP8 and VP9 decoded by the
 hardware at 30 frames a second; the microphone; the light sensor; Widevine at L3,
