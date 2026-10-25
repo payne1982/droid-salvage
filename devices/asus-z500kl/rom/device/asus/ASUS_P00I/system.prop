@@ -22,3 +22,10 @@ persist.data.mode=concurrent
 # powers the card down, it reads absent until airplane mode ends, and then comes
 # back as a newly inserted card.
 persist.radio.apm_sim_not_pwdn=1
+
+# Apps redraw their whole window on every frame instead of only what changed. With
+# only the changed part redrawn, onto a buffer whose age the Nougat Adreno driver
+# reports, bars and text fields flickered black for a frame (Messaging's toolbar,
+# Chrome's address bar). Where exactly it goes wrong was not traced; other
+# LineageOS 20 trees with drivers of that age set the same.
+debug.hwui.use_buffer_age=false
