@@ -1,0 +1,20 @@
+Subject: [PATCH] clk: msm: 8976: the SD clock rates ASUS uses
+
+ASUS runs this tablet's microSD at 160 MHz, and its 3.10 clock driver for the
+SoC has 133, 145 and 160 MHz for the SD controllers. This table went from 100
+straight to 177: asked for 160, the clock refused (-22), the DLL did not lock,
+and the card failed to initialise. The three rates are GPLL0 divided by 6, 5.5
+and 5, as there.
+---
+--- drivers/clk/msm/clock-gcc-8976.c
++++ drivers/clk/msm/clock-gcc-8976.c
+@@ -1463,6 +1463,9 @@ static struct clk_freq_tbl ftbl_sdcc2_4_apps_clk_src[] = {
+ 	F(  25000000,          gpll0,   16,    1,     2),
+ 	F(  50000000,          gpll0,   16,    0,     0),
+ 	F( 100000000,          gpll0,    8,    0,     0),
++	F( 133333333,          gpll0,    6,    0,     0),
++	F( 145454545,          gpll0,  5.5,    0,     0),
++	F( 160000000,          gpll0,    5,    0,     0),
+ 	F( 177777778,          gpll0,  4.5,    0,     0),
+ 	F( 200000000,          gpll0,    4,    0,     0),
+ 	F_END

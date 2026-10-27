@@ -1,0 +1,33 @@
+Subject: [PATCH] arm64: a platform symbol and a dts directory for the Z500KL
+
+MACH_ASUS_Z500KL selects this tablet the way MACH_SONY_SUZU selects the Xperia
+X: arch/arm64/boot/dts/asus/Makefile builds the tablet's device tree when it is
+set, and the image carries only that one appended. Like Sony's, it depends on
+ARCH_MSM8916, under which this tree builds the MSM8956.
+---
+--- arch/arm64/Kconfig.platforms
++++ arch/arm64/Kconfig.platforms
+@@ -380,6 +380,13 @@ config MACH_SONY_SUZU
+ 	  If you enable this config,
+ 	  please use SONY Mobile device tree.
+ 
++config MACH_ASUS_Z500KL
++	bool "ASUS ZenPad 3S 10 LTE (Z500KL)"
++	depends on ARCH_MSM8916
++	help
++	  Support for the ASUS ZenPad 3S 10 LTE, Z500KL (ASUS_P00I),
++	  a tablet built on the MSM8956.
++
+ config MACH_SONY_KUGO
+ 	bool "Sony Mobile Kugo"
+ 	depends on ARCH_SONY_LOIRE
+--- arch/arm64/boot/dts/Makefile
++++ arch/arm64/boot/dts/Makefile
+@@ -3,6 +3,7 @@ dts-dirs += altera
+ dts-dirs += amd
+ dts-dirs += amlogic
+ dts-dirs += apm
++dts-dirs += asus
+ dts-dirs += arm
+ dts-dirs += broadcom
+ dts-dirs += cavium

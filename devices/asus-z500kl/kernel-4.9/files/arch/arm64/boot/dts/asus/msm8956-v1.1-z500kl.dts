@@ -1,0 +1,239 @@
+/*
+ * ASUS ZenPad 3S 10 LTE (Z500KL, ASUS_P00I).
+ *
+ * The SoC description is Qualcomm's, as carried by this tree for the Sony
+ * Xperia X; what is here is the board, taken from ASUS' 3.10 device tree
+ * (msm8956-v1.1-cdp-Z500KL.dts and the msm8956-cdp.dtsi it includes).
+ *
+ * Early stages: enough to boot to a shell and leave a log behind. Storage,
+ * keys, the persistent RAM log, the battery and charging (which is also how
+ * the USB controller learns of a cable) are described; the display (behind a
+ * Pixelworks iris2 bridge), touch, audio, Wi-Fi and the cameras are not yet.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ */
+
+/dts-v1/;
+
+#include "../qcom/msm8956-v1.1.dtsi"
+
+/ {
+	model = "ASUS ZenPad 3S 10 LTE (Z500KL)";
+	compatible = "asus,z500kl", "qcom,msm8956";
+	/*
+	 * ASUS built the board on Qualcomm's CDP. The bootloader picks the
+	 * device tree whose board-id matches the hardware platform it reads,
+	 * and on this tablet that is 1, CDP.
+	 */
+	qcom,board-id = <1 0>;
+
+	reserved-memory {
+		/*
+		 * Where, how large, and laid out how, as in ASUS' 3.10
+		 * (fs/pstore/ram.c there has these as its defaults). The same
+		 * layout lets TWRP, which runs ASUS' kernel, read what this one
+		 * left in RAM before a reset.
+		 */
+		ramoops@9ff00000 {
+			compatible = "removed-dma-pool", "ramoops";
+			no-map;
+			reg = <0x0 0x9ff00000 0x0 0x00100000>;
+			record-size = <0x1000>;
+			console-size = <0x40000>;
+			ftrace-size = <0x1000>;
+			pmsg-size = <0x1000>;
+		};
+	};
+};
+
+/* ASUS' firmware relocation region is 1 MB smaller than Qualcomm's default. */
+&reloc_mem {
+	reg = <0x0 0x8c200000 0x0 0x1700000>;
+};
+
+/*
+ * Two nodes of the SoC description that Sony does not use, and that never
+ * compiled as they stand there.
+ */
+
+/* The high-speed UART carries Bluetooth on the Xperia; here Bluetooth goes
+ * through the WCNSS. Its wakeup interrupt is RX, GPIO 5 ("msmg_pio" there). */
+&blsp1_uart2 {
+	interrupt-map = <0 &intc 0 108 0
+			1 &intc 0 238 0
+			2 &msm_gpio 5 0>;
+	status = "disabled";
+};
+
+&soc {
+	/* The Pronto Wi-Fi core. Its RPM clocks come from the GCC driver here,
+	 * as in ASUS' tree; "clock_rpmcc" is the name of a newer driver. */
+	qcom,wcnss-wlan@0a000000 {
+		clocks = <&clock_gcc clk_xo_wlan_clk>,
+			 <&clock_gcc clk_rf_clk2>,
+			 <&clock_debug clk_gcc_debug_mux>,
+			 <&clock_gcc clk_wcnss_m_clk>;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		input-name = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&gpio_key_active>;
+
+		vol_up {
+			label = "volume_up";
+			gpios = <&msm_gpio 113 0x1>;
+			linux,input-type = <1>;
+			linux,code = <115>;
+			debounce-interval = <15>;
+		};
+
+		/* As ASUS declared it: GPIO 102, KEY_HOME, waking the tablet. */
+		home {
+			label = "home";
+			gpios = <&msm_gpio 102 0x1>;
+			linux,input-type = <1>;
+			linux,code = <102>;
+			gpio-key,wakeup;
+			debounce-interval = <15>;
+		};
+	};
+};
+
+/*
+ * Qualcomm's key pins are 113, 114 and 115. On this board 114 is the USB-C
+ * controller's interrupt and 115 switches the fuel gauge's ADC, so only the
+ * two keys' pins are claimed.
+ */
+&gpio_key_active {
+	mux {
+		pins = "gpio102", "gpio113";
+	};
+	config {
+		pins = "gpio102", "gpio113";
+	};
+};
+
+&gpio_key_suspend {
+	mux {
+		pins = "gpio102", "gpio113";
+	};
+	config {
+		pins = "gpio102", "gpio113";
+	};
+};
+
+/* eMMC */
+&sdhc_1 {
+	vdd-supply = <&pm8950_l8>;
+	qcom,vdd-voltage-level = <2900000 2900000>;
+	qcom,vdd-current-level = <200 570000>;
+
+	vdd-io-supply = <&pm8950_l5>;
+	qcom,vdd-io-always-on;
+	qcom,vdd-io-lpm-sup;
+	qcom,vdd-io-voltage-level = <1800000 1800000>;
+	qcom,vdd-io-current-level = <200 325000>;
+
+	pinctrl-names = "active", "sleep";
+	pinctrl-0 = <&sdc1_clk_on &sdc1_cmd_on &sdc1_data_on &sdc1_rclk_on>;
+	pinctrl-1 = <&sdc1_clk_off &sdc1_cmd_off &sdc1_data_off &sdc1_rclk_off>;
+
+	qcom,nonremovable;
+
+	status = "ok";
+};
+
+/* microSD */
+&sdhc_2 {
+	vdd-supply = <&pm8950_l11>;
+	qcom,vdd-voltage-level = <2950000 2950000>;
+	qcom,vdd-current-level = <15000 800000>;
+
+	vdd-io-supply = <&pm8950_l12>;
+	qcom,vdd-io-voltage-level = <1800000 2950000>;
+	qcom,vdd-io-current-level = <200 22000>;
+
+	pinctrl-names = "active", "sleep";
+	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_on>;
+	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_off>;
+
+	#address-cells = <0>;
+	interrupt-parent = <&sdhc_2>;
+	interrupts = <0 1 2>;
+	#interrupt-cells = <1>;
+	interrupt-map-mask = <0xffffffff>;
+	interrupt-map = <0 &intc 0 125 0
+			1 &intc 0 221 0
+			2 &msm_gpio 100 0>;
+	interrupt-names = "hc_irq", "pwr_irq", "status_irq";
+
+	qcom,clk-rates = <400000 25000000 50000000 100000000 160000000>;
+
+	/*
+	 * ASUS' 3.10 lists two polarities, active low for the early "SR"
+	 * boards and active high for all the others. This is one of the
+	 * others.
+	 */
+	cd-gpios = <&msm_gpio 100 0x0>;
+
+	status = "ok";
+};
+
+/* ASUS drove the SD card's command and data lines harder than Qualcomm's 10 mA. */
+&sdc2_cmd_on {
+	config {
+		drive-strength = <12>;
+	};
+};
+
+&sdc2_data_on {
+	config {
+		drive-strength = <12>;
+	};
+};
+
+/*
+ * The battery, 7800 mAh, as characterised for ASUS. Its own node, after the
+ * SoC's, because the fuel gauge looks for the first node by this name that
+ * follows its own.
+ */
+/ {
+	z500kl_batterydata: qcom,battery-data {
+		qcom,rpull-up-kohm = <100>;
+		qcom,vref-batt-therm = <1800000>;
+		qcom,batt-id-range-pct = <100>;
+		#include "Asus_ZT500KL_7800mAh_averaged_MasterSlave_Apr11th2016_PMI8952GUI20015.dtsi"
+	};
+};
+
+/*
+ * The PMI8950's fuel gauge and charger, with the values of ASUS' 3.10 where they
+ * differ from Qualcomm's. Not carried over: the parallel SMB1351, so the PMI8950
+ * charges alone and more slowly, and ASUS' own temperature steps, so the gauge's
+ * defaults apply: charging slows below 10 and above 40 degrees and stops below
+ * 5 and above 45, where ASUS went on to 60.
+ */
+&qpnp_fg {
+	qcom,battery-data = <&z500kl_batterydata>;
+	qcom,resume-soc = <98>;
+	qcom,thermal-coefficients = [c5 86 be 50 d2 37];
+	qcom,fg-iterm-ma = <250>;
+	qcom,fg-chg-iterm-ma = <150>;
+	qcom,vbat-estimate-diff-mv = <200>;
+	qcom,ext-sense-type;
+	qcom,hold-soc-while-full;
+	qcom,fg-cutoff-voltage-mv = <3400>;
+};
+
+&qpnp_smbcharger {
+	qcom,battery-data = <&z500kl_batterydata>;
+	/* The cell is rated for 4.4 V. */
+	qcom,float-voltage-mv = <4380>;
+	/delete-property/ qcom,chg-inhibit-fg;
+	/* D+/D- for telling chargers apart, from the USB PHY, as on the Xperia X. */
+	dpdm-supply = <&usb_otg>;
+};

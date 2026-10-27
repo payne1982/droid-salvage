@@ -1,0 +1,17 @@
+Subject: [PATCH] mmc: no retuning after ungating the clock, as on Loire
+
+Qualcomm's tree asks for the SD controller's tuning to be redone each time its
+clock is ungated. Sony switched that off for the Xperia X, the same SoC and
+the same controllers; the Z500KL is given the same behaviour.
+---
+--- drivers/mmc/core/core.c
++++ drivers/mmc/core/core.c
+@@ -2579,7 +2579,7 @@ void mmc_ungate_clock(struct mmc_host *host)
+ 		WARN_ON(host->ios.clock);
+ 		/* This call will also set host->clk_gated to false */
+ 		__mmc_set_clock(host, host->clk_old);
+-#ifndef CONFIG_ARCH_SONY_LOIRE
++#if !defined(CONFIG_ARCH_SONY_LOIRE) && !defined(CONFIG_MACH_ASUS_Z500KL)
+ 		/*
+ 		 * We have seen that host controller's clock tuning circuit may
+ 		 * go out of sync if controller clocks are gated.
