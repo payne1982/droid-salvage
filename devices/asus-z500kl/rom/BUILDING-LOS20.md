@@ -1,13 +1,8 @@
 # Building LineageOS 20 for ASUS_P00I
 
-Where the experiment described in [`../ROADMAP.md`](../ROADMAP.md) stands: milestone L2
-reached, L3 begun. The tree builds, `mka bacon` produces a flashable zip, and on the
-tablet that image starts and gets through the LineageOS setup wizard. **Little has been
-used beyond that**: Wi-Fi connects, also again with the screen off, the browser plays
-video, the camera takes photos and video, Bluetooth headphones connect and play, the
-GPS has had a fix at a window, it charges, from a Quick Charge 3 adapter at 9 V and
-with the system off too, and SELinux is enforcing.
-[`README.md`](README.md) still describes LineageOS 16, the release that does work.
+How the tree is built, and what each problem on the way was, in the order they came.
+What the published image does and does not do is in [`README.md`](README.md); how the
+experiment described in [`../ROADMAP.md`](../ROADMAP.md) got there is on that page.
 
 ## What the host needs
 
@@ -100,7 +95,7 @@ the SELinux label of the device node.
   computer's key accepted, and root over adb needs the developer option as well. With
   adb off the USB port answers as MTP, which on 16 had needed a fix.
 
-  Signing works as on 16 (`README.md`, "Signing"), with more keys: `releasekey`,
+  Signing works as on 16 ([`README-LOS16.md`](README-LOS16.md), "Signing"), with more keys: `releasekey`,
   `platform`, `shared`, `media`, `networkstack`, `bluetooth`, `sdk_sandbox`, `testkey`
   and `testcert`, in `vendor/lineage-priv/keys/`. All can be RSA 4096: Android 13
   checks updates against X.509 certificates, and the 2048-bit limit of 16's `dumpkey`

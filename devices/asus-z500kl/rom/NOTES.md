@@ -278,7 +278,7 @@ running kernel actually probed (`rom/HARDWARE.md`).
 ## 11. Building it
 
 - **WebView is in Git LFS**, and `repo` leaves a 134-byte pointer: the build fails at
-  ~94% with `zip END header not found`. See `rom/README.md`.
+  ~94% with `zip END header not found`. See `rom/README-LOS16.md`.
 - **GitHub rate-limits unauthenticated git downloads**, and `repo` reports it as "git
   requires authentication". `GIT_TRACE_CURL` shows the real `x-github-edge-message`.
   Authenticating (SSH, or a token with no scopes) finishes the sync.

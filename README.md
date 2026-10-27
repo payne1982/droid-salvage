@@ -30,7 +30,7 @@ at the top of each device's README.
 
 | device | status |
 |---|---|
-| [asus-z500kl](devices/asus-z500kl) — ASUS ZenPad 3S 10 LTE (Z500KL / P00I) | TWRP 3.7 released: touch, all partitions, FDE decryption of `/data`, adb. LineageOS 16.0 (Android 9) released, SELinux enforcing; no voice calls and no Widevine level 1. Kernel built from ASUS' sources |
+| [asus-z500kl](devices/asus-z500kl) — ASUS ZenPad 3S 10 LTE (Z500KL / P00I) | TWRP 3.7 released: touch, all partitions, FDE decryption of `/data`, adb. LineageOS 20 (Android 13) released, SELinux enforcing, in place of 16.0 (Android 9); no voice calls and no Widevine level 1. Kernel built from ASUS' sources |
 
 ## Local settings
 
@@ -39,8 +39,9 @@ Copy `local.conf.example` to `local.conf` (which is git-ignored) and put yours t
 
 ## Branches
 
-- `V1_DEV` — work in progress
-- `V1` — what has been tested on hardware
+- `stable` — what has been tested on hardware and released
+- `dev` — work in progress
+- `asus-z500kl-los16` — the LineageOS 16.0 tree of the ZenPad, kept as it was released
 
 ## A word on vendor files
 

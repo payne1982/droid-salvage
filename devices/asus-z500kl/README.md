@@ -1,4 +1,4 @@
-# ASUS ZenPad 3S 10 LTE — TWRP 3.7, and LineageOS 16.0
+# ASUS ZenPad 3S 10 LTE — TWRP 3.7, and LineageOS 20
 
 |  |  |
 |---|---|
@@ -16,12 +16,14 @@ As far as the XDA threads for this tablet go, this is the first working TWRP for
 - **Discussion and support:** [XDA thread](https://xdaforums.com/t/custom-rom-for-z500kl-p00i-zenpad-3s-10-lte.4184773/)
 - **Ready-to-flash image:** see [Releases](../../releases) — already AVB1-signed, so you
   can skip the signing step below.
-- **LineageOS 16.0 (Android 9):** [rom/README.md](rom/README.md) — runs as a daily
+- **LineageOS 20 (Android 13):** [rom/README.md](rom/README.md) — runs as a daily
   tablet; what is missing and what is still untested is listed there. The image is on
   the same Releases page.
+- **LineageOS 16.0 (Android 9)**, the image before it and no longer worked on:
+  [rom/README-LOS16.md](rom/README-LOS16.md).
 - **The kernel**, buildable from ASUS's sources: [kernel/README.md](kernel/README.md).
 - **How it got here:** [ROADMAP-LOS16.md](ROADMAP-LOS16.md).
-- **Where it is going:** [ROADMAP.md](ROADMAP.md), LineageOS 20 as an experiment.
+- **From 16 to 20:** [ROADMAP.md](ROADMAP.md).
 
 This page is about the recovery, which the ROM needs to be installed.
 

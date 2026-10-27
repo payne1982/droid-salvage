@@ -131,7 +131,7 @@ from the stock `/system`. The extraction needs no tablet at all: the full partit
 dump is already in hand and `debugfs` reads an ext4 image without root or mounting.
 
 **Done, 8 October 2026,** with the first complete build. The vendor tree is not committed:
-`tools/extract-files.sh` produces it from your own dumps. See `rom/README.md`.
+`tools/extract-files.sh` produces it from your own dumps. See `rom/README-LOS16.md`.
 
 ### M3 — first boot, measured in logs rather than in hope
 The goal of the first boot is not a usable tablet, it is **observability**: `init`
@@ -181,7 +181,7 @@ installation. Making the first release build found three things development buil
 hidden — no USB at all with adb off, the USB mode greyed out, and a race that could
 leave the tablet without sensors — and the last tests before publishing found more: a
 SIM gives data and SMS and no calls, the browser had stopped working, the SIM PIN was
-never asked with the screen lock off. All fixed or said. `rom/README.md` has what is
+never asked with the screen lock off. All fixed or said. `rom/README-LOS16.md` has what is
 missing, what is untested and what was never tried.
 
 ## What could still stop this

@@ -1,10 +1,11 @@
 # From Android 9 to Android 13 — the plan for ASUS_P00I
 
-LineageOS 16 for this tablet is released (`payne_31`) and stays on the branch
-`L1_DEV_LOS16`; how it got there is in [`ROADMAP-LOS16.md`](ROADMAP-LOS16.md). This
-branch, `L1_DEV_LOS20`, is an experiment on top of it: the same tablet, the same 3.10
-kernel, the same Nougat vendor files, under LineageOS 20. Nothing here is promised to
-work. What does not work will be written down as carefully as what does.
+LineageOS 16 for this tablet was released first (`payne_31`), and its tree stays on the
+branch `asus-z500kl-los16`; how it got there is in [`ROADMAP-LOS16.md`](ROADMAP-LOS16.md).
+This page began as an experiment on top of it: the same tablet, the same 3.10 kernel,
+the same Nougat vendor files, under LineageOS 20. It became the release `payne_32`,
+which replaces 16 (L5 below); what it does and does not do is in
+[`rom/README.md`](rom/README.md).
 
 ## Why this is possible after all
 
@@ -178,6 +179,13 @@ compiled while running either, because ART kept its JIT off on a kernel older th
 with two kernel patches (24 October) it runs in every process, and scrolling in Prime
 Video and Google News shows no tearing or visible slowdowns. Not tried yet: the wizard's options
 left switched off.
+
+**Decided, 24 October 2026: instead of 16.** What the tablet was used for on 16, it does on 20
+as well, with the same two things neither can do (voice calls, Widevine level 1), and
+with a newer Android at a newer security patch level. The round went on with the JIT (24 October), a SIM and a
+microSD card (25 October), and the release `payne_32` was built from it the same day.
+16 stays on its own branch and its image on the Releases page, and is not worked on any
+more.
 
 **Before anything is published: bring the LineageOS-UL forks up to date ourselves.**
 They stopped on 4 April 2025, and LineageOS has kept patching `lineage-20.0` since. Measured
