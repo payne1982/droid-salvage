@@ -98,7 +98,10 @@ Of the patches in [../kernel/patches](../kernel/patches):
 - **for building 3.10 only:** 0001, 0014, 0016;
 - **to look at again:** 0008, 0027;
 - **for ASUS' touch driver, which this kernel does without** (it uses its own
-  `atmel_mxt_ts`): 0002, 0026;
+  `atmel_mxt_ts`): 0002, 0026. The controller keeps its configuration; ASUS'
+  `mTX1666T2_cfg.raw` is in the OBP_RAW format this driver reads as
+  `maxtouch.cfg`, rewriting the controller only when the two differ, so a ROM
+  on this kernel can carry it under that name once the firmware paths are seen to;
 - **about this tablet's hardware, still to bring over:** 0009 (prima, the Wi-Fi driver), 0011 and 0020 (Venus), 0013 (exFAT), 0018 and
   0019 (charger), 0021 (camera heap), 0022 and 0023 (firmware paths: this kernel
   looks only in `/lib/firmware`), 0025 (modem restart), 0029 (SD read-ahead).
