@@ -5,10 +5,10 @@
  * Xperia X; what is here is the board, taken from ASUS' 3.10 device tree
  * (msm8956-v1.1-cdp-Z500KL.dts and the msm8956-cdp.dtsi it includes).
  *
- * Early stages. Storage, keys, the persistent RAM log, the battery and
- * charging (which is also how the USB controller learns of a cable), and the
- * display behind its Pixelworks iris2 bridge are described; touch, audio,
- * Wi-Fi and the cameras are not yet.
+ * Early stages. Described: storage, keys, the persistent RAM log, the battery
+ * and charging (which is also how the USB controller learns of a cable), the
+ * display behind its Pixelworks iris2 bridge, and touch. Not yet: audio,
+ * Wi-Fi and the cameras.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -391,6 +391,37 @@
 &lab_regulator {
 	qcom,qpnp-lab-init-voltage = <5000000>;
 	qcom,qpnp-lab-init-lcd-voltage = <5000000>;
+};
+
+/*
+ * Touch: an Atmel maXTouch mXT1666T2 on BLSP1 QUP4, driven by the kernel's own
+ * atmel_mxt_ts. Its configuration lives in the controller's memory, where ASUS'
+ * driver left it. That driver powered and reset the controller itself; this one
+ * expects both done, so the 2.8 V supply stays on and the reset line, active
+ * low, is driven high from the moment the GPIO controller is up.
+ */
+&i2c_4 {
+	atmel@4a {
+		compatible = "atmel,maxtouch";
+		reg = <0x4a>;
+		interrupt-parent = <&msm_gpio>;
+		interrupts = <65 0x2008>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&ts_int_active>;
+	};
+};
+
+&pm8950_l10 {
+	regulator-always-on;
+};
+
+&msm_gpio {
+	touch_reset {
+		gpio-hog;
+		gpios = <64 0>;
+		output-high;
+		line-name = "touch-reset";
+	};
 };
 
 /*

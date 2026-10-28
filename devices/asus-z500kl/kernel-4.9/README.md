@@ -85,7 +85,8 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | adb over USB, through ConfigFS | yes |
 | I²C buses | yes — at first deferred until the clock driver is up, then all four by 0.36 s |
 | display: the panel (BOE or Tianma) behind the Pixelworks iris2 bridge, the LP8557 backlight | described, with the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); not tried yet |
-| touch, audio, Wi-Fi, cameras, modem | not yet |
+| touch: Atmel maXTouch mXT1666T2 | described, with the kernel's own `atmel_mxt_ts` in place of ASUS' driver; not tried yet |
+| audio, Wi-Fi, cameras, modem | not yet |
 
 ## The 3.10 patches
 
@@ -96,7 +97,8 @@ Of the patches in [../kernel/patches](../kernel/patches):
   `memfd_create`, `O_TMPFILE`, the cgroup permission);
 - **for building 3.10 only:** 0001, 0014, 0016;
 - **to look at again:** 0008, 0027;
-- **about this tablet's hardware, still to bring over:** 0002 and 0026 (touch),
-  0009 (prima, the Wi-Fi driver), 0011 and 0020 (Venus), 0013 (exFAT), 0018 and
+- **for ASUS' touch driver, which this kernel does without** (it uses its own
+  `atmel_mxt_ts`): 0002, 0026;
+- **about this tablet's hardware, still to bring over:** 0009 (prima, the Wi-Fi driver), 0011 and 0020 (Venus), 0013 (exFAT), 0018 and
   0019 (charger), 0021 (camera heap), 0022 and 0023 (firmware paths: this kernel
   looks only in `/lib/firmware`), 0025 (modem restart), 0029 (SD read-ahead).
