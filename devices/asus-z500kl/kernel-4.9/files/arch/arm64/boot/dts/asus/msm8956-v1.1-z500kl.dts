@@ -230,8 +230,11 @@
 };
 
 &qpnp_smbcharger {
-	qcom,battery-data = <&z500kl_batterydata>;
-	/* The cell is rated for 4.4 V. */
+	/*
+	 * The cell is rated for 4.4 V; ASUS stops at 4.38. Not given the battery
+	 * profile: from it this driver takes the cell's maximum, 4.4 V, as the
+	 * float voltage, in place of the one below.
+	 */
 	qcom,float-voltage-mv = <4380>;
 	/delete-property/ qcom,chg-inhibit-fg;
 	/* D+/D- for telling chargers apart, from the USB PHY, as on the Xperia X. */

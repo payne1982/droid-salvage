@@ -74,9 +74,11 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | persistent RAM log, read back by TWRP's 3.10 | yes |
 | eMMC | yes — HS400 enhanced strobe, command queueing, all 45 partitions |
 | TWRP's userspace: init, SELinux, ueventd, logd, adbd; system, persist, cache and data mounted | yes, stable for over a minute |
-| microSD | failed at 160 MHz, which this clock driver lacked; `patches/0003` adds it, not tried yet |
-| battery and charging, and through them the USB cable | described, not tried yet |
-| adb over USB | not yet |
+| microSD | yes, with `patches/0003` — a 256 GB card in UHS SDR104, raw reads at 72 MB/s |
+| battery: the fuel gauge with ASUS' profile for the 7800 mAh cell | yes — the profile is recognised, level and temperature read |
+| charging, from a computer's USB port | yes — some 630 mA into the battery, at 24.5 °C |
+| adb over USB, through ConfigFS | yes |
+| I²C buses at 78b6000 and 78b8000 (charger chips, USB-C, touch are on I²C) | deferred at boot; whether they come up later is to be checked |
 | display (behind a Pixelworks iris2 bridge), touch, audio, Wi-Fi, cameras, modem | not yet |
 
 ## The 3.10 patches
