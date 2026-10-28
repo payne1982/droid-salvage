@@ -26,6 +26,14 @@ KERNEL_COMMIT=${KERNEL_COMMIT:-ec3c488d0b7150e8421aa9f1d2337697391ce1b6}
 EXFAT_REMOTE=${EXFAT_REMOTE:-https://github.com/dorimanx/exfat-nofuse.git}
 EXFAT_COMMIT=${EXFAT_COMMIT:-01c30ad52625a7261e1b0d874553b6ca7af25966}
 
+# The WLAN driver for the WCNSS Pronto core, Qualcomm's prima. Not in this tree,
+# whose phone has a Broadcom chip; LineageOS carries it in-tree in its 4.9 kernel
+# for MSM8953 devices, 4.9.227 like this one. 26 MB of driver, so it is fetched at
+# a pinned commit, as for the 3.10 kernel; patches/0012 wires it into
+# drivers/staging.
+PRIMA_REMOTE=${PRIMA_REMOTE:-https://github.com/LineageOS/android_kernel_xiaomi_msm8953.git}
+PRIMA_COMMIT=${PRIMA_COMMIT:-0ac2c6831eabb90d18f49081bc2221a715763e50}
+
 if [ ! -d "$KERNEL_TREE/.git" ]; then
     echo "==> fetching $KERNEL_REMOTE at $KERNEL_COMMIT into $KERNEL_TREE"
     mkdir -p "$KERNEL_TREE"
@@ -52,6 +60,20 @@ if [ ! -f fs/exfat/Kconfig ]; then
     rm -rf "${tmp:?}"
 else
     echo "==> reusing fs/exfat"
+fi
+
+if [ ! -f drivers/staging/prima/Kconfig ]; then
+    echo "==> fetching prima from $PRIMA_REMOTE at $PRIMA_COMMIT"
+    tmp=$(mktemp -d)
+    git -C "$tmp" init -q
+    git -C "$tmp" remote add origin "$PRIMA_REMOTE"
+    git -C "$tmp" sparse-checkout set --no-cone /drivers/staging/prima/
+    git -C "$tmp" fetch -q --depth=1 --filter=blob:none origin "$PRIMA_COMMIT"
+    git -C "$tmp" checkout -q FETCH_HEAD
+    cp -r "$tmp/drivers/staging/prima" drivers/staging/prima
+    rm -rf "${tmp:?}"
+else
+    echo "==> reusing drivers/staging/prima"
 fi
 
 echo "==> copying files/"

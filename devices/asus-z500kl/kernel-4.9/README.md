@@ -34,8 +34,8 @@ matters for the display bridge this tablet has.
     Pixelworks iris2 bridge, the bridge's power driver and the LP8557 backlight
     driver, with what was particular to ASUS' other tablets taken out.
 - `patches/` — changes to the kernel's own files, one per change, each saying why.
-- `tools/setup-kernel.sh`, `tools/build-kernel.sh` — fetch the base and the exFAT
-  driver, copy `files/` into it and apply `patches/`, build `Image.gz-dtb`.
+- `tools/setup-kernel.sh`, `tools/build-kernel.sh` — fetch the base, the exFAT
+  driver and the prima Wi-Fi driver, copy `files/` into it and apply `patches/`, build `Image.gz-dtb`.
 - `tools/make-test-image.sh`, `test/configfs-adb.rc` — a boot image to try the kernel
   with (below).
 
@@ -86,7 +86,8 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | I²C buses | yes — at first deferred until the clock driver is up, then all four by 0.36 s |
 | display: the panel (BOE or Tianma) behind the Pixelworks iris2 bridge, the LP8557 backlight | described, with the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); not tried yet |
 | touch: Atmel maXTouch mXT1666T2 | described, with the kernel's own `atmel_mxt_ts` in place of ASUS' driver; not tried yet |
-| audio, Wi-Fi, cameras, modem | not yet |
+| Wi-Fi: the WCNSS Pronto core, with prima | builds; not tried yet (it needs the ROM's `wcnss_service` to power the core) |
+| audio, cameras, modem | not yet |
 
 ## The 3.10 patches
 
@@ -104,10 +105,13 @@ Of the patches in [../kernel/patches](../kernel/patches):
   `mTX1666T2_cfg.raw` is in the OBP_RAW format this driver reads as
   `maxtouch.cfg`, rewriting the controller only when the two differ, so a ROM
   on this kernel can carry it under that name;
-- **brought over:** 0013 (exFAT, as `patches/0009` and the same exfat-nofuse),
+- **brought over:** 0009 (prima, the Wi-Fi driver, as `patches/0012`, fetched from
+  LineageOS' 4.9 kernel for MSM8953 devices), 0013 (exFAT, as `patches/0009` and
+  the same exfat-nofuse),
   0020 (`0010`), 0021 (the camera heap, in the device tree), 0022 and 0023
   (`0007`, `0008`), 0025 (`0011` and the device tree);
 - **for ASUS' charger driver, which this kernel does without** (Qualcomm's own,
   which neither holds a cable back for Quick Charge 3 nor reports a status of
   ASUS' own): 0018, 0019;
-- **still to bring over:** 0009 (prima, the Wi-Fi driver).
+- nothing is left to bring over; what is left is new work: audio, the cameras,
+  the modem, and whether the Nougat GPU blobs take this kernel's KGSL.

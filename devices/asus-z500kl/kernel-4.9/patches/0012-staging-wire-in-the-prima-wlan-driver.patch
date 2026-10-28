@@ -1,0 +1,25 @@
+Subject: [PATCH] staging: wire in the prima WLAN driver
+
+The Wi-Fi of the WCNSS Pronto core is driven by Qualcomm's prima, which was
+never part of this tree: the Xperia X has a Broadcom chip instead. As for the
+3.10 kernel (../kernel/patches/0009), tools/setup-kernel.sh fetches it, here
+from the LineageOS kernel for MSM8953 devices, 4.9.227 like this one, and this
+wires it into drivers/staging. The WCNSS core driver it works with is already
+in the tree, in drivers/soc/qcom/wcnss.
+---
+--- drivers/staging/Kconfig
++++ drivers/staging/Kconfig
+@@ -106,4 +106,6 @@
+ 
+ source "drivers/staging/vc04_services/Kconfig"
+ 
++source "drivers/staging/prima/Kconfig"
++
+ endif # STAGING
+--- drivers/staging/Makefile
++++ drivers/staging/Makefile
+@@ -42,3 +42,4 @@
+ obj-$(CONFIG_KS7010)		+= ks7010/
+ obj-$(CONFIG_GREYBUS)		+= greybus/
+ obj-$(CONFIG_BCM2708_VCHIQ)	+= vc04_services/
++obj-$(CONFIG_PRONTO_WLAN)	+= prima/
