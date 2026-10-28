@@ -103,5 +103,6 @@ Of the patches in [../kernel/patches](../kernel/patches):
   `maxtouch.cfg`, rewriting the controller only when the two differ, so a ROM
   on this kernel can carry it under that name once the firmware paths are seen to;
 - **about this tablet's hardware, still to bring over:** 0009 (prima, the Wi-Fi driver), 0011 and 0020 (Venus), 0013 (exFAT), 0018 and
-  0019 (charger), 0021 (camera heap), 0022 and 0023 (firmware paths: this kernel
-  looks only in `/lib/firmware`), 0025 (modem restart), 0029 (SD read-ahead).
+  0019 (charger), 0021 (camera heap), 0025 (modem restart), 0029 (SD read-ahead);
+- **brought over:** 0022 and 0023, the firmware paths and credentials, as
+  `patches/0007` and `0008`.
