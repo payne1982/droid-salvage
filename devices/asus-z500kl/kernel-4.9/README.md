@@ -28,8 +28,8 @@ matters for the display bridge this tablet has.
   - the battery profile ASUS' 3.10 tree carries for this tablet's 7800 mAh cell;
   - `arch/arm64/configs/z500kl_defconfig`: Sony's `loire_suzu_defconfig` without
     the drivers for the Xperia's own hardware, Sony's panel driver among them;
-  - `arch/arm64/boot/dts/asus/dsi-panel-boe-nt35523-dualmipi-1536x2048-cmd.dtsi`,
-    the panel, as in ASUS' tree;
+  - the two panels the Z500KL was built with, BOE and Tianma, as in ASUS' tree
+    (`dsi-panel-*.dtsi`); GPIO 126 says which one is fitted (`patches/0006`);
   - `drivers/video/fbdev/msm/`: from ASUS' 3.10, the light-up driver of the
     Pixelworks iris2 bridge, the bridge's power driver and the LP8557 backlight
     driver, with what was particular to ASUS' other tablets taken out.
@@ -83,8 +83,8 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | battery: the fuel gauge with ASUS' profile for the 7800 mAh cell | yes — the profile is recognised, level and temperature read |
 | charging, from a computer's USB port | yes — some 630 mA into the battery, at 24.5 °C |
 | adb over USB, through ConfigFS | yes |
-| I²C buses at 78b6000 and 78b8000 (charger chips, USB-C, touch are on I²C) | deferred at boot; whether they come up later is to be checked |
-| display: the BOE panel behind the Pixelworks iris2 bridge, the LP8557 backlight | described, with the iris2 light-up driver from ASUS' 3.10 (`patches/0004`, `0005`); not tried yet |
+| I²C buses | yes — at first deferred until the clock driver is up, then all four by 0.36 s |
+| display: the panel (BOE or Tianma) behind the Pixelworks iris2 bridge, the LP8557 backlight | described, with the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); not tried yet |
 | touch, audio, Wi-Fi, cameras, modem | not yet |
 
 ## The 3.10 patches

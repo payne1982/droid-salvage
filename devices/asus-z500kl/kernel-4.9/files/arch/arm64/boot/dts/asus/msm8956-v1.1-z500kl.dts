@@ -198,11 +198,12 @@
 
 /*
  * Display. Two DSI links go to a Pixelworks iris2, which drives the panel; the
- * backlight is a TI LP8557 on I2C. ASUS' board lists six panels and picks one
- * by a GPIO at boot; this tablet has the BOE one, which is the only one
- * described here.
+ * backlight is a TI LP8557 on I2C. The panel is one of two, the same size and
+ * controller (Novatek NT35523) from two makers, and GPIO 126 says which: low
+ * for BOE, high for Tianma, as ASUS' 3.10 reads it for the Z500KL.
  */
 #include "dsi-panel-boe-nt35523-dualmipi-1536x2048-cmd.dtsi"
+#include "dsi-panel-tianma-nt35523-dualmipi-1536x2048-es13-cmd.dtsi"
 
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
@@ -213,6 +214,13 @@
 };
 
 &dsi_boe_nt35523_dualmipi_1536x2048_cmd {
+	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_z500kl>;
+	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs_iris";
+	qcom,mdss-dsi-bl-min-level = <1>;
+	qcom,mdss-dsi-bl-max-level = <255>;
+};
+
+&dsi_tianma_nt35523_dualmipi_1536x2048_es13_cmd {
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply_z500kl>;
 	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs_iris";
 	qcom,mdss-dsi-bl-min-level = <1>;
@@ -321,14 +329,14 @@
 	};
 };
 
-/* The panel's reset line, GPIO 25, set up as ASUS does. */
+/* The panel's reset line, GPIO 25, and its identity, GPIO 126, set up as ASUS does. */
 &mdss_dsi_active {
 	mux {
-		pins = "gpio25";
+		pins = "gpio25", "gpio126";
 		function = "gpio";
 	};
 	config {
-		pins = "gpio25";
+		pins = "gpio25", "gpio126";
 		drive-strength = <8>;
 		bias-disable;
 		/delete-property/ output-high;
@@ -337,11 +345,11 @@
 
 &mdss_dsi_suspend {
 	mux {
-		pins = "gpio25";
+		pins = "gpio25", "gpio126";
 		function = "gpio";
 	};
 	config {
-		pins = "gpio25";
+		pins = "gpio25", "gpio126";
 		drive-strength = <2>;
 		bias-pull-down;
 	};
@@ -352,6 +360,8 @@
 	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
 	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
 	qcom,dsi-pref-prim-pan = <&dsi_boe_nt35523_dualmipi_1536x2048_cmd>;
+	qcom,panel-id-gpio = <&msm_gpio 126 0>;
+	qcom,dsi-pref-prim-pan-id-high = <&dsi_tianma_nt35523_dualmipi_1536x2048_es13_cmd>;
 	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
 	qcom,platform-te-gpio = <&msm_gpio 24 0>;
 };
@@ -361,6 +371,8 @@
 	pinctrl-0 = <&mdss_dsi_active &mdss_te_active>;
 	pinctrl-1 = <&mdss_dsi_suspend &mdss_te_suspend>;
 	qcom,dsi-pref-prim-pan = <&dsi_boe_nt35523_dualmipi_1536x2048_cmd>;
+	qcom,panel-id-gpio = <&msm_gpio 126 0>;
+	qcom,dsi-pref-prim-pan-id-high = <&dsi_tianma_nt35523_dualmipi_1536x2048_es13_cmd>;
 	qcom,platform-reset-gpio = <&msm_gpio 25 0>;
 };
 

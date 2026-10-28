@@ -1,0 +1,50 @@
+Subject: [PATCH] mdss: dsi: pick the panel by a GPIO
+
+The Z500KL was built with its panel from two makers, BOE and Tianma, the
+same size and controller but each with its own power-on commands; GPIO 126 is
+low for the first and high for the second. ASUS' 3.10 reads it with code of
+its own for each of its tablets. Here a board names the GPIO, as
+qcom,panel-id-gpio, and the panel for a high level, as
+qcom,dsi-pref-prim-pan-id-high, next to the usual qcom,dsi-pref-prim-pan;
+without them nothing changes. The GPIO is let go once read, since both DSI
+controllers read it.
+---
+--- drivers/video/fbdev/msm/mdss_dsi.c
++++ drivers/video/fbdev/msm/mdss_dsi.c
+@@ -2938,11 +2938,34 @@
+ 		struct platform_device *pdev)
+ {
+ 	struct device_node *dsi_pan_node = NULL;
++	const char *pref = "qcom,dsi-pref-prim-pan";
++	int id_gpio;
++
++	/*
++	 * A board fitted with one of two panels may say which by a GPIO: low
++	 * keeps qcom,dsi-pref-prim-pan, high picks qcom,dsi-pref-prim-pan-id-high.
++	 */
++	id_gpio = of_get_named_gpio(pdev->dev.of_node, "qcom,panel-id-gpio", 0);
++	if (gpio_is_valid(id_gpio) &&
++	    of_find_property(pdev->dev.of_node,
++			     "qcom,dsi-pref-prim-pan-id-high", NULL)) {
++		if (gpio_request(id_gpio, "panel_id") == 0) {
++			int high = gpio_get_value(id_gpio);
++
++			gpio_free(id_gpio);
++			pr_info("%s: panel id gpio %d is %s\n", __func__,
++				id_gpio, high ? "high" : "low");
++			if (high)
++				pref = "qcom,dsi-pref-prim-pan-id-high";
++		} else {
++			pr_err("%s: cannot request panel id gpio %d\n",
++			       __func__, id_gpio);
++		}
++	}
+ 
+ 	pr_debug("%s:%d: Select primary panel from dt\n",
+ 					__func__, __LINE__);
+-	dsi_pan_node = of_parse_phandle(pdev->dev.of_node,
+-					"qcom,dsi-pref-prim-pan", 0);
++	dsi_pan_node = of_parse_phandle(pdev->dev.of_node, pref, 0);
+ 	if (!dsi_pan_node)
+ 		pr_err("%s:can't find panel phandle\n", __func__);
+ 
