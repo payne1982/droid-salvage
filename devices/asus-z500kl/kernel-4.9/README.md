@@ -84,8 +84,8 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | charging, from a computer's USB port | yes — some 630 mA into the battery, at 24.5 °C |
 | adb over USB, through ConfigFS | yes |
 | I²C buses | yes — at first deferred until the clock driver is up, then all four by 0.36 s |
-| display: the panel (BOE or Tianma) behind the Pixelworks iris2 bridge, the LP8557 backlight | described, with the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); not tried yet |
-| touch: Atmel maXTouch mXT1666T2 | described, with the kernel's own `atmel_mxt_ts` in place of ASUS' driver; not tried yet |
+| display: the panel behind the Pixelworks iris2 bridge, the LP8557 backlight | yes — TWRP's screen, clean, through the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); GPIO 126 picks the BOE panel. The first frame after the bootloader's splash still fails (a DSI timeout), and the driver recovers by powering panel and bridge off and on, in about a second |
+| touch: Atmel maXTouch mXT1666T2 | yes — with the kernel's own `atmel_mxt_ts` in place of ASUS' driver |
 | Wi-Fi: the WCNSS Pronto core, with prima | builds; not tried yet (it needs the ROM's `wcnss_service` to power the core) |
 | audio, cameras, modem | not yet |
 

@@ -227,6 +227,13 @@
 	qcom,mdss-dsi-bl-max-level = <255>;
 };
 
+/* Qualcomm's I2C driver takes the bus number from an alias, and fails without one. */
+/ {
+	aliases {
+		i2c3 = &i2c_3;
+	};
+};
+
 &soc {
 	dsi_panel_pwr_supply_z500kl: dsi_panel_pwr_supply_z500kl {
 		#address-cells = <1>;
@@ -398,7 +405,10 @@
  * atmel_mxt_ts. Its configuration lives in the controller's memory, where ASUS'
  * driver left it. That driver powered and reset the controller itself; this one
  * expects both done, so the 2.8 V supply stays on and the reset line, active
- * low, is driven high from the moment the GPIO controller is up.
+ * low, is driven high by the pin controller as soon as it registers: a state
+ * it claims for itself. (A GPIO hog does not do: it is requested while the
+ * GPIO chip is added, before the pin ranges exist, and fails with -EPROBE_DEFER
+ * every time, taking the whole pin controller down with it.)
  */
 &i2c_4 {
 	atmel@4a {
@@ -416,11 +426,20 @@
 };
 
 &msm_gpio {
-	touch_reset {
-		gpio-hog;
-		gpios = <64 0>;
-		output-high;
-		line-name = "touch-reset";
+	pinctrl-names = "default";
+	pinctrl-0 = <&ts_reset_high>;
+
+	ts_reset_high: ts_reset_high {
+		mux {
+			pins = "gpio64";
+			function = "gpio";
+		};
+		config {
+			pins = "gpio64";
+			drive-strength = <2>;
+			bias-disable;
+			output-high;
+		};
 	};
 };
 
