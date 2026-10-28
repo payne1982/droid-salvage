@@ -424,6 +424,25 @@
 	};
 };
 
+&soc {
+	qcom,ion {
+		/*
+		 * The camera heap, as plain system memory (../../kernel/patches/0021
+		 * for 3.10): Android asks for it for the buffers of hardware video
+		 * decoders, and this platform's gralloc fails with no such heap.
+		 */
+		qcom,ion-heap@20 {
+			reg = <20>;
+			qcom,ion-heap-type = "SYSTEM";
+		};
+	};
+
+	/* A modem crash restarts the modem alone, as stock set it (patches/0011). */
+	qcom,mss@4080000 {
+		qcom,restart-level-related;
+	};
+};
+
 /*
  * The battery, 7800 mAh, as characterised for ASUS. Its own node, after the
  * SoC's, because the fuel gauge looks for the first node by this name that

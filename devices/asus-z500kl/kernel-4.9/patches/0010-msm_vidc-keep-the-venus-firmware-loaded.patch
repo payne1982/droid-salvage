@@ -1,0 +1,24 @@
+Subject: [PATCH] msm_vidc: keep the Venus firmware loaded
+
+As ../kernel/patches/0020 for 3.10: the video core's firmware was unloaded 15 s
+after the last session and loaded again at the next, into a CMA region it needs
+whole. After a while in use pages in the region can no longer be moved out, and
+from then on every hardware codec fails, the camera's video encoder among them.
+Loaded once and never unloaded, it never has to be placed again; an idle core is
+power-collapsed either way. The delay stays in debugfs as before.
+---
+--- drivers/media/platform/msm/vidc_3x/msm_vidc_debug.c
++++ drivers/media/platform/msm/vidc_3x/msm_vidc_debug.c
+@@ -27,7 +27,11 @@
+ bool msm_vidc_dec_dcvs_mode = true;
+ bool msm_vidc_enc_dcvs_mode = true;
+ bool msm_vidc_sys_idle_indicator = true;
+-int msm_vidc_firmware_unload_delay = 15000;
++/*
++ * Never unload the firmware: loading it again needs venus_mem whole, which after a
++ * while in use the kernel can no longer free.
++ */
++int msm_vidc_firmware_unload_delay = INT_MAX;
+ bool msm_vidc_thermal_mitigation_disabled = true;
+ bool msm_vidc_bitrate_clock_scaling = 1;
+ bool msm_vidc_debug_timeout = true;

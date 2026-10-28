@@ -34,8 +34,8 @@ matters for the display bridge this tablet has.
     Pixelworks iris2 bridge, the bridge's power driver and the LP8557 backlight
     driver, with what was particular to ASUS' other tablets taken out.
 - `patches/` — changes to the kernel's own files, one per change, each saying why.
-- `tools/setup-kernel.sh`, `tools/build-kernel.sh` — fetch the base, copy `files/`
-  into it and apply `patches/`, build `Image.gz-dtb`.
+- `tools/setup-kernel.sh`, `tools/build-kernel.sh` — fetch the base and the exFAT
+  driver, copy `files/` into it and apply `patches/`, build `Image.gz-dtb`.
 - `tools/make-test-image.sh`, `test/configfs-adb.rc` — a boot image to try the kernel
   with (below).
 
@@ -92,17 +92,22 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 
 Of the patches in [../kernel/patches](../kernel/patches):
 
-- **already in 4.9:** 0003, 0004, 0005, 0006, 0007, 0010, 0012, 0015, 0017, 0028
-  (binder and its security context, sdcardfs, `getrandom`, ambient capabilities,
-  `memfd_create`, `O_TMPFILE`, the cgroup permission);
+- **already in 4.9:** 0003, 0004, 0005, 0006, 0007, 0010, 0011, 0012, 0015,
+  0017, 0028 (binder and its security context, sdcardfs, the I-frame size hint
+  for the video encoder, `getrandom`, ambient capabilities, `memfd_create`,
+  `O_TMPFILE`, the cgroup permission), and 0029 in effect: this kernel's
+  read-ahead is 512 KB for every disk;
 - **for building 3.10 only:** 0001, 0014, 0016;
 - **to look at again:** 0008, 0027;
 - **for ASUS' touch driver, which this kernel does without** (it uses its own
   `atmel_mxt_ts`): 0002, 0026. The controller keeps its configuration; ASUS'
   `mTX1666T2_cfg.raw` is in the OBP_RAW format this driver reads as
   `maxtouch.cfg`, rewriting the controller only when the two differ, so a ROM
-  on this kernel can carry it under that name once the firmware paths are seen to;
-- **about this tablet's hardware, still to bring over:** 0009 (prima, the Wi-Fi driver), 0011 and 0020 (Venus), 0013 (exFAT), 0018 and
-  0019 (charger), 0021 (camera heap), 0025 (modem restart), 0029 (SD read-ahead);
-- **brought over:** 0022 and 0023, the firmware paths and credentials, as
-  `patches/0007` and `0008`.
+  on this kernel can carry it under that name;
+- **brought over:** 0013 (exFAT, as `patches/0009` and the same exfat-nofuse),
+  0020 (`0010`), 0021 (the camera heap, in the device tree), 0022 and 0023
+  (`0007`, `0008`), 0025 (`0011` and the device tree);
+- **for ASUS' charger driver, which this kernel does without** (Qualcomm's own,
+  which neither holds a cable back for Quick Charge 3 nor reports a status of
+  ASUS' own): 0018, 0019;
+- **still to bring over:** 0009 (prima, the Wi-Fi driver).

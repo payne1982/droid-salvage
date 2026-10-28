@@ -1,0 +1,24 @@
+Subject: [PATCH] subsystem_restart: a subsystem may restart on its own
+
+As ../kernel/patches/0025 for 3.10. Every Qualcomm subsystem starts with the
+restart level SYSTEM: if one crashes, the whole tablet restarts. Stock set the
+modem's to RELATED from user space, so that a modem crash cost the mobile
+connection for a few seconds. A device tree property, read when the subsystem
+registers, does the same here; the board marks the modem with it.
+---
+--- drivers/soc/qcom/subsystem_restart.c
++++ drivers/soc/qcom/subsystem_restart.c
+@@ -1802,6 +1802,13 @@
+ 		if (!subsys->desc->edge)
+ 			pr_debug("Reading qcom,edge for %s failed\n",
+ 								desc->name);
++
++		/*
++		 * A subsystem marked so in the device tree restarts on its own when
++		 * it crashes, instead of taking the whole system down with it.
++		 */
++		if (of_property_read_bool(ofnode, "qcom,restart-level-related"))
++			subsys->restart_level = RESET_SUBSYS_COUPLED;
+ 	}
+ 
+ 	ret = sysmon_notifier_register(desc);

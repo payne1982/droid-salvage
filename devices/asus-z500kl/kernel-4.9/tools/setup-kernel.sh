@@ -20,6 +20,12 @@ KERNEL_TREE=${KERNEL_TREE:-$HOME/droid-salvage-build/kernel-4.9}
 KERNEL_REMOTE=${KERNEL_REMOTE:-https://github.com/bartcubbins/kernel_loire.git}
 KERNEL_COMMIT=${KERNEL_COMMIT:-ec3c488d0b7150e8421aa9f1d2337697391ce1b6}
 
+# The exFAT driver, as for the 3.10 kernel (../kernel/tools/setup-kernel.sh):
+# exfat-nofuse, the GPLv2 driver Samsung published in its Android kernels, at a
+# pinned commit; Linux has its own only from 5.4. patches/0009 wires it into fs/.
+EXFAT_REMOTE=${EXFAT_REMOTE:-https://github.com/dorimanx/exfat-nofuse.git}
+EXFAT_COMMIT=${EXFAT_COMMIT:-01c30ad52625a7261e1b0d874553b6ca7af25966}
+
 if [ ! -d "$KERNEL_TREE/.git" ]; then
     echo "==> fetching $KERNEL_REMOTE at $KERNEL_COMMIT into $KERNEL_TREE"
     mkdir -p "$KERNEL_TREE"
@@ -32,6 +38,21 @@ else
 fi
 
 cd "$KERNEL_TREE"
+
+if [ ! -f fs/exfat/Kconfig ]; then
+    echo "==> fetching exfat from $EXFAT_REMOTE at $EXFAT_COMMIT"
+    tmp=$(mktemp -d)
+    git -C "$tmp" init -q
+    git -C "$tmp" remote add origin "$EXFAT_REMOTE"
+    git -C "$tmp" fetch -q --depth=1 origin "$EXFAT_COMMIT"
+    git -C "$tmp" checkout -q FETCH_HEAD
+    mkdir fs/exfat
+    # the kernel sources and the licence; not the DKMS and standalone-module files
+    cp "$tmp"/*.c "$tmp"/*.h "$tmp"/Kconfig "$tmp"/Makefile "$tmp"/LICENSE fs/exfat/
+    rm -rf "${tmp:?}"
+else
+    echo "==> reusing fs/exfat"
+fi
 
 echo "==> copying files/"
 cp -r "$here/files/." .
