@@ -1,0 +1,41 @@
+Subject: [PATCH] mdss: build the iris2 and LP8557 drivers
+
+Two options and the objects behind them: the iris2 light-up code is part of
+mdss-dsi, the iris2 power driver and the LP8557 backlight driver are drivers
+of their own, as in ASUS' 3.10.
+---
+--- drivers/video/fbdev/msm/Kconfig
++++ drivers/video/fbdev/msm/Kconfig
+@@ -144,4 +144,19 @@
+ 	statistics and check whether its output pattern matches expected
+ 	cadence.
+ 
++config IRIS2_LIGHTUP_ONLY
++	depends on FB_MSM_MDSS
++	bool "Pixelworks iris2 display bridge, light-up only"
++	---help---
++	Power, reset and program a Pixelworks iris2 that sits between the DSI
++	controllers and the panel, so that it passes the picture through. As
++	on the ASUS ZenPad 3S 10 (Z500KL).
++
++config BACKLIGHT_LP8557E01
++	depends on FB_MSM_MDSS && I2C
++	bool "TI LP8557 backlight driven from the panel driver"
++	---help---
++	The backlight chip of the ASUS ZenPad 3S 10 (Z500KL), selected by
++	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs_iris".
++
+ endif
+--- drivers/video/fbdev/msm/Makefile
++++ drivers/video/fbdev/msm/Makefile
+@@ -43,6 +43,10 @@
+ mdss-dsi-objs += mdss_dsi_phy.o
+ mdss-dsi-objs += mdss_dsi_phy_12nm.o
+ mdss-dsi-objs += mdss_dsi_clk.o
++mdss-dsi-objs-$(CONFIG_IRIS2_LIGHTUP_ONLY) += mdss_dsi_iris2_lightup_only.o
++mdss-dsi-objs += $(mdss-dsi-objs-y)
++obj-$(CONFIG_IRIS2_LIGHTUP_ONLY) += iris2_io.o
++obj-$(CONFIG_BACKLIGHT_LP8557E01) += lp8557e01.o
+ obj-$(CONFIG_FB_MSM_MDSS) += mdss-dsi.o
+ obj-$(CONFIG_FB_MSM_MDSS) += mdss_panel.o
+ 

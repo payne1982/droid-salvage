@@ -1,0 +1,224 @@
+Subject: [PATCH] mdss: dsi: the Pixelworks iris2 bridge and the LP8557 backlight
+
+The Z500KL's panel sits behind a Pixelworks iris2, a video processor that
+receives the picture on two DSI links and drives the panel itself. Until it is
+powered, reset and programmed nothing reaches the panel. ASUS' 3.10 drives it
+from inside this driver; of its two variants this is the light-up one, which
+sets the bridge to pass the picture through unchanged. The full one, with the
+picture processing, reaches into the frame timing that 4.9 rewrote and is not
+carried over.
+
+What 4.9 gains, all under CONFIG_IRIS2_LIGHTUP_ONLY and as in ASUS' tree:
+the bridge powered before the panel's reset sequence and after it is released,
+panel on and off sent through the bridge, the partial-update window in high
+speed mode, the bridge's parameters read from the panel's device tree node,
+mdss_dsi_cmd_hs_mode() for the bridge's driver, and the panel's wakeup GPIO.
+
+The backlight is not the PMIC's WLED but a TI LP8557 on I2C, which ASUS'
+device tree names "bl_ctrl_dcs_iris": it is switched on with the first level
+above zero and off at zero, under CONFIG_BACKLIGHT_LP8557E01.
+
+The drivers themselves are in ../files/drivers/video/fbdev/msm/.
+---
+--- drivers/video/fbdev/msm/mdss_dsi.h
++++ drivers/video/fbdev/msm/mdss_dsi.h
+@@ -99,6 +99,8 @@
+ 	BL_PWM,
+ 	BL_WLED,
+ 	BL_DCS_CMD,
++	/* through a backlight chip of its own (ASUS: an LP8557 on I2C) */
++	BL_DCS_CMD_IRIS,
+ 	UNKNOWN_CTRL,
+ };
+ 
+@@ -660,6 +662,9 @@
+ void mdss_dsi_ctrl_init(struct device *ctrl_dev,
+ 			struct mdss_dsi_ctrl_pdata *ctrl);
+ void mdss_dsi_cmd_mdp_busy(struct mdss_dsi_ctrl_pdata *ctrl);
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++void mdss_dsi_cmd_hs_mode(int enable, struct mdss_panel_data *pdata);
++#endif
+ void mdss_dsi_wait4video_done(struct mdss_dsi_ctrl_pdata *ctrl);
+ int mdss_dsi_en_wait4dynamic_done(struct mdss_dsi_ctrl_pdata *ctrl);
+ int mdss_dsi_cmdlist_commit(struct mdss_dsi_ctrl_pdata *ctrl, int from_mdp);
+--- drivers/video/fbdev/msm/mdss_dsi_host.c
++++ drivers/video/fbdev/msm/mdss_dsi_host.c
+@@ -3408,3 +3408,25 @@
+ 
+ 	return IRQ_HANDLED;
+ }
++
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++/* Send commands in high speed (enable) or low power mode, as ASUS' 3.10 does. */
++void mdss_dsi_cmd_hs_mode(int enable, struct mdss_panel_data *pdata)
++{
++	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
++	u32 dsi_ctrl;
++
++	if (pdata == NULL) {
++		pr_err("%s: Invalid input data\n", __func__);
++		return;
++	}
++	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
++				panel_data);
++	dsi_ctrl = MIPI_INP((ctrl_pdata->ctrl_base) + 0x003c);
++	if (enable)
++		dsi_ctrl &= ~BIT(26);
++	else
++		dsi_ctrl |= BIT(26);
++	MIPI_OUTP((ctrl_pdata->ctrl_base) + 0x003c, dsi_ctrl);
++}
++#endif
+--- drivers/video/fbdev/msm/mdss_dsi_panel.c
++++ drivers/video/fbdev/msm/mdss_dsi_panel.c
+@@ -30,6 +30,16 @@
+ #endif
+ #include "mdss_debug.h"
+ 
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#include "mdss_dsi_iris2_lightup_only.h"
++#include "iris2_io.h"
++#endif
++#if defined(CONFIG_BACKLIGHT_LP8557E01)
++void lp8557e01_suspend(void);
++void lp8557e01_resume(void);
++void lp8557e01_set_brightness(int level);
++#endif
++
+ #ifdef CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL
+ #include "panel_driver/panel_driver.h"
+ #ifdef CONFIG_DEBUG_FS
+@@ -470,6 +480,9 @@
+ 			return rc;
+ 		}
+ 		if (!pinfo->cont_splash_enabled) {
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++			iris2_io_resume();
++#endif
+ 			if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
+ 				rc = gpio_direction_output(
+ 					ctrl_pdata->disp_en_gpio, 1);
+@@ -557,6 +570,9 @@
+ 		gpio_free(ctrl_pdata->rst_gpio);
+ 		if (gpio_is_valid(ctrl_pdata->mode_gpio))
+ 			gpio_free(ctrl_pdata->mode_gpio);
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++		iris2_io_suspend();
++#endif
+ 	}
+ 
+ exit:
+@@ -642,6 +658,9 @@
+ 	memset(&cmdreq, 0, sizeof(cmdreq));
+ 	cmdreq.cmds_cnt = 3;
+ 	cmdreq.flags = CMD_REQ_COMMIT;
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++	cmdreq.flags |= CMD_REQ_HS_MODE;
++#endif
+ 	if (unicast)
+ 		cmdreq.flags |= CMD_REQ_UNICAST;
+ 	cmdreq.rlen = 0;
+@@ -868,6 +887,10 @@
+ #endif /* CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL */
+ }
+ 
++#if defined(CONFIG_BACKLIGHT_LP8557E01)
++static u32 bl_prev_level;
++#endif
++
+ static void mdss_dsi_panel_bl_ctrl(struct mdss_panel_data *pdata,
+ 							u32 bl_level)
+ {
+@@ -922,6 +945,19 @@
+ 				mdss_dsi_panel_bklt_dcs(sctrl, bl_level);
+ 		}
+ 		break;
++#if defined(CONFIG_BACKLIGHT_LP8557E01)
++	case BL_DCS_CMD_IRIS:
++		/* The chip is switched on with the first level above 0, off at 0. */
++		lp8557e01_set_brightness(bl_level);
++		if (!!bl_prev_level ^ !!bl_level) {
++			if (bl_level)
++				lp8557e01_resume();
++			else
++				lp8557e01_suspend();
++		}
++		bl_prev_level = bl_level;
++		break;
++#endif
+ 	default:
+ 		pr_err("%s: Unknown bl_ctrl configuration\n",
+ 			__func__);
+@@ -987,8 +1023,15 @@
+ 	pr_debug("%s: ndx=%d cmd_cnt=%d\n", __func__,
+ 				ctrl->ndx, on_cmds->cmd_cnt);
+ 
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++	/* The bridge first, then the panel's commands through it. */
++	iris2_init(ctrl);
++	iris2_panel_cmds(ctrl, PANEL_ON_CMDS);
++	iris2_lightup(ctrl);
++#else
+ 	if (on_cmds->cmd_cnt)
+ 		mdss_dsi_panel_cmds_send(ctrl, on_cmds, CMD_REQ_COMMIT);
++#endif
+ 
+ 	if (pinfo->compression_mode == COMPRESSION_DSC)
+ 		mdss_dsi_panel_dsc_pps_send(ctrl, pinfo);
+@@ -1122,8 +1165,21 @@
+ 			goto end;
+ 	}
+ 
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++	mdss_dsi_cmd_mdp_busy(ctrl);
++	if (ctrl->mdss_util->bus_bandwidth_ctrl)
++		ctrl->mdss_util->bus_bandwidth_ctrl(1);
++
++	iris2_lightoff(ctrl);
++	iris2_panel_cmds(ctrl, PANEL_OFF_CMDS);
++	iris2_lightoff_finish(ctrl);
++
++	if (ctrl->mdss_util->bus_bandwidth_ctrl)
++		ctrl->mdss_util->bus_bandwidth_ctrl(0);
++#else
+ 	if (ctrl->off_cmds.cmd_cnt)
+ 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->off_cmds, CMD_REQ_COMMIT);
++#endif
+ 
+ 	mdss_dsi_panel_off_hdmi(ctrl, pinfo);
+ 
+@@ -2479,6 +2535,10 @@
+ 
+ 			pr_debug("%s: Configured DCS_CMD bklt ctrl\n",
+ 								__func__);
++		} else if (!strcmp(data, "bl_ctrl_dcs_iris")) {
++			ctrl_pdata->bklt_ctrl = BL_DCS_CMD_IRIS;
++			pr_debug("%s: Configured DCS_CMD_IRIS bklt ctrl\n",
++								__func__);
+ 		}
+ 	}
+ 	return 0;
+@@ -3103,6 +3163,11 @@
+ 
+ 	mdss_dsi_parse_dfps_config(np, ctrl_pdata);
+ 
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++	mdss_dsi_parse_iris_params(np, pinfo);
++	mdss_dsi_parse_iris_mipi(np, pinfo->mipi.mode, pinfo->pdest);
++#endif
++
+ 	rc = mdss_panel_parse_dt_hdmi(np, ctrl_pdata);
+ 	if (rc)
+ 		goto error;
+--- drivers/video/fbdev/msm/mdss_panel.h
++++ drivers/video/fbdev/msm/mdss_panel.h
+@@ -739,6 +739,9 @@
+ 	void *edid_data;
+ 	void *dba_data;
+ 	void *cec_data;
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++	int iris_wakeup_gpio;
++#endif
+ 
+ 	char panel_name[MDSS_MAX_PANEL_LEN];
+ 	struct mdss_mdp_pp_tear_check te;
