@@ -285,11 +285,13 @@ PRODUCT_COPY_FILES += \
 # configs/media/media_codecs.xml lists what is declared and why; the measured frame
 # rates (media_codecs_performance.xml) are stock's for this chip, see
 # proprietary-files.txt.
+# Not libOmxVdec and libOmxVenc on the 4.9 kernel, for now. hardware/qcom-caf/msm8952's
+# video components were written for the 3.10 driver's interface (its V4L2 commands,
+# events and controls), which the 4.9 driver, vidc_3x, changed; they do not build
+# against its headers. Without them media.codec offers only the software codecs.
 PRODUCT_PACKAGES += \
     libc2dcolorconvert \
     libOmxCore \
-    libOmxVdec \
-    libOmxVenc \
     libstagefrighthw
 
 PRODUCT_PROPERTY_OVERRIDES += \
