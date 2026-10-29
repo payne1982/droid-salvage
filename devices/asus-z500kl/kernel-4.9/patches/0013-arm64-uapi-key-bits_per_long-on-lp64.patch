@@ -1,0 +1,29 @@
+Subject: [PATCH] arm64: uapi: key __BITS_PER_LONG on __LP64__
+
+As ../kernel/patches/0006 for 3.10, which this kernel needs as much: the ROM's
+build stopped in the 32-bit half of the audio HAL with "format specifies type
+'ssize_t' (aka 'int') but the argument has type 'ssize_t' (aka 'long')".
+LineageOS exports these headers once, for arm64, ahead of bionic's own, to 32-bit
+compiles too, and an unconditional 64 makes ssize_t a long there. GCC and clang
+define __LP64__ for LP64 targets only.
+---
+--- arch/arm64/include/uapi/asm/bitsperlong.h
++++ arch/arm64/include/uapi/asm/bitsperlong.h
+@@ -16,7 +16,17 @@
+ #ifndef __ASM_BITSPERLONG_H
+ #define __ASM_BITSPERLONG_H
+ 
++/*
++ * These headers are exported once, for arm64, and the Android build hands the same
++ * copy to its 32-bit compiles too. An unconditional 64 then makes ssize_t a long in
++ * 32-bit code. __LP64__ is defined by GCC and clang for LP64 targets only, so key the
++ * width on that and the header is right for both ABIs.
++ */
++#ifdef __LP64__
+ #define __BITS_PER_LONG 64
++#else
++#define __BITS_PER_LONG 32
++#endif
+ 
+ #include <asm-generic/bitsperlong.h>
+ 

@@ -96,7 +96,7 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 
 Of the patches in [../kernel/patches](../kernel/patches):
 
-- **already in 4.9:** 0003, 0004, 0005, 0006, 0007, 0010, 0011, 0012, 0015,
+- **already in 4.9:** 0003, 0004, 0005, 0007, 0010, 0011, 0012, 0015,
   0017, 0028 (binder and its security context, sdcardfs, the I-frame size hint
   for the video encoder, `getrandom`, ambient capabilities, `memfd_create`,
   `O_TMPFILE`, the cgroup permission), and 0029 in effect: this kernel's
@@ -108,7 +108,9 @@ Of the patches in [../kernel/patches](../kernel/patches):
   `mTX1666T2_cfg.raw` is in the OBP_RAW format this driver reads as
   `maxtouch.cfg`, rewriting the controller only when the two differ, so a ROM
   on this kernel can carry it under that name;
-- **brought over:** 0009 (prima, the Wi-Fi driver, as `patches/0012`, fetched from
+- **brought over:** 0006 (the uapi `__BITS_PER_LONG`, as `patches/0013`: 4.9 has
+  the same unconditional 64, which the ROM's 32-bit audio HAL tripped over),
+  0009 (prima, the Wi-Fi driver, as `patches/0012`, fetched from
   LineageOS' 4.9 kernel for MSM8953 devices), 0013 (exFAT, as `patches/0009` and
   the same exfat-nofuse),
   0020 (`0010`), 0021 (the camera heap, in the device tree), 0022 and 0023
