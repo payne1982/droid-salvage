@@ -42,6 +42,7 @@ Copy `local.conf.example` to `local.conf` (which is git-ignored) and put yours t
 - `stable` — what has been tested on hardware and released
 - `dev` — work in progress
 - `asus-z500kl-los16` — the LineageOS 16.0 tree of the ZenPad, kept as it was released
+- `asus-z500kl-los20-k310` — the LineageOS 20 tree of the ZenPad on ASUS' 3.10 kernel, as released; `dev` goes on with a 4.9 kernel
 
 ## A word on vendor files
 
