@@ -44,3 +44,10 @@ genfscon sysfs /devices/soc.0/qpnp-vadc-15                           u:object_r:
 # The PMIC's clock, where /sys/class/rtc/rtc0 points: AOSP labels only the class
 # directory itself sysfs_rtc. timekeep and its receiver read since_epoch here.
 genfscon sysfs /devices/soc.0/qpnp-rtc-8/rtc                        u:object_r:sysfs_rtc:s0
+
+# The same files under the 4.9 kernel's device names, where they are known: there
+# every platform device sits under /devices/platform/soc. The PMIC's ADCs, clock and
+# power supplies have other names again, and are to be added once seen.
+genfscon sysfs /devices/platform/soc/a000000.qcom,wcnss-wlan/wcnss_mac_addr u:object_r:sysfs_wcnss_mac_addr:s0
+genfscon sysfs /devices/platform/soc/7824900.sdhci/mmc_host/mmc0/mmc0:0001/block/mmcblk0/queue/discard_max_bytes   u:object_r:sysfs_devices_block:s0
+genfscon sysfs /devices/platform/soc/7824900.sdhci/mmc_host/mmc0/mmc0:0001/block/mmcblk0/queue/read_ahead_kb       u:object_r:sysfs_devices_block:s0

@@ -43,7 +43,8 @@ on init
     # line); Pie's ueventd does not -- it only makes /dev/block/by-name for the devices
     # in androidboot.boot_devices, which this bootloader does not pass. Without this line
     # mount_all waits 20 s for each partition and skips them all (second M3 attempt).
-    symlink /dev/block/platform/soc.0/${ro.boot.bootdevice} /dev/block/bootdevice
+    # platform/soc is the 4.9 kernel's name for it; ASUS' 3.10 called it soc.0.
+    symlink /dev/block/platform/soc/${ro.boot.bootdevice} /dev/block/bootdevice
 
     # What a script in /system/etc/init said under a trigger that had gone by when Pie's
     # init read it (see trace_marker above). On Android 13 the first stage mounts

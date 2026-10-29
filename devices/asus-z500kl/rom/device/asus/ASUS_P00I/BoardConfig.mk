@@ -76,8 +76,10 @@ BUILD_BROKEN_PREBUILT_ELF_FILES := true
 # headers with LOCAL_COPY_HEADERS, which Android 13 calls obsolete.
 BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 
-# Kernel, built from ASUS' published sources with the configuration recovered from the
-# stock image. See ../../../../kernel/README.md for the whole story.
+# Kernel: the 4.9 of ../../../../kernel-4.9, Sony's kernel for the Xperia X with this
+# tablet's device tree and drivers, which kernel-4.9/tools/setup-kernel.sh prepares in
+# $(TARGET_KERNEL_SOURCE) (KERNEL_TREE=<this tree>/kernel/asus/msm8956-4.9). The
+# release on ASUS' 3.10, ../../../../kernel, is on the asus-z500kl-los20-k310 branch.
 #
 # The hook is TARGET_KERNEL_ADDITIONAL_FLAGS, and only that one. KERNEL_MAKE_FLAGS looks
 # like a hook -- kernel.mk uses it and never defines it -- but
@@ -87,15 +89,12 @@ BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 # silently discarded, which is how the first build failed: the -fcommon below never
 # arrived and scripts/dtc would not link.
 #
-# Four things go through it:
+# Three things go through it:
 #
-#   TARGET_PROJECT=Z500KL  arch/arm64/boot/dts/qcom/Makefile builds
-#                          msm8956-v1.1-cdp-$(TARGET_PROJECT).dtb. Without it this
-#                          tablet's device tree is never compiled and the kernel has no
-#                          matching board, so it does not boot.
 #   CC=...real-...-gcc     the tree routes CC through scripts/gcc-wrapper.py, a Python 2
-#                          script. Pointing CC at the real driver binary skips it; all
-#                          it does is promote some warnings to errors. In LineageOS 20's
+#                          script, which crashes under Python 3 on the first warning it
+#                          has to print. Pointing CC at the real driver binary skips it;
+#                          all it does is promote some warnings to errors. In LineageOS 20's
 #                          prebuilts that binary is real-aarch64-linux-android-gcc (the
 #                          one without "real-" is a Python wrapper around it); the
 #                          aarch64-linux-android-gcc-4.9.x that LineageOS 16 used is
@@ -113,20 +112,17 @@ BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 # $OUT first.
 #
 # TARGET_KERNEL_CLANG_COMPILE stays false (the default), which leaves KERNEL_CC empty
-# so our CC is the only one in play. A current clang cannot build a 3.10 kernel anyway.
-TARGET_KERNEL_SOURCE := kernel/asus/msm8956
-TARGET_KERNEL_CONFIG := asus_P00I_defconfig
+# so our CC is the only one in play. The kernel is built with GCC 4.9, as Sony's was.
+TARGET_KERNEL_SOURCE := kernel/asus/msm8956-4.9
+TARGET_KERNEL_CONFIG := z500kl_defconfig
 TARGET_KERNEL_CLANG_COMPILE := false
 TARGET_KERNEL_ARCH := arm64
 
-# The kernel has memfd_create() (kernel/patches/0028, from 3.17). Without this LineageOS
-# switch the runtime refuses it on any kernel older than 3.17 by its version number, and
-# system_server's JIT has nowhere to put its code.
-TARGET_HAS_MEMFD_BACKPORT := true
+# memfd_create() is in 4.9 itself, so TARGET_HAS_MEMFD_BACKPORT, which the 3.10 kernel
+# needed (kernel/patches/0028), is not set.
 
 KERNEL_TOOLCHAIN_BIN := prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin
-TARGET_KERNEL_ADDITIONAL_FLAGS := TARGET_PROJECT=Z500KL
-TARGET_KERNEL_ADDITIONAL_FLAGS += CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/real-aarch64-linux-android-gcc)
+TARGET_KERNEL_ADDITIONAL_FLAGS := CC=$(abspath $(KERNEL_TOOLCHAIN_BIN)/real-aarch64-linux-android-gcc)
 TARGET_KERNEL_ADDITIONAL_FLAGS += HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -fcommon"
 TARGET_KERNEL_ADDITIONAL_FLAGS += KBUILD_BUILD_USER=payne1982 KBUILD_BUILD_HOST=droid-salvage
 

@@ -22,7 +22,9 @@
 # Bluetooth: the AOSP HAL aborts without an address ("Open: No Bluetooth Address!");
 # it reads it as text from the file ro.bt.bdaddr_path names.
 
-WCNSS_MAC=/sys/devices/soc.0/a000000.qcom,wcnss-wlan/wcnss_mac_addr
+# The WCNSS device as the 4.9 kernel names it, or as ASUS' 3.10 did.
+WCNSS_MAC=/sys/devices/platform/soc/a000000.qcom,wcnss-wlan/wcnss_mac_addr
+[ -e "$WCNSS_MAC" ] || WCNSS_MAC=/sys/devices/soc.0/a000000.qcom,wcnss-wlan/wcnss_mac_addr
 BT_NV=/persist/.bt_nv.bin
 BT_ADDR_FILE=/data/vendor/bluetooth/bdaddr
 
