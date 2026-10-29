@@ -1,0 +1,18 @@
+Subject: [PATCH] msm_vidc_enc: the old spelling of VEN_MSG_FLUSH_OUTPUT_DONE
+
+The video encoder HAL this platform's ROM builds (hardware/qcom-caf/msm8952,
+libOmxVenc) was written against the kernel headers of its time, where the
+message was spelled VEN_MSG_FLUSH_OUPUT_DONE; this header corrected it. Both
+names, the same value.
+---
+--- include/uapi/linux/msm_vidc_enc.h
++++ include/uapi/linux/msm_vidc_enc.h
+@@ -39,6 +39,8 @@
+ #define VEN_MSG_NEED_OUTPUT_BUFFER	3
+ #define VEN_MSG_FLUSH_INPUT_DONE	4
+ #define VEN_MSG_FLUSH_OUTPUT_DONE	5
++/* As older headers spelled it, and older userspace still does. */
++#define VEN_MSG_FLUSH_OUPUT_DONE	VEN_MSG_FLUSH_OUTPUT_DONE
+ #define VEN_MSG_START	6
+ #define VEN_MSG_STOP	7
+ #define VEN_MSG_PAUSE	8

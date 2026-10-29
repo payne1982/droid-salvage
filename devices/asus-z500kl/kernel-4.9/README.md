@@ -30,6 +30,8 @@ matters for the display bridge this tablet has.
     the drivers for the Xperia's own hardware, Sony's panel driver among them;
   - the two panels the Z500KL was built with, BOE and Tianma, as in ASUS' tree
     (`dsi-panel-*.dtsi`); GPIO 126 says which one is fitted (`patches/0006`);
+  - `include/uapi/linux/android_pmem.h`, from ASUS' 3.10: the video HAL of the ROM
+    still includes it, though nothing in it is used any more;
   - `techpack/audio/include/uapi/`: the userspace headers of Qualcomm's audio
     techpack, from the kenzo's 4.9 kernel, which the ROM's audio HAL includes
     (`sound/voice_params.h` and the rest); the audio drivers are not here yet;
