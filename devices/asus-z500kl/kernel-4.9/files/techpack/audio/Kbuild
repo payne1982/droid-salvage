@@ -1,0 +1,3 @@
+# Only the userspace headers of Qualcomm's audio techpack are here, from the kenzo's
+# 4.9 kernel (same SoC), so that the audio HAL of the ROM builds; the audio drivers
+# themselves are not, yet.
