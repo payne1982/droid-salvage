@@ -1,0 +1,97 @@
+Subject: [PATCH] msm: kgsl: A510: read RPTR from the register
+
+LineageOS 20 on this kernel stopped at the Adreno: "CP initialization failed to
+idle", pos=C/C, and surfaceflinger without EGL. This KGSL reads the ringbuffer's
+read pointer from a shadow in scratch memory, which the CP updates when it runs
+a CP_WHERE_AM_I packet, emitted after every submission. The only microcode this
+tablet has for its A510, the a530_pm4/pfp of its 2016 firmware, does not appear
+to support that packet: the 12 dwords of the first submission (9 of ME_INIT, 3
+of WHERE_AM_I) are 0xC, what the hardware registers showed for both RPTR and
+WPTR, while the driver kept waiting.
+
+KGSL already reads the register for A3xx, which has no such packet. The A510
+joins it: no WHERE_AM_I, RPTR from CP_RB_RPTR. Linux's own A5xx driver does the
+same for microcode without WHERE_AM_I support. The A510 has a single ringbuffer
+and no preemption, which would need the shadow.
+
+When a spin for idle still times out, the debug print now also gives what the
+driver compared: its wptr, the rptr as it reads it, and the shadow.
+
+The diagnosis comes from a separate reading of the sources and the logs; this
+was untested on the tablet when written.
+---
+--- drivers/gpu/msm/adreno.h
++++ drivers/gpu/msm/adreno.h
+@@ -1764,6 +1764,21 @@
+ 
+ unsigned int adreno_get_rptr(struct adreno_ringbuffer *rb);
+ 
++/*
++ * Whether the ringbuffer's read pointer is read from the CP_RB_RPTR register
++ * rather than from the shadow in scratch memory, which the CP writes only when
++ * a CP_WHERE_AM_I packet tells it to. A3xx has no such packet. Nor does the
++ * microcode the A510 of the MSM8956 has to run here, its vendor's of 2016: the
++ * shadow never moved, and the very first command, ME_INIT, timed out with the
++ * registers showing RPTR and WPTR equal. Linux's own A5xx driver reads the
++ * register for microcode without WHERE_AM_I support too. The A510 has a single
++ * ringbuffer and no preemption, which would need the shadow.
++ */
++static inline bool adreno_rptr_from_register(struct adreno_device *adreno_dev)
++{
++	return adreno_is_a3xx(adreno_dev) || adreno_is_a510(adreno_dev);
++}
++
+ static inline bool adreno_rb_empty(struct adreno_ringbuffer *rb)
+ {
+ 	return (adreno_get_rptr(rb) == rb->wptr);
+--- drivers/gpu/msm/adreno.c
++++ drivers/gpu/msm/adreno.c
+@@ -198,7 +198,7 @@
+ 	struct adreno_device *adreno_dev = ADRENO_RB_DEVICE(rb);
+ 	unsigned int rptr = 0;
+ 
+-	if (adreno_is_a3xx(adreno_dev))
++	if (adreno_rptr_from_register(adreno_dev))
+ 		adreno_readreg(adreno_dev, ADRENO_REG_CP_RB_RPTR,
+ 				&rptr);
+ 	else {
+@@ -3041,6 +3041,19 @@
+ 
+ 	dev_err(device->dev, " hwfault=%8.8X\n", hwfault);
+ 
++	{
++		/* What the driver compared: rptr as it reads it, the shadow. */
++		struct adreno_ringbuffer *rb = adreno_dev->cur_rb;
++		unsigned int shadow = 0;
++
++		kgsl_sharedmem_readl(&device->scratch, &shadow,
++				SCRATCH_RPTR_OFFSET(rb->id));
++		dev_err(device->dev,
++			" sw: wptr=%X _wptr=%X rptr=%X shadow=%X rptr_from_register=%d\n",
++			rb->wptr, rb->_wptr, adreno_get_rptr(rb), shadow,
++			adreno_rptr_from_register(adreno_dev));
++	}
++
+ 	kgsl_device_snapshot(device, NULL, adreno_gmu_gpu_fault(adreno_dev));
+ }
+ 
+--- drivers/gpu/msm/adreno_ringbuffer.c
++++ drivers/gpu/msm/adreno_ringbuffer.c
+@@ -208,7 +208,7 @@
+ 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
+ 	unsigned int *cmds;
+ 
+-	if (adreno_is_a3xx(adreno_dev))
++	if (adreno_rptr_from_register(adreno_dev))
+ 		return adreno_ringbuffer_submit_spin_nosync(rb, time, timeout);
+ 
+ 	cmds = adreno_ringbuffer_allocspace(rb, 3);
+@@ -773,7 +773,7 @@
+ 				adreno_is_preemption_enabled(adreno_dev))
+ 		ringcmds += gpudev->preemption_post_ibsubmit(adreno_dev,
+ 			ringcmds);
+-	else if (!adreno_is_a3xx(adreno_dev)) {
++	else if (!adreno_rptr_from_register(adreno_dev)) {
+ 		*ringcmds++ = cp_packet(adreno_dev, CP_WHERE_AM_I, 2);
+ 		ringcmds += cp_gpuaddr(adreno_dev, ringcmds,
+ 				SCRATCH_RPTR_GPU_ADDR(device, rb->id));
