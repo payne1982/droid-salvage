@@ -1,0 +1,56 @@
+# The ROM's fstab.qcom with one change, for the package and TWRP. The kernel of 4.9 names
+# the first-stage system device under platform/soc, TWRP on 3.10 under platform/soc.0: the
+# package writes to the path it finds here, and only bootdevice exists in both.
+# Android fstab for ASUS_P00I (ASUS ZenPad 3S 10 LTE).
+#
+# Rewritten from the stock one, with the partitions the stock init.target.rc mounted by
+# hand moved in here instead: there should be one description of the layout, and fs_mgr
+# handles them perfectly well.
+#
+# Two deliberate differences from stock, both on /system:
+#
+#   * no `verify`. The stock /system is dm-verity protected and carries a hash tree
+#     after the filesystem; ours will not. Leaving it on would fail at once.
+#   * no `rebooterr`. Rebooting the moment a mount goes wrong is exactly what you do not
+#     want while bringing a ROM up: it replaces a readable error with a loop.
+#
+# /system is the one entry the first stage of init mounts (first_stage_mount): from
+# Android 10 the rest of init is inside it. It runs before any init script, so the
+# /dev/block/bootdevice link init.qcom.rc makes does not exist yet, and this entry uses
+# the path under /dev/block/platform that the first stage creates by itself. That path
+# follows the kernel's device names: platform/soc.0/... on ASUS' 3.10, platform/soc/...
+# on the 4.9 this branch builds.
+#
+# /data is not encrypted on this branch (BoardConfig.mk says why), so `encryptable` is
+# gone. `length=-16384` keeps the last 16 KB out of the filesystem, where the footer of
+# stock's and LineageOS 16's encryption lives: a /data formatted here stays usable by
+# them. No `formattable`: a /data that fails to mount is to be looked at, not erased.
+#
+# /firmware is the `modem` partition, vfat, and it has to be mounted for decryption to
+# work at all: qseecomd loads the keymaster trustlet from /firmware/image.
+#
+# /boot and /recovery are listed although nothing mounts them: the OTA tools look them
+# up here to know which partition to write and to check the image fits
+# (common.CheckSize), and without them packaging stops with KeyError: '/boot'.
+# mount_all skips emmc entries.
+#
+# The paths are the by-name symlinks, which exist under a normal Android boot. They do
+# *not* exist under TWRP, which is why the recovery in ../../../../twrp/ uses raw
+# mmcblk0pN nodes instead -- that cost real time to find out.
+
+#<src>                                          <mnt_point>        <type>  <mnt_flags and options>                                                                        <fs_mgr_flags>
+/dev/block/bootdevice/by-name/system     /system   ext4    ro,barrier=1,discard                                                                  wait,first_stage_mount
+/dev/block/bootdevice/by-name/userdata          /data              ext4    nosuid,nodev,barrier=1,noauto_da_alloc,discard                                                 wait,check,length=-16384
+/dev/block/bootdevice/by-name/cache             /cache             ext4    nosuid,nodev,barrier=1                                                                         wait,check
+/dev/block/bootdevice/by-name/persist           /persist           ext4    nosuid,nodev,barrier=1                                                                         wait
+/dev/block/bootdevice/by-name/modem             /firmware          vfat    ro,context=u:object_r:firmware_file:s0,shortname=lower,uid=1000,gid=1000,dmask=227,fmask=337    wait
+/dev/block/bootdevice/by-name/dsp               /dsp               ext4    nosuid,nodev,barrier=1                                                                         wait
+/dev/block/bootdevice/by-name/boot              /boot              emmc    defaults                                                                                       defaults
+/dev/block/bootdevice/by-name/recovery          /recovery          emmc    defaults                                                                                       defaults
+/dev/block/bootdevice/by-name/config            /frp               emmc    defaults                                                                                       defaults
+/dev/block/bootdevice/by-name/misc              /misc              emmc    defaults                                                                                       defaults
+
+# Removable storage, handled by vold rather than mounted at boot.
+# noemulatedsd: this tablet has a real microSD slot, so /sdcard is not a fuse view of /data.
+/devices/platform/soc/7864900.sdhci/mmc_host*   /storage/sdcard1   vfat    nosuid,nodev                                                                                   wait,voldmanaged=sdcard1:auto,noemulatedsd
+/devices/platform/msm_hsusb*                    /storage/usbotg    vfat    nosuid,nodev                                                                                   wait,voldmanaged=usbotg:auto

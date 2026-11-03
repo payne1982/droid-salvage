@@ -1,0 +1,86 @@
+Subject: [PATCH] msm: mdss: Z500KL: the kernel resets a dead panel
+
+The first frame after the bootloader's splash times out on this kernel and the
+panel is reported dead. In TWRP that passes unnoticed, because TWRP turns the
+screen off and on by itself. Under Android nothing recovers: the composer resets
+the panel from its next prepare, SurfaceFlinger will not call prepare until the
+present fence of the failed frame signals, and that needs a vsync from the panel
+nobody resets. The screen stays on the logo, and PowerManagerService ends up
+blocked until the system watchdog restarts Android.
+
+Do the reset in the kernel, with the same blank and unblank as FBIOBLANK, at most
+one every 10 seconds, and without the uevent, or the composer would reset the panel
+a second time. Turning the panel off flushes the fences, but a commit that comes in
+meanwhile gets a new one that nothing signals, so flush them again afterwards.
+This works around the first-frame timeout, whose cause is still open.
+---
+--- drivers/video/fbdev/msm/mdss_fb.c
++++ drivers/video/fbdev/msm/mdss_fb.c
+@@ -5503,6 +5503,54 @@
+  * from the panel. The function sends the PANEL_ALIVE=0 status to HAL
+  * layer.
+  */
++#ifdef CONFIG_MACH_ASUS_Z500KL
++/*
++ * The panel is reset here and not by the composer. HWC1 resets it from its next
++ * prepare, but SurfaceFlinger does not get there: it waits for the present fence
++ * of the frame that timed out, which needs a vsync from the dead panel. Turning
++ * the panel off also signals that fence. The sequence is what FBIOBLANK does.
++ */
++#define PANEL_RESET_MIN_INTERVAL	(10 * HZ)
++
++static struct msm_fb_data_type *panel_reset_mfd;
++
++static void mdss_fb_panel_reset_work(struct work_struct *work)
++{
++	struct fb_info *info = panel_reset_mfd->fbi;
++
++	if (!lock_fb_info(info))
++		return;
++	console_lock();
++	info->flags |= FBINFO_MISC_USEREVENT;
++	fb_blank(info, FB_BLANK_POWERDOWN);
++	fb_blank(info, FB_BLANK_UNBLANK);
++	info->flags &= ~FBINFO_MISC_USEREVENT;
++	console_unlock();
++	unlock_fb_info(info);
++
++	/* A commit that came in while the panel was off still has its fences */
++	mdss_resync_timeline(panel_reset_mfd->mdp_sync_pt_data.timeline);
++	mdss_resync_timeline(panel_reset_mfd->mdp_sync_pt_data.timeline_retire);
++}
++static DECLARE_WORK(panel_reset_work, mdss_fb_panel_reset_work);
++
++static bool mdss_fb_schedule_panel_reset(struct msm_fb_data_type *mfd)
++{
++	static unsigned long last_reset;
++
++	if (mfd->index != 0)
++		return false;
++	if (last_reset &&
++	    time_before(jiffies, last_reset + PANEL_RESET_MIN_INTERVAL))
++		return true;
++
++	last_reset = jiffies;
++	panel_reset_mfd = mfd;
++	schedule_work(&panel_reset_work);
++	return true;
++}
++#endif /* CONFIG_MACH_ASUS_Z500KL */
++
+ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
+ {
+ 	char *envp[2] = {"PANEL_ALIVE=0", NULL};
+@@ -5526,6 +5574,12 @@
+ #endif /* CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL */
+ 
+ 	pdata->panel_info.panel_dead = true;
++#ifdef CONFIG_MACH_ASUS_Z500KL
++	if (mdss_fb_schedule_panel_reset(mfd)) {
++		pr_err("Panel has gone bad, resetting it\n");
++		return;
++	}
++#endif /* CONFIG_MACH_ASUS_Z500KL */
+ 	kobject_uevent_env(&mfd->fbi->dev->kobj,
+ 		KOBJ_CHANGE, envp);
+ 	pr_err("Panel has gone bad, sending uevent - %s\n", envp[0]);

@@ -1,0 +1,16 @@
+Subject: [PATCH] soc: qcom: qdsp6v2: Z500KL: a loader for the ADSP
+
+Nothing starts the ADSP on this kernel: /sys/kernel/boot_adsp/boot, which init
+writes, comes from adsp-loader, part of the audio techpack that is not here yet.
+The sensors live on the ADSP, so sensors.qcom gave up waiting for its SMGR service,
+init killed the sensors HAL, and SensorService aborted system_server about 90
+seconds after every start of Android.
+
+files/drivers/soc/qcom/qdsp6v2/adsp-loader.c is this tree's cdsp-loader.c for the
+ADSP: same sysfs file, same subsystem_get. The full loader replaces it with audio.
+---
+--- drivers/soc/qcom/qdsp6v2/Makefile
++++ drivers/soc/qcom/qdsp6v2/Makefile
+@@ -1 +1,2 @@
+ obj-$(CONFIG_MSM_CDSP_LOADER) += cdsp-loader.o
++obj-$(CONFIG_MACH_ASUS_Z500KL) += adsp-loader.o

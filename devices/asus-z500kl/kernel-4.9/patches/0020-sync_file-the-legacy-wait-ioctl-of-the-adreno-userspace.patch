@@ -1,0 +1,55 @@
+Subject: [PATCH] sync_file: the legacy wait ioctl of the Adreno userspace
+
+The Adreno driver of this tablet waits on fences with SYNC_IOC_WAIT, from the
+old Android sync driver, which sync_file does not have: the log fills with
+"wait_on_sync_fd: error 25 Inappropriate ioctl for device" and the wait is
+skipped. Answer it as that driver did: 0 once signaled, -ETIME on timeout, a
+negative timeout waits for good, and the fence's error if it has one.
+---
+--- drivers/dma-buf/sync_file.c
++++ drivers/dma-buf/sync_file.c
+@@ -441,12 +441,44 @@
+ 	return ret;
+ }
+ 
++/*
++ * The wait ioctl of the old Android sync driver. The Adreno userspace of this
++ * tablet (2016) still calls it, in wait_on_sync_fd.
++ */
++#define SYNC_IOC_LEGACY_WAIT	_IOW(SYNC_IOC_MAGIC, 0, __s32)
++
++static long sync_file_ioctl_legacy_wait(struct sync_file *sync_file,
++					unsigned long arg)
++{
++	struct fence *fence = sync_file->fence;
++	signed long timeout, ret;
++	__s32 timeout_ms;
++
++	if (copy_from_user(&timeout_ms, (void __user *)arg, sizeof(timeout_ms)))
++		return -EFAULT;
++
++	if (!fence_is_signaled(fence)) {
++		timeout = timeout_ms < 0 ? MAX_SCHEDULE_TIMEOUT :
++					   msecs_to_jiffies(timeout_ms);
++		ret = fence_wait_timeout(fence, true, timeout);
++		if (ret < 0)
++			return ret;
++		if (!ret)
++			return -ETIME;
++	}
++
++	return min(fence_get_status(fence), 0);
++}
++
+ static long sync_file_ioctl(struct file *file, unsigned int cmd,
+ 			    unsigned long arg)
+ {
+ 	struct sync_file *sync_file = file->private_data;
+ 
+ 	switch (cmd) {
++	case SYNC_IOC_LEGACY_WAIT:
++		return sync_file_ioctl_legacy_wait(sync_file, arg);
++
+ 	case SYNC_IOC_MERGE:
+ 		return sync_file_ioctl_merge(sync_file, arg);
+ 

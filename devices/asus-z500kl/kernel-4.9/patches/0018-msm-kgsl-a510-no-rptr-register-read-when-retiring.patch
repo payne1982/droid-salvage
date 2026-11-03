@@ -1,0 +1,38 @@
+Subject: [PATCH] msm: kgsl: A510: no RPTR register read when retiring
+
+Patch 0015 made the A510 read RPTR from the register, but the two tracepoints
+that retire a command still took that path. They run without the device mutex
+and, as the comment there says, with the GPU clocks possibly off. The value only
+goes to the trace. In the first boot of LineageOS 20 the GPU worked and this
+printed a kgsl_pre_hwaccess WARNING for each of the 6058 commands retired in 50
+seconds, and the tablet reset by itself at about 70 seconds with nothing in
+pstore. A3xx already passes 0 here: do the same.
+---
+--- drivers/gpu/msm/adreno_dispatch.c
++++ drivers/gpu/msm/adreno_dispatch.c
+@@ -313,9 +313,9 @@
+ 	/*
+ 	 * For A3xx we still get the rptr from the CP_RB_RPTR instead of
+ 	 * rptr scratch out address. At this point GPU clocks turned off.
+-	 * So avoid reading GPU register directly for A3xx.
+-	 */
+-	if (adreno_is_a3xx(ADRENO_DEVICE(device)))
++	 * So avoid reading GPU register directly for A3xx and A510.
++	 */
++	if (adreno_rptr_from_register(ADRENO_DEVICE(device)))
+ 		trace_adreno_cmdbatch_retired(drawobj, -1, 0, 0, drawctxt->rb,
+ 				0, 0);
+ 	else
+@@ -2353,9 +2353,9 @@
+ 	/*
+ 	 * For A3xx we still get the rptr from the CP_RB_RPTR instead of
+ 	 * rptr scratch out address. At this point GPU clocks turned off.
+-	 * So avoid reading GPU register directly for A3xx.
+-	 */
+-	if (adreno_is_a3xx(adreno_dev))
++	 * So avoid reading GPU register directly for A3xx and A510.
++	 */
++	if (adreno_rptr_from_register(adreno_dev))
+ 		trace_adreno_cmdbatch_retired(drawobj,
+ 			(int) dispatcher->inflight, start, end,
+ 			ADRENO_DRAWOBJ_RB(drawobj), 0, cmdobj->fault_recovery);

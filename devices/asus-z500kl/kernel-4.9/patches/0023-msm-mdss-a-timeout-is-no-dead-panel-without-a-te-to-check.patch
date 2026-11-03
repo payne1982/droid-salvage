@@ -1,0 +1,59 @@
+Subject: [PATCH] msm: mdss: a timeout is no dead panel without a TE to check
+
+On the first pingpong timeout this driver waits for a TE interrupt to see if the
+panel is alive, and reports it dead if none comes. Here the panel data is DSI1's,
+which has no TE GPIO: gpio_to_irq(-2), "invalid GPIO -2", the wait can only fail,
+and the panel is reported dead at the first timeout. ASUS' 3.10 has no such check
+and reports it only after 10 timeouts in a row.
+
+Without a valid TE GPIO, skip the check and leave the decision to the count.
+---
+--- drivers/video/fbdev/msm/mdss_mdp_intf_cmd.c
++++ drivers/video/fbdev/msm/mdss_mdp_intf_cmd.c
+@@ -2132,7 +2132,7 @@
+ 	struct mdss_mdp_cmd_ctx *ctx;
+ 	struct mdss_panel_data *pdata;
+ 	unsigned long flags;
+-	int rc = 0, te_irq;
++	int rc = 0;
+ #ifdef CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL
+ 	struct panel_incell_ctrl *incell = panel_incell_get_info();
+ 	struct mdss_panel_specific_pdata *spec_pdata;
+@@ -2192,14 +2192,19 @@
+ 				atomic_read(&ctx->koff_cnt));
+ 
+ 		/* enable TE irq to check if it is coming from the panel */
+-		te_irq = gpio_to_irq(pdata->panel_te_gpio);
+-		enable_irq(te_irq);
+-
+-		/* wait for 20ms to ensure we are getting the next TE */
+-		usleep_range(20000, 20010);
+-
+-		reinit_completion(&pdata->te_done);
+-		rc = wait_for_completion_timeout(&pdata->te_done, KOFF_TIMEOUT);
++		if (gpio_is_valid(pdata->panel_te_gpio)) {
++			enable_irq(gpio_to_irq(pdata->panel_te_gpio));
++
++			/* wait for 20ms to ensure we are getting the next TE */
++			usleep_range(20000, 20010);
++
++			reinit_completion(&pdata->te_done);
++			rc = wait_for_completion_timeout(&pdata->te_done,
++					KOFF_TIMEOUT);
++		} else {
++			/* No TE to check, as on DSI1: only the count decides */
++			rc = 1;
++		}
+ 
+ 		if (!rc) {
+ 			MDSS_XLOG(0xbac);
+@@ -2243,7 +2248,8 @@
+ 		}
+ 
+ 		/* disable te irq */
+-		disable_irq_nosync(te_irq);
++		if (gpio_is_valid(pdata->panel_te_gpio))
++			disable_irq_nosync(gpio_to_irq(pdata->panel_te_gpio));
+ 
+ 		ctx->pp_timeout_report_cnt++;
+ 		rc = -EPERM;

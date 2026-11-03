@@ -1,0 +1,20 @@
+Subject: [PATCH] msm: mdss: Z500KL: keep the overlay ioctls
+
+This MDSS turns away MSMFB_OVERLAY_*, MSMFB_BUFFER_SYNC and MSMFB_DISPLAY_COMMIT
+unless the target is MDP3, because newer composers use MSMFB_ATOMIC_COMMIT. The
+composer of this ROM, hwcomposer.msm8952 from display-caf, is HWC1 and uses the
+old ones, so every frame failed with "Unsupported ioctl" and the screen stayed
+on the boot logo. The code behind these ioctls is all still here: only the check
+stops it.
+---
+--- drivers/video/fbdev/msm/mdss_fb.c
++++ drivers/video/fbdev/msm/mdss_fb.c
+@@ -5182,7 +5182,7 @@
+ 	return ret;
+ }
+ 
+-#ifdef TARGET_HW_MDSS_MDP3
++#if defined(TARGET_HW_MDSS_MDP3) || defined(CONFIG_MACH_ASUS_Z500KL)
+ static bool check_not_supported_ioctl(u32 cmd)
+ {
+ 	return false;

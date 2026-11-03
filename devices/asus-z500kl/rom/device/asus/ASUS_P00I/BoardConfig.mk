@@ -199,9 +199,9 @@ TARGET_USERIMAGES_USE_F2FS := true
 include device/qcom/sepolicy-legacy/sepolicy.mk
 BOARD_SEPOLICY_DIRS += $(DEVICE_PATH)/sepolicy
 
-# Recovery: the same fstab the ROM uses, so there is one description of the layout.
+# Recovery and package: the ROM's fstab, with the system path TWRP can open too.
 TARGET_RECOVERY_PIXEL_FORMAT := "RGBX_8888"
-TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/fstab.qcom
+TARGET_RECOVERY_FSTAB := $(DEVICE_PATH)/rootdir/etc/recovery.fstab
 
 # The bootloader refuses an image whose AVB1 signature does not name the partition it
 # is being written to, and fastboot flash is disabled on it, so images go on with dd
