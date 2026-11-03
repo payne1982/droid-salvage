@@ -94,7 +94,7 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | Wi-Fi: the WCNSS Pronto core, with prima | builds; with LineageOS 20 on 4.9 the core's pins could not be set, the pin table naming the wrong functions for GPIO 40-42 (`patches/0016`); not tried since |
 | GPU: Adreno 510 through KGSL | yes, with `patches/0015` and `0018`: LineageOS 20 reaches its interface on 4.9 (after a manual restart of the framework, see below) |
 | composition: HWC1 on this MDSS | yes, with `patches/0019` and `0020`: 59 fps, 1428 commits with their fences, in a 25-second trace |
-| first frame after the bootloader's splash | times out. The cause is open and the iris2 bridge is not ruled out; once the panel has been reset, frames flow. `patches/0021` and `0023` not tried yet |
+| first frame after the bootloader's splash | times out. The cause is open and the iris2 bridge is not ruled out; once the panel has been reset, frames flow. `patches/0021`, `0023` and `0024` not tried yet |
 | ADSP and sensors | without a loader the ADSP stays down, the sensors daemon gives up and SensorService aborts system_server about 90 s after each start. `patches/0022` not tried yet |
 | QSEE: qseecomd's version query | refused on 4.9 (`Invalid IOCTL: 0xc0049725`); `patches/0017` brings it back; not tried yet |
 | audio, cameras, modem | not yet |

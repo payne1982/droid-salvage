@@ -1,0 +1,90 @@
+Subject: [PATCH] msm: mdss: Z500KL: a time limit on a stalled display
+
+Patch 0023 leaves the verdict on the panel to a count of 10 timeouts, but the count
+only moves if frames keep coming, and in the runs so far SurfaceFlinger stopped
+after one to three. The panel would then never be reported dead, nor reset by patch
+0021, and the screen would stay on the logo.
+
+Start a clock at a timeout: if no frame gets through in 3 seconds and the panel is
+still meant to be on, report it dead. A frame that gets through stops the clock and
+logs it, which also tells whether the first frame's timeout heals by itself or only
+with a reset.
+---
+--- drivers/video/fbdev/msm/mdss_fb.c
++++ drivers/video/fbdev/msm/mdss_fb.c
+@@ -5551,6 +5551,40 @@
+ }
+ #endif /* CONFIG_MACH_ASUS_Z500KL */
+ 
++#ifdef CONFIG_MACH_ASUS_Z500KL
++/*
++ * The count of timeouts only moves if frames keep coming, and SurfaceFlinger may
++ * stop sending them after the first timeout. So a timeout also starts a clock: if
++ * no frame gets through before it runs out, treat the panel as dead.
++ */
++#define FRAME_TIMEOUT_LIMIT	(3 * HZ)
++
++static void mdss_fb_frame_timeout_work(struct work_struct *work)
++{
++	if (!mdss_fb_is_power_on_interactive(panel_reset_mfd))
++		return;
++
++	pr_err("no frame for 3 seconds after a timeout\n");
++	mdss_fb_report_panel_dead(panel_reset_mfd);
++}
++static DECLARE_DELAYED_WORK(frame_timeout_work, mdss_fb_frame_timeout_work);
++
++void mdss_fb_frame_timed_out(struct msm_fb_data_type *mfd)
++{
++	if (mfd->index != 0)
++		return;
++
++	panel_reset_mfd = mfd;
++	schedule_delayed_work(&frame_timeout_work, FRAME_TIMEOUT_LIMIT);
++}
++
++void mdss_fb_frame_recovered(struct msm_fb_data_type *mfd)
++{
++	if (mfd->index == 0 && cancel_delayed_work(&frame_timeout_work))
++		pr_info("frames are back after a timeout\n");
++}
++#endif /* CONFIG_MACH_ASUS_Z500KL */
++
+ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
+ {
+ 	char *envp[2] = {"PANEL_ALIVE=0", NULL};
+--- drivers/video/fbdev/msm/mdss_fb.h
++++ drivers/video/fbdev/msm/mdss_fb.h
+@@ -495,6 +495,13 @@
+ 
+ u32 mdss_fb_get_mode_switch(struct msm_fb_data_type *mfd);
+ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd);
++#ifdef CONFIG_MACH_ASUS_Z500KL
++void mdss_fb_frame_timed_out(struct msm_fb_data_type *mfd);
++void mdss_fb_frame_recovered(struct msm_fb_data_type *mfd);
++#else
++static inline void mdss_fb_frame_timed_out(struct msm_fb_data_type *mfd) {}
++static inline void mdss_fb_frame_recovered(struct msm_fb_data_type *mfd) {}
++#endif
+ void mdss_panelinfo_to_fb_var(struct mdss_panel_info *pinfo,
+ 						struct fb_var_screeninfo *var);
+ void mdss_fb_calc_fps(struct msm_fb_data_type *mfd);
+--- drivers/video/fbdev/msm/mdss_mdp_intf_cmd.c
++++ drivers/video/fbdev/msm/mdss_mdp_intf_cmd.c
+@@ -2251,6 +2251,7 @@
+ 		if (gpio_is_valid(pdata->panel_te_gpio))
+ 			disable_irq_nosync(gpio_to_irq(pdata->panel_te_gpio));
+ 
++		mdss_fb_frame_timed_out(ctl->mfd);
+ 		ctx->pp_timeout_report_cnt++;
+ 		rc = -EPERM;
+ 
+@@ -2265,6 +2266,8 @@
+ 
+ 	} else {
+ 		rc = 0;
++		if (ctx->pp_timeout_report_cnt)
++			mdss_fb_frame_recovered(ctl->mfd);
+ 		ctx->pp_timeout_report_cnt = 0;
+ 	}
+ 
