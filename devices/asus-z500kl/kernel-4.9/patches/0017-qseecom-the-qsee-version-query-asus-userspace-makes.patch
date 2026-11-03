@@ -1,0 +1,76 @@
+Subject: [PATCH] qseecom: the QSEE version query ASUS' userspace makes
+
+qseecomd and the keymaster blobs of this tablet ask the driver for QSEE's
+version with QSEECOM_IOCTL_GET_QSEE_VERSION_REQ, command 37, which ASUS' 3.10
+has and this tree does not: LineageOS 20 on this kernel logged "Invalid IOCTL:
+0xc0049725" seven times as qseecomd started. The command returns the version
+the driver read at probe, four bytes, the same for native and compat callers.
+This is QSEE's version, not QSEOS' interface version, which is another query.
+
+From a separate analysis of the same log, which also checked the command's
+number and size for both ABIs; untested on the tablet when written. It does not
+by itself make keymaster or DRM work.
+---
+--- drivers/misc/compat_qseecom.c
++++ drivers/misc/compat_qseecom.c
+@@ -550,6 +550,9 @@
+ 	long ret;
+ 
+ 	switch (cmd) {
++	case QSEECOM_IOCTL_GET_QSEE_VERSION_REQ:
++		/* No pointer or long fields require a compat structure conversion. */
++		return qseecom_ioctl(file, cmd, (unsigned long)compat_ptr(arg));
+ 
+ 	case COMPAT_QSEECOM_IOCTL_UNREGISTER_LISTENER_REQ:
+ 	case COMPAT_QSEECOM_IOCTL_RECEIVE_REQ:
+--- drivers/misc/qseecom.c
++++ drivers/misc/qseecom.c
+@@ -5306,6 +5306,18 @@
+ 	return 0;
+ }
+ 
++/* Pointer-free four-byte result, identical for native and compat callers.
++ * This is QSEE's firmware version, distinct from the QSEOS interface version.
++ */
++static int qseecom_get_qsee_version(void __user *argp)
++{
++	struct qseecom_qsee_version_req req = {
++		.qsee_version = qseecom.qsee_version,
++	};
++
++	return copy_to_user(argp, &req, sizeof(req)) ? -EFAULT : 0;
++}
++
+ static int __qseecom_enable_clk(enum qseecom_ce_hw_instance ce)
+ {
+ 	int rc = 0;
+@@ -7637,6 +7649,12 @@
+ 		atomic_dec(&data->ioctl_count);
+ 		break;
+ 	}
++	case QSEECOM_IOCTL_GET_QSEE_VERSION_REQ: {
++		atomic_inc(&data->ioctl_count);
++		ret = qseecom_get_qsee_version(argp);
++		atomic_dec(&data->ioctl_count);
++		break;
++	}
+ 	case QSEECOM_IOCTL_PERF_ENABLE_REQ:{
+ 		if ((data->type != QSEECOM_GENERIC) &&
+ 			(data->type != QSEECOM_CLIENT_APP)) {
+--- include/uapi/linux/qseecom.h
++++ include/uapi/linux/qseecom.h
+@@ -380,6 +380,14 @@
+ #define QSEECOM_IOCTL_SEND_MODFD_RESP_64 \
+ 	_IOWR(QSEECOM_IOC_MAGIC, 36, struct qseecom_send_modfd_listener_resp)
+ 
++/* Legacy ASUS userspace queries the version already cached by the driver. */
++struct qseecom_qsee_version_req {
++	unsigned int qsee_version;
++};
++
++#define QSEECOM_IOCTL_GET_QSEE_VERSION_REQ \
++	_IOWR(QSEECOM_IOC_MAGIC, 37, struct qseecom_qsee_version_req)
++
+ #define QSEECOM_IOCTL_GET_CE_PIPE_INFO \
+ 	_IOWR(QSEECOM_IOC_MAGIC, 40, struct qseecom_ce_info_req)
+ 

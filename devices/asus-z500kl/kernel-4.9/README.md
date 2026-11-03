@@ -91,7 +91,9 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | I²C buses | yes — at first deferred until the clock driver is up, then all four by 0.36 s |
 | display: the panel behind the Pixelworks iris2 bridge, the LP8557 backlight | yes — TWRP's screen, clean, through the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); GPIO 126 picks the BOE panel. The first frame after the bootloader's splash still fails (a DSI timeout), and the driver recovers by powering panel and bridge off and on, in about a second; sometimes the backlight is seen to flash. Sending the bridge its power-on commands before that frame, with or without resetting it first, did not help: the trouble is with the DSI link as the bootloader left it. ASUS' 3.10 has the same timeout pending, and ignores it |
 | touch: Atmel maXTouch mXT1666T2 | yes — with the kernel's own `atmel_mxt_ts` in place of ASUS' driver |
-| Wi-Fi: the WCNSS Pronto core, with prima | builds; not tried yet (it needs the ROM's `wcnss_service` to power the core) |
+| Wi-Fi: the WCNSS Pronto core, with prima | builds; with LineageOS 20 on 4.9 the core's pins could not be set, the pin table naming the wrong functions for GPIO 40-42 (`patches/0016`); not tried since |
+| GPU: Adreno 510 through KGSL | with LineageOS 20, "CP initialization failed to idle": the read pointer's shadow is never written by the 2016 microcode; `patches/0015` reads the register instead; not tried yet |
+| QSEE: qseecomd's version query | refused on 4.9 (`Invalid IOCTL: 0xc0049725`); `patches/0017` brings it back; not tried yet |
 | audio, cameras, modem | not yet |
 
 ## The 3.10 patches

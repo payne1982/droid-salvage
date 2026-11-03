@@ -1,0 +1,28 @@
+Subject: [PATCH] pinctrl: msm8976: the WCNSS WLAN functions of GPIO 40-42
+
+The driver declares wcss_wlan2, wcss_wlan1 and wcss_wlan0 for GPIO 40, 41 and
+42, and the SoC's device tree asks for them in its wcnss_default and
+wcnss_sleep states; but the pin groups listed wcss_wlan, a function of GPIO 43
+and 44 only, for all five. So the WCNSS driver could not set its pins when
+wcnss_service started the core ("can not set wcnss_default pins", after a
+warning from msm_pinmux_set_mux), and the Wi-Fi did not start. The groups now
+name the functions declared for them, in the same first alternate slot.
+
+Found by a separate analysis of the LineageOS-on-4.9 log, which also checked the
+tables against the compiled device tree; untested on the tablet when written.
+---
+--- drivers/pinctrl/qcom/pinctrl-msm8976.c
++++ drivers/pinctrl/qcom/pinctrl-msm8976.c
+@@ -970,9 +970,9 @@
+ 	PINGROUP(37, NA, NA, NA, qdss_tracedata_b, NA, NA, NA, NA, NA),
+ 	PINGROUP(38, NA, NA, NA, NA, NA, NA, NA, qdss_tracedata_b, NA),
+ 	PINGROUP(39, wcss_bt, sdc3, NA, qdss_tracedata_a, NA, NA, NA, NA, NA),
+-	PINGROUP(40, wcss_wlan, sdc3, NA, qdss_tracedata_a, NA, NA, NA, NA, NA),
+-	PINGROUP(41, wcss_wlan, sdc3, NA, qdss_tracedata_a, NA, NA, NA, NA, NA),
+-	PINGROUP(42, wcss_wlan, sdc3, NA, qdss_tracedata_a, NA, NA, NA, NA, NA),
++	PINGROUP(40, wcss_wlan2, sdc3, NA, qdss_tracedata_a, NA, NA, NA, NA, NA),
++	PINGROUP(41, wcss_wlan1, sdc3, NA, qdss_tracedata_a, NA, NA, NA, NA, NA),
++	PINGROUP(42, wcss_wlan0, sdc3, NA, qdss_tracedata_a, NA, NA, NA, NA, NA),
+ 	PINGROUP(43, wcss_wlan, sdc3, NA, NA, qdss_tracedata_a, NA, NA, NA, NA),
+ 	PINGROUP(44, wcss_wlan, sdc3, NA, NA, NA, NA, NA, NA, NA),
+ 	PINGROUP(45, wcss_fm, NA, qdss_tracectl_a, NA, NA, NA, NA, NA, NA),
