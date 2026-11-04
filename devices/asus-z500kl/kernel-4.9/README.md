@@ -89,16 +89,28 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | charging, from a computer's USB port | yes — some 630 mA into the battery, at 24.5 °C |
 | adb over USB, through ConfigFS | yes |
 | I²C buses | yes — at first deferred until the clock driver is up, then all four by 0.36 s |
-| display: the panel behind the Pixelworks iris2 bridge, the LP8557 backlight | yes — TWRP's screen, clean, through the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); GPIO 126 picks the BOE panel. The first frame after the bootloader's splash still fails (a DSI timeout), and the driver recovers by powering panel and bridge off and on, in about a second; sometimes the backlight is seen to flash. Sending the bridge its power-on commands before that frame, with or without resetting it first, did not help: the trouble is with the DSI link as the bootloader left it. ASUS' 3.10 has the same timeout pending, and ignores it |
+| display: the panel behind the Pixelworks iris2 bridge, the LP8557 backlight | yes, with ASUS' full iris2 driver (`files/drivers/video/fbdev/msm/iris2/`, `patches/0027`), its firmware loaded at each power-on. The light-up driver is still there as a build option. The advanced functions, MEMC and the picture modes, have not been tried |
 | touch: Atmel maXTouch mXT1666T2 | yes — with the kernel's own `atmel_mxt_ts` in place of ASUS' driver |
 | Wi-Fi: the WCNSS Pronto core, with prima | builds; with LineageOS 20 on 4.9 the core's pins could not be set, the pin table naming the wrong functions for GPIO 40-42 (`patches/0016`); not tried since |
 | GPU: Adreno 510 through KGSL | yes, with `patches/0015` and `0018` |
 | composition: HWC1 on this MDSS | yes, with `patches/0019` and `0020`: 59 fps, 1428 commits with their fences, in a 25-second trace |
-| first frame after the bootloader's splash | times out and does not heal by itself: 13 timeouts in a row in one run. Worked around, not solved: the kernel resets the panel (`patches/0021`, `0023`, `0024`, `0025`), about 3.5 s after the first frame. The cause is open, and the iris2 bridge, left as the bootloader set it, is the first suspect |
+| first frame after the bootloader's splash | **open, see below.** Times out, and only a panel reset gets it going |
 | LineageOS 20 | boots to the lock screen by itself, in 52 s, and stays up; the screen sleeps and wakes. `patches/0026` was what let SurfaceFlinger go on after the failed first frame |
 | ADSP and sensors | yes, with `patches/0022`: the ADSP online, 25 sensors. The loader is a minimal one, to be replaced by the full one with audio |
 | QSEE: qseecomd's version query | refused on 4.9 (`Invalid IOCTL: 0xc0049725`); `patches/0017` brings it back; not tried yet |
 | audio, cameras, modem | not yet |
+
+## Open: the first frame
+
+The first frame after the bootloader's splash never gets through. In the runs so far, 13 pingpong timeouts in a row, `mdss_dsi_fifo_status: status=99991080` after each. Then the kernel resets the panel (`patches/0021`, `0023`, `0024`, `0025`), which shows as a brief black at boot, and from there on frames flow. This works around the fault and does not explain it.
+
+What has been measured:
+
+- it is the same with the light-up driver and with the full one, with the firmware loaded before that frame;
+- it does not heal by itself: without the reset, it goes on;
+- `mdss_dsi_timeout_status: status=1` is there already during the firmware download, before the first frame.
+
+So neither the choice of driver nor the firmware is the cause. The iris2 chip itself is not ruled out, and the DSI side of the handoff from the bootloader has not been looked at yet. To compare: the DSI and MDP registers on 3.10, where the first frame goes through, against 4.9 at the same point.
 
 ## The 3.10 patches
 

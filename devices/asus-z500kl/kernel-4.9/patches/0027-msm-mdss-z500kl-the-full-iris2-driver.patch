@@ -1,0 +1,439 @@
+Subject: [PATCH] msm: mdss: Z500KL: the full iris2 driver
+
+Hooks of ASUS' full Pixelworks iris2 driver in this MDSS: exclusive full and light
+selection, panel on and off, DT parsing, a 64 KiB TX buffer for its firmware, metadata
+in command-mode frames, and quiescing before off and mode changes. The driver and its
+lifecycle are in files/drivers/video/fbdev/msm/iris2/, its ioctls in
+files/include/uapi/linux/msm_iris2.h.
+
+The firmware goes to the bridge's RAM at each power-on, on the first unblank as on
+3.10. EFUSE_REWRITE is left out: the sequence is not sent to the IRIS2_26 of this
+tablet in any case, and nothing here should go near the chip's fuses.
+---
+--- drivers/video/fbdev/msm/Kconfig
++++ drivers/video/fbdev/msm/Kconfig
+@@ -144,13 +144,21 @@
+ 	statistics and check whether its output pattern matches expected
+ 	cadence.
+ 
++choice
++	prompt "Pixelworks Iris2 bridge support"
++	depends on FB_MSM_MDSS
++	optional
++
+ config IRIS2_LIGHTUP_ONLY
+-	depends on FB_MSM_MDSS
+-	bool "Pixelworks iris2 display bridge, light-up only"
+-	---help---
+-	Power, reset and program a Pixelworks iris2 that sits between the DSI
+-	controllers and the panel, so that it passes the picture through. As
+-	on the ASUS ZenPad 3S 10 (Z500KL).
++	bool "Light-up and pass-through only"
++
++config IRIS2_FULL_SUPPORT
++	bool "Full Iris2 support (experimental Z500KL port)"
++	help
++	  Includes firmware download, image processing, metadata and mode changes.
++	  Experimental: compile checked, not validated on hardware.
++
++endchoice
+ 
+ config BACKLIGHT_LP8557E01
+ 	depends on FB_MSM_MDSS && I2C
+--- drivers/video/fbdev/msm/Makefile
++++ drivers/video/fbdev/msm/Makefile
+@@ -44,8 +44,18 @@
+ mdss-dsi-objs += mdss_dsi_phy_12nm.o
+ mdss-dsi-objs += mdss_dsi_clk.o
+ mdss-dsi-objs-$(CONFIG_IRIS2_LIGHTUP_ONLY) += mdss_dsi_iris2_lightup_only.o
++mdss-dsi-objs-$(CONFIG_IRIS2_FULL_SUPPORT) += iris2/iris2_mdss.o iris2/iris2_lifecycle.o
++mdss-dsi-objs-$(CONFIG_IRIS2_FULL_SUPPORT) += iris2/mdss_dsi_iris2_def.o iris2/mdss_dsi_iris2.o
++mdss-dsi-objs-$(CONFIG_IRIS2_FULL_SUPPORT) += iris2/mdss_dsi_iris2_lightup.o iris2/mdss_dsi_iris2_ioctl.o
++mdss-dsi-objs-$(CONFIG_IRIS2_FULL_SUPPORT) += iris2/mdss_dsi_iris2_mode_switch.o iris2/mdss_dsi_iris2_dbg.o
++ifeq ($(CONFIG_IRIS2_FULL_SUPPORT),y)
++ccflags-y += -I$(src) -I$(src)/iris2
++endif
++# Expand the selected, mutually exclusive implementation once.
+ mdss-dsi-objs += $(mdss-dsi-objs-y)
+-obj-$(CONFIG_IRIS2_LIGHTUP_ONLY) += iris2_io.o
++ifneq ($(filter y,$(CONFIG_IRIS2_LIGHTUP_ONLY) $(CONFIG_IRIS2_FULL_SUPPORT)),)
++obj-y += iris2_io.o
++endif
+ obj-$(CONFIG_BACKLIGHT_LP8557E01) += lp8557e01.o
+ obj-$(CONFIG_FB_MSM_MDSS) += mdss-dsi.o
+ obj-$(CONFIG_FB_MSM_MDSS) += mdss_panel.o
+--- drivers/video/fbdev/msm/mdss_dsi.c
++++ drivers/video/fbdev/msm/mdss_dsi.c
+@@ -33,6 +33,11 @@
+ #include "mdss_panel.h"
+ #include "mdss_dsi.h"
+ #include "mdss_debug.h"
++
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++#include "iris2/iris2_mdss.h"
++#endif
++
+ #include "mdss_dsi_phy.h"
+ #include "mdss_dba_utils.h"
+ 
+@@ -2786,6 +2791,9 @@
+ 							pdata);
+ 		break;
+ 	case MDSS_EVENT_UNBLANK:
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++		iris2_mdss_splash(pdata);
++#endif
+ 		if (ctrl_pdata->on_cmds.link_state == DSI_LP_MODE)
+ 			rc = mdss_dsi_unblank(pdata);
+ 		break;
+@@ -4038,6 +4046,9 @@
+ 		return -ENODEV;
+ 	}
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_panel_release(&ctrl_pdata->panel_data);
++#endif
+ 	mdss_dsi_pm_qos_remove_request(ctrl_pdata->shared_data);
+ 
+ 	if (msm_dss_config_vreg(&pdev->dev,
+--- drivers/video/fbdev/msm/mdss_dsi_host.c
++++ drivers/video/fbdev/msm/mdss_dsi_host.c
+@@ -121,7 +121,12 @@
+ 	mutex_init(&ctrl->cmd_mutex);
+ 	mutex_init(&ctrl->clk_lane_mutex);
+ 	mutex_init(&ctrl->cmdlist_mutex);
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	/* The full bridge firmware transport requires the ASUS 64 KiB TX buffer. */
++	mdss_dsi_buf_alloc(ctrl_dev, &ctrl->tx_buf, SZ_64K);
++#else
+ 	mdss_dsi_buf_alloc(ctrl_dev, &ctrl->tx_buf, SZ_4K);
++#endif
+ 	mdss_dsi_buf_alloc(ctrl_dev, &ctrl->rx_buf, SZ_4K);
+ 	mdss_dsi_buf_alloc(ctrl_dev, &ctrl->status_buf, SZ_4K);
+ 	ctrl->cmdlist_commit = mdss_dsi_cmdlist_commit;
+--- drivers/video/fbdev/msm/mdss_dsi_panel.c
++++ drivers/video/fbdev/msm/mdss_dsi_panel.c
+@@ -30,8 +30,12 @@
+ #endif
+ #include "mdss_debug.h"
+ 
+-#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY) || defined(CONFIG_IRIS2_FULL_SUPPORT)
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++#include "iris2/iris2_mdss.h"
++#else
+ #include "mdss_dsi_iris2_lightup_only.h"
++#endif
+ #include "iris2_io.h"
+ #endif
+ #if defined(CONFIG_BACKLIGHT_LP8557E01)
+@@ -480,7 +484,7 @@
+ 			return rc;
+ 		}
+ 		if (!pinfo->cont_splash_enabled) {
+-#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY) || defined(CONFIG_IRIS2_FULL_SUPPORT)
+ 			iris2_io_resume();
+ #endif
+ 			if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
+@@ -570,7 +574,7 @@
+ 		gpio_free(ctrl_pdata->rst_gpio);
+ 		if (gpio_is_valid(ctrl_pdata->mode_gpio))
+ 			gpio_free(ctrl_pdata->mode_gpio);
+-#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY) || defined(CONFIG_IRIS2_FULL_SUPPORT)
+ 		iris2_io_suspend();
+ #endif
+ 	}
+@@ -658,7 +662,7 @@
+ 	memset(&cmdreq, 0, sizeof(cmdreq));
+ 	cmdreq.cmds_cnt = 3;
+ 	cmdreq.flags = CMD_REQ_COMMIT;
+-#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY) || defined(CONFIG_IRIS2_FULL_SUPPORT)
+ 	cmdreq.flags |= CMD_REQ_HS_MODE;
+ #endif
+ 	if (unicast)
+@@ -1023,11 +1027,15 @@
+ 	pr_debug("%s: ndx=%d cmd_cnt=%d\n", __func__,
+ 				ctrl->ndx, on_cmds->cmd_cnt);
+ 
+-#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY) || defined(CONFIG_IRIS2_FULL_SUPPORT)
+ 	/* The bridge first, then the panel's commands through it. */
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	ret = iris2_mdss_panel_on(ctrl);
++#else
+ 	iris2_init(ctrl);
+ 	iris2_panel_cmds(ctrl, PANEL_ON_CMDS);
+ 	iris2_lightup(ctrl);
++#endif
+ #else
+ 	if (on_cmds->cmd_cnt)
+ 		mdss_dsi_panel_cmds_send(ctrl, on_cmds, CMD_REQ_COMMIT);
+@@ -1165,14 +1173,18 @@
+ 			goto end;
+ 	}
+ 
+-#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY) || defined(CONFIG_IRIS2_FULL_SUPPORT)
+ 	mdss_dsi_cmd_mdp_busy(ctrl);
+ 	if (ctrl->mdss_util->bus_bandwidth_ctrl)
+ 		ctrl->mdss_util->bus_bandwidth_ctrl(1);
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_panel_off(ctrl);
++#else
+ 	iris2_lightoff(ctrl);
+ 	iris2_panel_cmds(ctrl, PANEL_OFF_CMDS);
+ 	iris2_lightoff_finish(ctrl);
++#endif
+ 
+ 	if (ctrl->mdss_util->bus_bandwidth_ctrl)
+ 		ctrl->mdss_util->bus_bandwidth_ctrl(0);
+@@ -3163,9 +3175,13 @@
+ 
+ 	mdss_dsi_parse_dfps_config(np, ctrl_pdata);
+ 
+-#if defined(CONFIG_IRIS2_LIGHTUP_ONLY)
++#if defined(CONFIG_IRIS2_LIGHTUP_ONLY) || defined(CONFIG_IRIS2_FULL_SUPPORT)
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_parse(np, pinfo);
++#else
+ 	mdss_dsi_parse_iris_params(np, pinfo);
+ 	mdss_dsi_parse_iris_mipi(np, pinfo->mipi.mode, pinfo->pdest);
++#endif
+ #endif
+ 
+ 	rc = mdss_panel_parse_dt_hdmi(np, ctrl_pdata);
+--- drivers/video/fbdev/msm/mdss_fb.c
++++ drivers/video/fbdev/msm/mdss_fb.c
+@@ -47,6 +47,9 @@
+ #include <linux/kthread.h>
+ #include <linux/dma-buf.h>
+ #include "mdss_fb.h"
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++#include "iris2/iris2_mdss.h"
++#endif
+ #include "mdss_mdp_splash_logo.h"
+ #define CREATE_TRACE_POINTS
+ #include "mdss_debug.h"
+@@ -1083,6 +1086,9 @@
+ 	struct msm_fb_data_type *mfd = platform_get_drvdata(pdev);
+ 
+ 	mfd->shutdown_pending = true;
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_quiesce(mfd);
++#endif
+ 
+ 	/* wake up threads waiting on idle or kickoff queues */
+ 	wake_up_all(&mfd->idle_wait_q);
+@@ -1612,6 +1618,9 @@
+ 		pr_err("msm_fb_remove: can't stop the device %d\n",
+ 			    mfd->index);
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_detach(mfd);
++#endif
+ 	/* remove /dev/fb* */
+ 	unregister_framebuffer(mfd->fbi);
+ 
+--- drivers/video/fbdev/msm/mdss_mdp_ctl.c
++++ drivers/video/fbdev/msm/mdss_mdp_ctl.c
+@@ -27,6 +27,11 @@
+ #include "mdss_mdp.h"
+ #include "mdss_mdp_trace.h"
+ #include "mdss_debug.h"
++
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++#include "iris2/iris2_mdss.h"
++#endif
++
+ 
+ #define MDSS_MDP_QSEED3_VER_DOWNSCALE_LIM 2
+ #define NUM_MIXERCFG_REGS 3
+@@ -2470,6 +2475,9 @@
+ 	if (!ctl)
+ 		return -ENODEV;
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_forget_ctl(ctl);
++#endif
+ 	pr_debug("free ctl_num=%d ref_cnt=%d\n", ctl->num, ctl->ref_cnt);
+ 
+ 	if (!ctl->ref_cnt) {
+--- drivers/video/fbdev/msm/mdss_mdp_intf_cmd.c
++++ drivers/video/fbdev/msm/mdss_mdp_intf_cmd.c
+@@ -19,6 +19,11 @@
+ #include "mdss_mdp.h"
+ #include "mdss_panel.h"
+ #include "mdss_debug.h"
++
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++#include "iris2/iris2_mdss.h"
++#endif
++
+ #include "mdss_mdp_trace.h"
+ #include "mdss_dsi_clk.h"
+ #include <linux/interrupt.h>
+@@ -1174,6 +1179,9 @@
+ 		return;
+ 	}
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_cadence(ctl);
++#endif
+ 	vsync_time = ktime_get();
+ 	ctl->vsync_cnt++;
+ 	MDSS_XLOG(ctl->num, atomic_read(&ctx->koff_cnt));
+@@ -3121,6 +3129,9 @@
+ 	 * for both DSIs
+ 	 */
+ 	mdss_mdp_resource_control(ctl, MDP_RSRC_CTL_EVENT_KICKOFF);
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_cmd_frame(ctl);
++#endif
+ 
+ 	if (!ctl->is_master)
+ 		mctl = mdss_mdp_get_main_ctl(ctl);
+--- drivers/video/fbdev/msm/mdss_mdp_overlay.c
++++ drivers/video/fbdev/msm/mdss_mdp_overlay.c
+@@ -33,6 +33,11 @@
+ #include <linux/msm-bus.h>
+ #include "mdss.h"
+ #include "mdss_debug.h"
++
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++#include "iris2/iris2_mdss.h"
++#endif
++
+ #include "mdss_fb.h"
+ #include "mdss_mdp.h"
+ #include "mdss_smmu.h"
+@@ -985,6 +990,9 @@
+ 	req->vert_deci = pipe->vert_deci;
+ 
+ 	pipe->req_data = *req;
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_track_pipe(mfd, pipe);
++#endif
+ 	pipe->dirty = false;
+ 
+ 	pipe->params_changed++;
+@@ -1763,6 +1771,10 @@
+ 	pr_debug("fb%d switch to mode=%x\n", mfd->index, mode);
+ 	ATRACE_FUNC();
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	/* Drain bridge jobs before changing interface callbacks or ctl context. */
++	iris2_mdss_quiesce(mfd);
++#endif
+ 	ctl->pending_mode_switch = mode;
+ 	sctl = mdss_mdp_get_split_ctl(ctl);
+ 	if (sctl)
+@@ -1778,6 +1790,9 @@
+ 				rc = sctl->ops.wait_pingpong(sctl, NULL);
+ 			if (rc) {
+ 				pr_err("wait for pp failed before resolution switch\n");
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++				iris2_mdss_resume(mfd);
++#endif
+ 				return rc;
+ 			}
+ 
+@@ -1844,6 +1859,9 @@
+ 		mdss_mdp_switch_to_vid_mode(ctl, 0);
+ 	} else {
+ 		pr_err("Invalid mode switch arg %d\n", mode);
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++		iris2_mdss_resume(mfd);
++#endif
+ 		return -EINVAL;
+ 	}
+ 
+@@ -1903,6 +1921,10 @@
+ 	if (sctl)
+ 		sctl->pending_mode_switch = 0;
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	if (!rc)
++		iris2_mdss_resume(mfd);
++#endif
+ 	return rc;
+ }
+ 
+@@ -2897,6 +2919,9 @@
+ 		mdss_mdp_ctl_notify(ctl, MDP_NOTIFY_FRAME_BEGIN);
+ 
+ 	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_video_frame(ctl);
++#endif
+ 
+ 	mdss_mdp_check_ctl_reset_status(ctl);
+ 	__validate_and_set_roi(mfd, data);
+@@ -5741,6 +5766,9 @@
+ 		break;
+ 
+ 	default:
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++		ret = iris2_mdss_ioctl(mfd, cmd, argp);
++#endif
+ 		break;
+ 	}
+ 
+@@ -5966,6 +5994,10 @@
+ 	}
+ 
+ end:
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	if (!rc)
++		iris2_mdss_resume(mfd);
++#endif
+ 	return rc;
+ }
+ 
+@@ -6033,6 +6065,9 @@
+ 		return -ENODEV;
+ 	}
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_quiesce(mfd);
++#endif
+ 	/*
+ 	 * Keep a reference to the runtime pm until the overlay is turned
+ 	 * off, and then release this last reference at the end. This will
+@@ -6774,6 +6809,11 @@
+ 			pr_warn("%s: unable to add event timer\n", __func__);
+ 	}
+ 
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	rc = iris2_mdss_attach(mfd);
++	if (rc)
++		goto init_fail;
++#endif
+ 	if (mfd->panel_info->cont_splash_enabled) {
+ 		rc = mdss_mdp_overlay_handoff(mfd);
+ 		if (rc) {
+--- drivers/video/fbdev/msm/mdss_mdp_pipe.c
++++ drivers/video/fbdev/msm/mdss_mdp_pipe.c
+@@ -21,6 +21,9 @@
+ #include "mdss_mdp.h"
+ #include "mdss_mdp_trace.h"
+ #include "mdss_debug.h"
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++#include "iris2/iris2_mdss.h"
++#endif
+ 
+ #define SMP_MB_SIZE		(mdss_res->smp_mb_size)
+ #define SMP_MB_CNT		(mdss_res->smp_mb_cnt)
+@@ -1477,6 +1480,9 @@
+ 	struct mdss_mdp_pipe *pipe, *next_pipe;
+ 
+ 	pipe = container_of(kref, struct mdss_mdp_pipe, kref);
++#ifdef CONFIG_IRIS2_FULL_SUPPORT
++	iris2_mdss_forget_pipe(pipe);
++#endif
+ 
+ 	pr_debug("ndx=%x pnum=%d rect=%d\n",
+ 			pipe->ndx, pipe->num, pipe->multirect.num);
