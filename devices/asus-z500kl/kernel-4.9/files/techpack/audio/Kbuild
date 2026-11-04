@@ -1,5 +1,5 @@
-# Only the userspace headers of Qualcomm's audio techpack are here, from the kenzo's
-# 4.9 kernel (same SoC), so that the audio HAL of the ROM builds; the audio drivers
-# themselves are not, yet. techpack/Kbuild links a built-in.o from every directory
-# here, and an object listed in obj- has kbuild make an empty one.
-obj- := dummy.o
+# SPDX-License-Identifier: GPL-2.0-only
+# Keep vendor includes private to this driver and its children.
+subdir-ccflags-y += -I$(srctree)/techpack/audio/include
+subdir-ccflags-y += -I$(srctree)/techpack/audio/include/uapi
+obj-$(CONFIG_SND_SOC_Z500KL) += ipc/ dsp/ asoc/

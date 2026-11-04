@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Selected built-in Z500KL sources; no Android source-layout assumptions.
+obj-y += apr.o apr_v2.o apr_tal.o apr_dummy.o

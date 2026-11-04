@@ -96,9 +96,10 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | composition: HWC1 on this MDSS | yes, with `patches/0019` and `0020`: 59 fps, 1428 commits with their fences, in a 25-second trace |
 | first frame after the bootloader's splash | **open, see below.** Times out, and only a panel reset gets it going |
 | LineageOS 20 | boots to the lock screen by itself, in 52 s, and stays up; the screen sleeps and wakes. `patches/0026` was what let SurfaceFlinger go on after the failed first frame |
-| ADSP and sensors | yes, with `patches/0022`: the ADSP online, 25 sensors. The loader is a minimal one, to be replaced by the full one with audio |
+| ADSP and sensors | yes on the tablet with a minimal loader: the ADSP online, 25 sensors. That loader has since given way to the audio techpack's, not tried yet |
 | QSEE: qseecomd's version query | refused on 4.9 (`Invalid IOCTL: 0xc0049725`); `patches/0017` brings it back; not tried yet |
-| audio, cameras, modem | not yet |
+| audio | builds, not tried: Qualcomm's techpack from the kenzo's 4.9 with ASUS' values (`files/techpack/audio`, `z500kl-audio.dtsi`, `patches/0028`). The device tree, amplifier and calibration IDs match ASUS' 3.10. To see on the tablet: this driver sends the ADSP's 2016 firmware the PCM V4 format and `AFE_MODULE_CLOCK_SET`, which 3.10 did not use. Voice calls may lack some mixer controls |
+| cameras, modem | not yet |
 
 ## Open: the first frame
 

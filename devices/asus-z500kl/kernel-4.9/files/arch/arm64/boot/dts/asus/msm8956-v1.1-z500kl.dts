@@ -7,7 +7,7 @@
  *
  * Early stages. Described: storage, keys, the persistent RAM log, the battery
  * and charging (which is also how the USB controller learns of a cable), the
- * display behind its Pixelworks iris2 bridge, and touch. Not yet: audio,
+ * display behind its Pixelworks iris2 bridge, touch and Cajon audio. Not yet:
  * Wi-Fi and the cameras.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -506,3 +506,5 @@
 	/* D+/D- for telling chargers apart, from the USB PHY, as on the Xperia X. */
 	dpdm-supply = <&usb_otg>;
 };
+
+#include "z500kl-audio.dtsi"

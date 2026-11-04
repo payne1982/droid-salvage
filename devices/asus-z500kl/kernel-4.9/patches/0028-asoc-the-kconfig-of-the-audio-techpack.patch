@@ -1,0 +1,14 @@
+Subject: [PATCH] ASoC: the Kconfig of the audio techpack
+
+The Z500KL's audio is in techpack/audio, from the kenzo's 4.9 (same SoC) with ASUS'
+values: files/techpack/audio and files/arch/arm64/boot/dts/asus/z500kl-audio.dtsi.
+Generic ALSA, regmap, SPMI and IOMMU code is not changed, only this include.
+---
+--- sound/soc/Kconfig
++++ sound/soc/Kconfig
+@@ -81,3 +81,5 @@
+ 
+ endif	# SND_SOC
+ 
++
++source "techpack/audio/Kconfig"

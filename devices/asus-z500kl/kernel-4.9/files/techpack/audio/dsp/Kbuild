@@ -1,0 +1,3 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Selected built-in Z500KL sources; no Android source-layout assumptions.
+obj-y += audio_calibration.o audio_cal_utils.o q6adm.o q6afe.o q6asm.o q6audio-v2.o q6voice.o q6core.o rtac.o q6lsm.o audio_slimslave.o adsp_err.o msm_audio_ion.o avtimer.o q6_init.o adsp-loader.o audio_notifier.o audio_ssr.o

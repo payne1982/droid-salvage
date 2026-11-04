@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Selected built-in Z500KL sources; no Android source-layout assumptions.
+obj-y += msm_stub.o msm-cdc-pinctrl.o msm-cdc-supply.o wcdcal-hwdep.o wcd-mbhc-v2.o wcd-mbhc-legacy.o
+obj-y += sdm660_cdc/

@@ -1,0 +1,96 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* Z500KL electrical values and routing from the working ASUS 3.10 DT.
+ * Cajon analog/digital component split follows the 4.9 codec binding.
+ */
+&ext_codec { status = "disabled"; };
+
+&msm_audio_ion {
+	/* DSP ASID used by ASUS firmware; the AP IOMMU remains on context bank 14. */
+	qcom,smmu-sid = <1>;
+};
+
+&soc {
+	z500kl_cdc_pins: z500kl-cdc-pinctrl {
+		compatible = "qcom,msm-cdc-pinctrl";
+		pinctrl-names = "aud_active", "aud_sleep";
+		pinctrl-0 = <&cdc_pdm_lines_act &cdc_pdm_lines_2_act>;
+		pinctrl-1 = <&cdc_pdm_lines_sus &cdc_pdm_lines_2_sus>;
+	};
+
+	z500kl_voice_svc: qcom,msm-voice-svc {
+		compatible = "qcom,msm-voice-svc";
+	};
+
+	sound@c051000 {
+		compatible = "asus,z500kl-audio", "qcom,msm8952-audio-codec";
+		qcom,model = "msm8952-snd-card";
+		reg = <0xc051000 4>, <0xc051004 4>, <0xc055000 4>, <0xc052000 4>;
+		reg-names = "csr_gp_io_mux_mic_ctl", "csr_gp_io_mux_spkr_ctl",
+			"csr_gp_io_lpaif_pri_pcm_pri_mode_muxsel", "csr_gp_io_mux_quin_ctl";
+		qcom,msm-ext-pa = "primary";
+		qcom,msm-mclk-freq = <9600000>;
+		qcom,msm-mbhc-hphl-swh = <1>;
+		qcom,msm-mbhc-gnd-swh = <0>;
+		qcom,msm-hs-micbias-type = "internal";
+		qcom,msm-micbias1-ext-cap;
+		qcom,msm-micbias2-ext-cap;
+		qcom,pri-mi2s-gpios = <&z500kl_cdc_pins>;
+		qcom,audio-routing =
+			"RX_BIAS", "MCLK", "SPK_RX_BIAS", "MCLK", "INT_LDO_H", "MCLK",
+			"MIC BIAS Internal1", "Handset Mic",
+			"MIC BIAS Internal2", "Headset Mic",
+			"MIC BIAS External", "Secondary Mic",
+			"AMIC1", "MIC BIAS Internal1", "AMIC2", "MIC BIAS Internal2",
+			"AMIC3", "MIC BIAS External";
+		asoc-platform = <&pcm0>, <&pcm1>, <&pcm2>, <&voip>, <&voice>,
+			<&loopback>, <&compress>, <&hostless>, <&afe>, <&lsm>, <&routing>, <&pcm_noirq>;
+		asoc-platform-names = "msm-pcm-dsp.0", "msm-pcm-dsp.1", "msm-pcm-dsp.2",
+			"msm-voip-dsp", "msm-pcm-voice", "msm-pcm-loopback", "msm-compress-dsp",
+			"msm-pcm-hostless", "msm-pcm-afe", "msm-lsm-client", "msm-pcm-routing",
+			"msm-pcm-dsp-noirq";
+		asoc-cpu = <&dai_pri_auxpcm>, <&dai_hdmi>, <&dai_dp>, <&dai_mi2s0>, <&dai_mi2s1>, <&dai_mi2s2>, <&dai_mi2s3>, <&dai_mi2s4>, <&dai_mi2s5>, <&sb_0_rx>, <&sb_0_tx>, <&sb_1_rx>, <&sb_1_tx>, <&sb_2_rx>, <&sb_2_tx>, <&sb_3_rx>, <&sb_3_tx>, <&sb_4_rx>, <&sb_4_tx>, <&sb_5_tx>, <&sb_5_rx>, <&sb_6_rx>, <&sb_7_rx>, <&sb_7_tx>, <&sb_8_rx>, <&sb_8_tx>, <&bt_sco_rx>, <&bt_sco_tx>, <&int_fm_rx>, <&int_fm_tx>, <&afe_pcm_rx>, <&afe_pcm_tx>, <&afe_proxy_rx>, <&afe_proxy_tx>, <&afe_loopback_tx>, <&incall_record_rx>, <&incall_record_tx>, <&incall_music_rx>, <&incall_music_2_rx>, <&proxy_rx>, <&proxy_tx>, <&usb_audio_rx>, <&usb_audio_tx>;
+		asoc-cpu-names = "msm-dai-q6-auxpcm.1", "msm-dai-q6-dev.8", "msm-dai-q6-dev.24608", "msm-dai-q6-mi2s.0", "msm-dai-q6-mi2s.1", "msm-dai-q6-mi2s.2", "msm-dai-q6-mi2s.3", "msm-dai-q6-mi2s.4", "msm-dai-q6-mi2s.6", "msm-dai-q6-dev.16384", "msm-dai-q6-dev.16385", "msm-dai-q6-dev.16386", "msm-dai-q6-dev.16387", "msm-dai-q6-dev.16388", "msm-dai-q6-dev.16389", "msm-dai-q6-dev.16390", "msm-dai-q6-dev.16391", "msm-dai-q6-dev.16392", "msm-dai-q6-dev.16393", "msm-dai-q6-dev.16395", "msm-dai-q6-dev.16394", "msm-dai-q6-dev.16396", "msm-dai-q6-dev.16398", "msm-dai-q6-dev.16399", "msm-dai-q6-dev.16400", "msm-dai-q6-dev.16401", "msm-dai-q6-dev.12288", "msm-dai-q6-dev.12289", "msm-dai-q6-dev.12292", "msm-dai-q6-dev.12293", "msm-dai-q6-dev.224", "msm-dai-q6-dev.225", "msm-dai-q6-dev.241", "msm-dai-q6-dev.240", "msm-dai-q6-dev.24577", "msm-dai-q6-dev.32771", "msm-dai-q6-dev.32772", "msm-dai-q6-dev.32773", "msm-dai-q6-dev.32770", "msm-dai-q6-dev.8194", "msm-dai-q6-dev.8195", "msm-dai-q6-dev.28672", "msm-dai-q6-dev.28673";
+		asoc-codec = <&stub_codec>, <&z500kl_digital_codec>, <&z500kl_analog_codec>;
+		asoc-codec-names = "msm-stub-codec.1", "msm-dig-codec", "analog-codec";
+		msm-vdd-wsa-switch-supply = <&pm8950_l13>;
+		qcom,msm-vdd-wsa-switch-voltage = <3075000>;
+		qcom,msm-vdd-wsa-switch-current = <5000>;
+	};
+};
+
+&pm8950_1 {
+	z500kl_analog_codec: analog-codec@f000 {
+		compatible = "asus,z500kl-cajon", "qcom,pmic-analog-codec";
+		reg = <0xf000 0x200>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		interrupt-parent = <&spmi_bus>;
+		interrupts = <1 0xf0 0 0>, <1 0xf0 1 0>, <1 0xf0 2 0>, <1 0xf0 3 0>,
+			<1 0xf0 4 0>, <1 0xf0 5 0>, <1 0xf0 6 0>, <1 0xf0 7 0>,
+			<1 0xf1 0 0>, <1 0xf1 1 0>, <1 0xf1 2 0>,
+			<1 0xf1 3 0>, <1 0xf1 4 0>, <1 0xf1 5 0>;
+		interrupt-names = "spk_cnp_int", "spk_clip_int", "spk_ocp_int", "ins_rem_det1",
+			"but_rel_det", "but_press_det", "ins_rem_det", "mbhc_int", "ear_ocp_int",
+			"hphr_ocp_int", "hphl_ocp_det", "ear_cnp_int", "hphr_cnp_int", "hphl_cnp_int";
+		right-speaker-gpios = <&msm_gpio 62 0>;
+		cdc-vdda-cp-supply = <&pm8950_s4>;
+		qcom,cdc-vdda-cp-voltage = <2050000 2050000>;
+		qcom,cdc-vdda-cp-current = <500000>;
+		cdc-vdd-io-supply = <&pm8950_l5>;
+		qcom,cdc-vdd-io-voltage = <1800000 1800000>;
+		qcom,cdc-vdd-io-current = <5000>;
+		cdc-vdd-pa-supply = <&pm8950_s4>;
+		qcom,cdc-vdd-pa-voltage = <2050000 2050000>;
+		qcom,cdc-vdd-pa-current = <260000>;
+		cdc-vdd-mic-bias-supply = <&pm8950_l13>;
+		qcom,cdc-vdd-mic-bias-voltage = <3075000 3075000>;
+		qcom,cdc-vdd-mic-bias-current = <5000>;
+		qcom,cdc-mclk-clk-rate = <9600000>;
+		qcom,cdc-static-supplies = "cdc-vdd-io", "cdc-vdd-pa", "cdc-vdda-cp";
+		qcom,cdc-on-demand-supplies = "cdc-vdd-mic-bias";
+		z500kl_digital_codec: msm-dig-codec {
+			compatible = "qcom,msm-digital-codec";
+			reg = <0xc0f0000 0x400>;
+		};
+	};
+};

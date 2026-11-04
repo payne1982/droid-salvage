@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SND_SOC_Z500KL
+	bool "ASUS Z500KL Cajon audio over APR/SMD"
+	depends on ARCH_MSM8916 && SND_SOC && MSM_SMD && SPMI
+	select SND_COMPRESS_OFFLOAD
+	select SND_SOC_COMPRESS
+	select SND_HWDEP
+	select SND_JACK
+	select MSM_CDC_PINCTRL
+	select REGMAP_MMIO
+	select REGMAP_SPMI
+	help
+	  Board profile and CAF audio services for the Z500KL, using the
+	  existing Qualcomm SMD/subsystem and ALSA/ASoC interfaces.
+
+config MSM_QDSP6_APRV2
+	bool
+	default y if SND_SOC_Z500KL
+
+config MSM_ADSP_LOADER
+	bool
+	default y if SND_SOC_Z500KL
+
+config MSM_QDSP6_NOTIFIER
+	bool
+	default y if SND_SOC_Z500KL
+
+config MSM_QDSP6_SSR
+	bool
+	default y if SND_SOC_Z500KL
+
+config MSM_QDSP6V2_CODECS
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_QDSP6V2
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_MSM_QDSP6V2_INTF
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_MSM_HOSTLESS_PCM
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_SDM450
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_WCD9XXX_V2
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_WCD_MBHC
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_WCD_MBHC_LEGACY
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_SDM660_CDC
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_ANALOG_CDC
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_DIGITAL_CDC_LEGACY
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_SOC_MSM_STUB
+	bool
+	default y if SND_SOC_Z500KL
+
+config SND_HWDEP_ROUTING
+	bool
+	default y if SND_SOC_Z500KL
