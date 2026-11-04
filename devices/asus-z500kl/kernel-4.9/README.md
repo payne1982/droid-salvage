@@ -92,10 +92,11 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | display: the panel behind the Pixelworks iris2 bridge, the LP8557 backlight | yes — TWRP's screen, clean, through the iris2 light-up driver from ASUS' 3.10 (`patches/0004` to `0006`); GPIO 126 picks the BOE panel. The first frame after the bootloader's splash still fails (a DSI timeout), and the driver recovers by powering panel and bridge off and on, in about a second; sometimes the backlight is seen to flash. Sending the bridge its power-on commands before that frame, with or without resetting it first, did not help: the trouble is with the DSI link as the bootloader left it. ASUS' 3.10 has the same timeout pending, and ignores it |
 | touch: Atmel maXTouch mXT1666T2 | yes — with the kernel's own `atmel_mxt_ts` in place of ASUS' driver |
 | Wi-Fi: the WCNSS Pronto core, with prima | builds; with LineageOS 20 on 4.9 the core's pins could not be set, the pin table naming the wrong functions for GPIO 40-42 (`patches/0016`); not tried since |
-| GPU: Adreno 510 through KGSL | yes, with `patches/0015` and `0018`: LineageOS 20 reaches its interface on 4.9 (after a manual restart of the framework, see below) |
+| GPU: Adreno 510 through KGSL | yes, with `patches/0015` and `0018` |
 | composition: HWC1 on this MDSS | yes, with `patches/0019` and `0020`: 59 fps, 1428 commits with their fences, in a 25-second trace |
-| first frame after the bootloader's splash | times out. The cause is open and the iris2 bridge is not ruled out; once the panel has been reset, frames flow. `patches/0021`, `0023` and `0024` not tried yet |
-| ADSP and sensors | without a loader the ADSP stays down, the sensors daemon gives up and SensorService aborts system_server about 90 s after each start. `patches/0022` not tried yet |
+| first frame after the bootloader's splash | times out and does not heal by itself: 13 timeouts in a row in one run. Worked around, not solved: the kernel resets the panel (`patches/0021`, `0023`, `0024`, `0025`), about 3.5 s after the first frame. The cause is open, and the iris2 bridge, left as the bootloader set it, is the first suspect |
+| LineageOS 20 | boots to the lock screen by itself, in 52 s, and stays up; the screen sleeps and wakes. `patches/0026` was what let SurfaceFlinger go on after the failed first frame |
+| ADSP and sensors | yes, with `patches/0022`: the ADSP online, 25 sensors. The loader is a minimal one, to be replaced by the full one with audio |
 | QSEE: qseecomd's version query | refused on 4.9 (`Invalid IOCTL: 0xc0049725`); `patches/0017` brings it back; not tried yet |
 | audio, cameras, modem | not yet |
 

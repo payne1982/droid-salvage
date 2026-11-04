@@ -1,0 +1,51 @@
+Subject: [PATCH] msm: mdss: retire fences are relative to the timeline
+
+__vsync_retire_get_fence numbers a fence 1 + retire_cnt, but mdss_get_sync_fence
+takes that as the timeline's absolute value. ASUS' 3.10 added the timeline's value.
+In steady use this goes unnoticed: nearly every fence is number 1, signaled from
+birth. After a frame fails the numbers go up and then down again, next_value goes
+back with them, and mdss_inc_timeline only advances within next_value, so the
+highest fence never signals, not even after turning the panel off. SurfaceFlinger
+waits for it as the present fence and composes nothing more.
+
+Number them from the timeline's value, so that they only grow. With the display
+off, where the caller's fallback would take a number from the release timeline, use
+a fence that goes with those pending, or one already reached if there are none.
+---
+--- drivers/video/fbdev/msm/mdss_mdp_overlay.c
++++ drivers/video/fbdev/msm/mdss_mdp_overlay.c
+@@ -6380,6 +6380,7 @@
+ 	struct msm_fb_data_type *mfd;
+ 	struct mdss_overlay_private *mdp5_data;
+ 	struct mdss_mdp_ctl *ctl;
++	struct mdss_timeline *tl;
+ 	int value;
+ 
+ 	mfd = container_of(sync_pt_data, typeof(*mfd), mdp_sync_pt_data);
+@@ -6392,16 +6393,20 @@
+ 	if (!ctl->ops.add_vsync_handler)
+ 		return ERR_PTR(-EOPNOTSUPP);
+ 
++	tl = mfd->mdp_sync_pt_data.timeline_retire;
++
+ 	if (!mdss_mdp_ctl_is_power_on(ctl)) {
++		/* No vsync will retire this one: it goes with those pending */
+ 		pr_debug("fb%d vsync pending first update\n", mfd->index);
+-		return ERR_PTR(-EPERM);
+-	}
+-
+-	value = 1 + mdp5_data->retire_cnt;
++		return mdss_fb_sync_get_fence(tl, "mdp-retire",
++				mdss_get_timeline_retire_ts(tl) +
++				mdp5_data->retire_cnt);
++	}
++
++	value = mdss_get_timeline_retire_ts(tl) + 1 + mdp5_data->retire_cnt;
+ 	mdp5_data->retire_cnt++;
+ 
+-	return mdss_fb_sync_get_fence(mfd->mdp_sync_pt_data.timeline_retire,
+-			"mdp-retire", value);
++	return mdss_fb_sync_get_fence(tl, "mdp-retire", value);
+ }
+ 
+ static int __vsync_set_vsync_handler(struct msm_fb_data_type *mfd)

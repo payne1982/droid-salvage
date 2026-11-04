@@ -1,0 +1,65 @@
+Subject: [PATCH] msm: mdss: Z500KL: the reset stops the clock, and only it marks the panel dead
+
+Two faults of patches 0021 and 0024, seen on the tablet. The reset left the clock of
+0024 running: 3 seconds after the first timeout it reported the panel dead again,
+when frames had already resumed. And the panel was marked dead even when the 10-second
+limit refused the reset, so nothing cleared the mark: every commit returned early,
+leaving the pipes unreleased ("error allocating pipe") and the screen frozen.
+
+The reset now stops the clock, and the panel is marked dead only if a reset follows.
+---
+--- drivers/video/fbdev/msm/mdss_fb.c
++++ drivers/video/fbdev/msm/mdss_fb.c
+@@ -5513,6 +5513,7 @@
+ #define PANEL_RESET_MIN_INTERVAL	(10 * HZ)
+ 
+ static struct msm_fb_data_type *panel_reset_mfd;
++static struct delayed_work frame_timeout_work;
+ 
+ static void mdss_fb_panel_reset_work(struct work_struct *work)
+ {
+@@ -5528,6 +5529,8 @@
+ 	console_unlock();
+ 	unlock_fb_info(info);
+ 
++	cancel_delayed_work(&frame_timeout_work);
++
+ 	/* A commit that came in while the panel was off still has its fences */
+ 	mdss_resync_timeline(panel_reset_mfd->mdp_sync_pt_data.timeline);
+ 	mdss_resync_timeline(panel_reset_mfd->mdp_sync_pt_data.timeline_retire);
+@@ -5538,11 +5541,9 @@
+ {
+ 	static unsigned long last_reset;
+ 
+-	if (mfd->index != 0)
+-		return false;
+ 	if (last_reset &&
+ 	    time_before(jiffies, last_reset + PANEL_RESET_MIN_INTERVAL))
+-		return true;
++		return false;
+ 
+ 	last_reset = jiffies;
+ 	panel_reset_mfd = mfd;
+@@ -5607,13 +5608,16 @@
+ 	}
+ #endif /* CONFIG_FB_MSM_MDSS_SPECIFIC_PANEL */
+ 
++#ifdef CONFIG_MACH_ASUS_Z500KL
++	if (mfd->index == 0) {
++		if (mdss_fb_schedule_panel_reset(mfd)) {
++			pdata->panel_info.panel_dead = true;
++			pr_err("Panel has gone bad, resetting it\n");
++		}
++		return;
++	}
++#endif /* CONFIG_MACH_ASUS_Z500KL */
+ 	pdata->panel_info.panel_dead = true;
+-#ifdef CONFIG_MACH_ASUS_Z500KL
+-	if (mdss_fb_schedule_panel_reset(mfd)) {
+-		pr_err("Panel has gone bad, resetting it\n");
+-		return;
+-	}
+-#endif /* CONFIG_MACH_ASUS_Z500KL */
+ 	kobject_uevent_env(&mfd->fbi->dev->kobj,
+ 		KOBJ_CHANGE, envp);
+ 	pr_err("Panel has gone bad, sending uevent - %s\n", envp[0]);

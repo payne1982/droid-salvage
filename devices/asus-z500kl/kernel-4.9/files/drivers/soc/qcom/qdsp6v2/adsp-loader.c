@@ -57,8 +57,6 @@ static void adsp_load_fw(struct work_struct *adsp_ldr_work)
 	struct platform_device *pdev = adsp_private;
 	struct adsp_loader_private *priv = NULL;
 
-	int rc = 0;
-	const char *img_name;
 
 	if (!pdev) {
 		dev_err(&pdev->dev, "%s: Platform device null\n", __func__);
@@ -72,39 +70,31 @@ static void adsp_load_fw(struct work_struct *adsp_ldr_work)
 		goto fail;
 	}
 
-	rc = of_property_read_string(pdev->dev.of_node,
-					"qcom,proc-img-to-load",
-					&img_name);
-	if (rc)
-		goto fail;
-
-	if (!strcmp(img_name, "adsp")) {
-		/* adsp_state always returns "0".*/
-		if (adsp_state == ADSP_SUBSYS_DOWN) {
-			priv = platform_get_drvdata(pdev);
-			if (!priv) {
-				dev_err(&pdev->dev,
-				" %s: Private data get failed\n", __func__);
-				goto fail;
-			}
-
-			priv->pil_h = subsystem_get("adsp");
-			if (IS_ERR(priv->pil_h)) {
-				dev_err(&pdev->dev, "%s: pil get failed,\n",
-					__func__);
-				goto fail;
-			}
-
-			/* Set the state of the ADSP.*/
-			adsp_state = ADSP_SUBSYS_LOADED;
-		} else if (adsp_state == ADSP_SUBSYS_LOADED) {
-			dev_dbg(&pdev->dev,
-			"%s: ADSP state = %x\n", __func__, adsp_state);
+	/* adsp_state always returns "0".*/
+	if (adsp_state == ADSP_SUBSYS_DOWN) {
+		priv = platform_get_drvdata(pdev);
+		if (!priv) {
+			dev_err(&pdev->dev,
+			" %s: Private data get failed\n", __func__);
+			goto fail;
 		}
 
-		dev_dbg(&pdev->dev, "%s: ADSP image is loaded\n", __func__);
-		return;
+		priv->pil_h = subsystem_get("adsp");
+		if (IS_ERR(priv->pil_h)) {
+			dev_err(&pdev->dev, "%s: pil get failed, %ld\n",
+				__func__, PTR_ERR(priv->pil_h));
+			goto fail;
+		}
+
+		/* Set the state of the ADSP.*/
+		adsp_state = ADSP_SUBSYS_LOADED;
+	} else if (adsp_state == ADSP_SUBSYS_LOADED) {
+		dev_dbg(&pdev->dev,
+		"%s: ADSP state = %x\n", __func__, adsp_state);
 	}
+
+	dev_dbg(&pdev->dev, "%s: ADSP image is loaded\n", __func__);
+	return;
 
 fail:
 	dev_err(&pdev->dev, "%s: ADSP image loading failed\n", __func__);
