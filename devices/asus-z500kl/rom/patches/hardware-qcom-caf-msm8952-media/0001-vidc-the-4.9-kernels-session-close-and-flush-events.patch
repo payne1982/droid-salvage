@@ -1,0 +1,275 @@
+Subject: [PATCH] mm-video-v4l2: vidc: the 4.9 kernel's session close and flush events
+
+For LineageOS/android_hardware_qcom_media, lineage-18.1-caf-msm8952, at
+hardware/qcom-caf/msm8952/media. Enabled by TARGET_USES_Z500KL_VENUS_49, with the
+kernel's patches/0029: the components close their sessions with its private command,
+and read which queue a flush completed. Without the flag they build as before.
+---
+--- a/mm-video-v4l2/vidc/common/Android.mk
++++ b/mm-video-v4l2/vidc/common/Android.mk
+@@ -15,6 +15,10 @@
+ libmm-vidc-def += -D_ANDROID_
+ libmm-vidc-def += -Werror
+ libmm-vidc-def += -D_ANDROID_ICS_
++
++ifeq ($(TARGET_USES_Z500KL_VENUS_49),true)
++libmm-vidc-def += -DZ500KL_VENUS_49
++endif
+ 
+ # ---------------------------------------------------------------------------------
+ # 			Make the Shared library (libOmxVidcCommon)
+--- /dev/null
++++ b/mm-video-v4l2/vidc/common/inc/z500kl_venus_compat.h
+@@ -0,0 +1,57 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++#ifndef Z500KL_VENUS_COMPAT_H
++#define Z500KL_VENUS_COMPAT_H
++
++#include <linux/videodev2.h>
++
++/* Enable only for the matching
++ * candidate 4.9 driver. Shared control IDs, enums, buffer flags and extradata
++ * layouts must come from that driver's headers, never copied 3.10 headers.
++ */
++#ifdef Z500KL_VENUS_49
++#include <media/msm_vidc_z500kl.h>
++
++#define Z500KL_VDEC_SESSION_CLOSE MSM_VIDC_Z500KL_CMD_SESSION_CLOSE
++#define Z500KL_VENC_SESSION_CLOSE MSM_VIDC_Z500KL_CMD_SESSION_CLOSE
++#define V4L2_EVENT_MSM_VIDC_CLOSE_DONE MSM_VIDC_Z500KL_EVENT_SESSION_CLOSE_DONE
++
++#ifndef V4L2_DEC_QCOM_CMD_FLUSH
++#define V4L2_DEC_QCOM_CMD_FLUSH V4L2_QCOM_CMD_FLUSH
++#endif
++#ifndef V4L2_ENC_QCOM_CMD_FLUSH
++#define V4L2_ENC_QCOM_CMD_FLUSH V4L2_QCOM_CMD_FLUSH
++#endif
++#ifndef V4L2_DEC_QCOM_CMD_FLUSH_OUTPUT
++#define V4L2_DEC_QCOM_CMD_FLUSH_OUTPUT V4L2_QCOM_CMD_FLUSH_OUTPUT
++#endif
++#ifndef V4L2_DEC_QCOM_CMD_FLUSH_CAPTURE
++#define V4L2_DEC_QCOM_CMD_FLUSH_CAPTURE V4L2_QCOM_CMD_FLUSH_CAPTURE
++#endif
++#ifndef V4L2_CID_MPEG_VIDC_VIDEO_H264_AU_DELIMITER
++#define V4L2_CID_MPEG_VIDC_VIDEO_H264_AU_DELIMITER V4L2_CID_MPEG_VIDC_VIDEO_AU_DELIMITER
++#define V4L2_MPEG_VIDC_VIDEO_H264_AU_DELIMITER_DISABLED V4L2_MPEG_VIDC_VIDEO_AU_DELIMITER_DISABLED
++#define V4L2_MPEG_VIDC_VIDEO_H264_AU_DELIMITER_ENABLED V4L2_MPEG_VIDC_VIDEO_AU_DELIMITER_ENABLED
++#endif
++
++#else
++#define Z500KL_VDEC_SESSION_CLOSE V4L2_DEC_CMD_STOP
++#define Z500KL_VENC_SESSION_CLOSE V4L2_ENC_CMD_STOP
++#endif
++
++/* Native 4.9 flush events identify which queue completed. The driver's
++ * invalid-state flush deliberately has a zero payload and completes both.
++ * Legacy ASUS clients received one aggregate completion.
++ */
++static inline unsigned int z500kl_venus_flush_mask(const struct v4l2_event *event)
++{
++    const unsigned int both = V4L2_QCOM_CMD_FLUSH_OUTPUT | V4L2_QCOM_CMD_FLUSH_CAPTURE;
++#ifdef Z500KL_VENUS_49
++    unsigned int mask = 0;
++    __builtin_memcpy(&mask, event->u.data, sizeof(mask));
++    return mask ? (mask & both) : both;
++#else
++    (void)event;
++    return both;
++#endif
++}
++#endif
+--- a/mm-video-v4l2/vidc/vdec/Android.mk
++++ b/mm-video-v4l2/vidc/vdec/Android.mk
+@@ -25,6 +25,11 @@
+ libmm-vdec-def += -DPROCESS_EXTRADATA_IN_OUTPUT_PORT
+ libmm-vdec-def += -DMAX_RES_1080P
+ libmm-vdec-def += -DMAX_RES_1080P_EBI
++
++# Paired with the Z500KL 4.9 driver's private session-close command.
++ifeq ($(TARGET_USES_Z500KL_VENUS_49),true)
++libmm-vdec-def += -DZ500KL_VENUS_49
++endif
+ 
+ TARGETS_THAT_USE_HEVC_ADSP_HEAP := msm8226 msm8974
+ TARGETS_THAT_HAVE_VENUS_HEVC := apq8084 msm8994
+--- a/mm-video-v4l2/vidc/vdec/inc/omx_vdec.h
++++ b/mm-video-v4l2/vidc/vdec/inc/omx_vdec.h
+@@ -99,11 +99,14 @@
+ #include "qc_omx_component.h"
+ #include <linux/msm_vidc_dec.h>
+ #include <media/msm_vidc.h>
++#include "z500kl_venus_compat.h"
+ #include "frameparser.h"
+ #ifdef MAX_RES_1080P
+ #include "mp4_utils.h"
+ #endif
++#ifndef USE_ION
+ #include <linux/android_pmem.h>
++#endif
+ #include "extra_data_handler.h"
+ #include "ts_parser.h"
+ #include "vidc_color_converter.h"
+--- a/mm-video-v4l2/vidc/vdec/src/omx_vdec_msm8974.cpp
++++ b/mm-video-v4l2/vidc/vdec/src/omx_vdec_msm8974.cpp
+@@ -205,6 +205,10 @@
+         }
+         if (pfd.revents & POLLPRI) {
+             rc = ioctl(pfd.fd, VIDIOC_DQEVENT, &dqevent);
++            if (rc) {
++                DEBUG_PRINT_ERROR("VIDIOC_DQEVENT failed: %d", errno);
++                continue;
++            }
+             if (dqevent.type == V4L2_EVENT_MSM_VIDC_PORT_SETTINGS_CHANGED_INSUFFICIENT ) {
+                 struct vdec_msginfo vdec_msg;
+                 unsigned int *ptr = (unsigned int *)(void *)dqevent.u.data;
+@@ -220,19 +224,24 @@
+                 }
+             } else if (dqevent.type == V4L2_EVENT_MSM_VIDC_FLUSH_DONE) {
+                 struct vdec_msginfo vdec_msg;
+-                vdec_msg.msgcode=VDEC_MSG_RESP_FLUSH_INPUT_DONE;
+-                vdec_msg.status_code=VDEC_S_SUCCESS;
+-                DEBUG_PRINT_HIGH("VIDC Input Flush Done Recieved");
+-                if (omx->async_message_process(input,&vdec_msg) < 0) {
+-                    DEBUG_PRINT_HIGH("async_message_thread Exited");
+-                    break;
++                const unsigned int ports = z500kl_venus_flush_mask(&dqevent);
++                if (ports & V4L2_QCOM_CMD_FLUSH_OUTPUT) {
++                    vdec_msg.msgcode=VDEC_MSG_RESP_FLUSH_INPUT_DONE;
++                    vdec_msg.status_code=VDEC_S_SUCCESS;
++                    DEBUG_PRINT_HIGH("VIDC Input Flush Done Recieved");
++                    if (omx->async_message_process(input,&vdec_msg) < 0) {
++                        DEBUG_PRINT_HIGH("async_message_thread Exited");
++                        break;
++                    }
+                 }
+-                vdec_msg.msgcode=VDEC_MSG_RESP_FLUSH_OUTPUT_DONE;
+-                vdec_msg.status_code=VDEC_S_SUCCESS;
+-                DEBUG_PRINT_HIGH("VIDC Output Flush Done Recieved");
+-                if (omx->async_message_process(input,&vdec_msg) < 0) {
+-                    DEBUG_PRINT_HIGH("async_message_thread Exited");
+-                    break;
++                if (ports & V4L2_QCOM_CMD_FLUSH_CAPTURE) {
++                    vdec_msg.msgcode=VDEC_MSG_RESP_FLUSH_OUTPUT_DONE;
++                    vdec_msg.status_code=VDEC_S_SUCCESS;
++                    DEBUG_PRINT_HIGH("VIDC Output Flush Done Recieved");
++                    if (omx->async_message_process(input,&vdec_msg) < 0) {
++                        DEBUG_PRINT_HIGH("async_message_thread Exited");
++                        break;
++                    }
+                 }
+             } else if (dqevent.type == V4L2_EVENT_MSM_VIDC_CLOSE_DONE) {
+                 DEBUG_PRINT_HIGH("VIDC Close Done Recieved and async_message_thread Exited");
+@@ -824,7 +833,7 @@
+ omx_vdec::~omx_vdec()
+ {
+     m_pmem_info = NULL;
+-    struct v4l2_decoder_cmd dec;
++    struct v4l2_decoder_cmd dec = {};
+     DEBUG_PRINT_HIGH("In OMX vdec Destructor");
+     if (msg_thread_created) {
+         DEBUG_PRINT_HIGH("Signalling close to OMX Msg Thread");
+@@ -838,7 +847,7 @@
+     m_pipe_in = -1;
+     m_pipe_out = -1;
+     DEBUG_PRINT_HIGH("Waiting on OMX Async Thread exit");
+-    dec.cmd = V4L2_DEC_CMD_STOP;
++    dec.cmd = Z500KL_VDEC_SESSION_CLOSE;
+     if (drv_ctx.video_driver_fd >=0 ) {
+         if (ioctl(drv_ctx.video_driver_fd, VIDIOC_DECODER_CMD, &dec))
+             DEBUG_PRINT_ERROR("STOP Command failed");
+--- a/mm-video-v4l2/vidc/venc/Android.mk
++++ b/mm-video-v4l2/vidc/venc/Android.mk
+@@ -20,6 +20,10 @@
+ libmm-venc-def += -Werror
+ libmm-venc-def += -D_ANDROID_ICS_
+ libmm-venc-def += -D_MSM8974_
++
++ifeq ($(TARGET_USES_Z500KL_VENUS_49),true)
++libmm-venc-def += -DZ500KL_VENUS_49
++endif
+ 
+ TARGETS_THAT_USE_FLAG_MSM8226 := msm8226 msm8916 msm8909 msm8952
+ TARGETS_THAT_NEED_SW_VENC_MPEG4 := msm8909
+--- a/mm-video-v4l2/vidc/venc/inc/video_encoder_device_v4l2.h
++++ b/mm-video-v4l2/vidc/venc/inc/video_encoder_device_v4l2.h
+@@ -38,6 +38,7 @@
+ #include "omx_video_base.h"
+ #include "omx_video_encoder.h"
+ #include <linux/videodev2.h>
++#include "z500kl_venus_compat.h"
+ #include <poll.h>
+ 
+ #define TIMEOUT 5*60*1000
+--- a/mm-video-v4l2/vidc/venc/src/video_encoder_device_v4l2.cpp
++++ b/mm-video-v4l2/vidc/venc/src/video_encoder_device_v4l2.cpp
+@@ -33,7 +33,6 @@
+ #include <fcntl.h>
+ #include "video_encoder_device_v4l2.h"
+ #include "omx_video_encoder.h"
+-#include <linux/android_pmem.h>
+ #include <media/msm_vidc.h>
+ #ifdef USE_ION
+ #include <linux/msm_ion.h>
+@@ -442,25 +441,34 @@
+ 
+         if (pfd.revents & POLLPRI) {
+             rc = ioctl(pfd.fd, VIDIOC_DQEVENT, &dqevent);
++            if (rc) {
++                DEBUG_PRINT_ERROR("VIDIOC_DQEVENT failed: %d", errno);
++                continue;
++            }
+ 
+             if (dqevent.type == V4L2_EVENT_MSM_VIDC_CLOSE_DONE) {
+                 DEBUG_PRINT_HIGH("CLOSE DONE");
+                 break;
+             } else if (dqevent.type == V4L2_EVENT_MSM_VIDC_FLUSH_DONE) {
+-                venc_msg.msgcode = VEN_MSG_FLUSH_INPUT_DONE;
+-                venc_msg.statuscode = VEN_S_SUCCESS;
+-
+-                if (omx->async_message_process(input,&venc_msg) < 0) {
+-                    DEBUG_PRINT_ERROR("ERROR: Wrong ioctl message");
+-                    break;
+-                }
+-
+-                venc_msg.msgcode = VEN_MSG_FLUSH_OUPUT_DONE;
+-                venc_msg.statuscode = VEN_S_SUCCESS;
+-
+-                if (omx->async_message_process(input,&venc_msg) < 0) {
+-                    DEBUG_PRINT_ERROR("ERROR: Wrong ioctl message");
+-                    break;
++                const unsigned int ports = z500kl_venus_flush_mask(&dqevent);
++                if (ports & V4L2_QCOM_CMD_FLUSH_OUTPUT) {
++                    venc_msg.msgcode = VEN_MSG_FLUSH_INPUT_DONE;
++                    venc_msg.statuscode = VEN_S_SUCCESS;
++
++                    if (omx->async_message_process(input,&venc_msg) < 0) {
++                        DEBUG_PRINT_ERROR("ERROR: Wrong ioctl message");
++                        break;
++                    }
++
++                }
++                if (ports & V4L2_QCOM_CMD_FLUSH_CAPTURE) {
++                    venc_msg.msgcode = VEN_MSG_FLUSH_OUPUT_DONE;
++                    venc_msg.statuscode = VEN_S_SUCCESS;
++
++                    if (omx->async_message_process(input,&venc_msg) < 0) {
++                        DEBUG_PRINT_ERROR("ERROR: Wrong ioctl message");
++                        break;
++                    }
+                 }
+             } else if (dqevent.type == V4L2_EVENT_MSM_VIDC_HW_OVERLOAD) {
+                 DEBUG_PRINT_ERROR("HW Overload received");
+@@ -1152,11 +1160,11 @@
+ 
+ void venc_dev::venc_close()
+ {
+-    struct v4l2_encoder_cmd enc;
++    struct v4l2_encoder_cmd enc = {};
+     DEBUG_PRINT_LOW("venc_close: fd = %u", (unsigned int)m_nDriver_fd);
+ 
+     if ((int)m_nDriver_fd >= 0) {
+-        enc.cmd = V4L2_ENC_CMD_STOP;
++        enc.cmd = Z500KL_VENC_SESSION_CLOSE;
+         ioctl(m_nDriver_fd, VIDIOC_ENCODER_CMD, &enc);
+         DEBUG_PRINT_HIGH("venc_close E");
+ 

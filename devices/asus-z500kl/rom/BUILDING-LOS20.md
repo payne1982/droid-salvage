@@ -355,3 +355,12 @@ In the order the build asked for it. Each is a commit on this branch.
 | GPS: `set_sched_policy` undefined | `tools/gps-patches/0003` |
 | Six applications do not compile against a framework of April 2025 | `tools/merge-lineage.sh` |
 | Nothing stops, but the kernel modules go into the image unsigned and seven of fifteen not at all: the 3.10 kernel signs them with a perl script, and the perl LineageOS builds with has no `Getopt::Std` | `tree-patches/prebuilts/tools-lineage/0001`; `kernel/patches/0016` is what lets the kernel then load them |
+
+## On the 4.9 kernel: a patch to the media tree
+
+The dev branch builds the OMX video components against the 4.9 driver, and they need one patch, applied by hand after the sync:
+
+```sh
+cd hardware/qcom-caf/msm8952/media
+patch -p1 < <droid-salvage>/devices/asus-z500kl/rom/patches/hardware-qcom-caf-msm8952-media/0001-vidc-the-4.9-kernels-session-close-and-flush-events.patch
+```

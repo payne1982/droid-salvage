@@ -508,3 +508,6 @@
 };
 
 #include "z500kl-audio.dtsi"
+
+/* ASUS Venus firmware protocol profile. */
+#include "z500kl-venus.dtsi"

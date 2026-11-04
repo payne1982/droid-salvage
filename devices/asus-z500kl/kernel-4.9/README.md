@@ -99,6 +99,7 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | ADSP and sensors | yes on the tablet with a minimal loader: the ADSP online, 25 sensors. That loader has since given way to the audio techpack's, not tried yet |
 | QSEE: qseecomd's version query | refused on 4.9 (`Invalid IOCTL: 0xc0049725`); `patches/0017` brings it back; not tried yet |
 | audio | builds, not tried: Qualcomm's techpack from the kenzo's 4.9 with ASUS' values (`files/techpack/audio`, `z500kl-audio.dtsi`, `patches/0028`). The device tree, amplifier and calibration IDs match ASUS' 3.10. To see on the tablet: this driver sends the ADSP's 2016 firmware the PCM V4 format and `AFE_MODULE_CLOCK_SET`, which 3.10 did not use. Voice calls may lack some mixer controls |
+| video: Venus, with the ROM's OMX components | builds, not tried: `patches/0029` and `rom/patches/hardware-qcom-caf-msm8952-media`. The session close follows 3.10's order; whether the 2016 firmware accepts everything these components ask of it remains to be seen |
 | cameras, modem | not yet |
 
 ## Open: the first frame

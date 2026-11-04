@@ -114,6 +114,8 @@ BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true
 # TARGET_KERNEL_CLANG_COMPILE stays false (the default), which leaves KERNEL_CC empty
 # so our CC is the only one in play. The kernel is built with GCC 4.9, as Sony's was.
 TARGET_KERNEL_SOURCE := kernel/asus/msm8956-4.9
+# Enable only with the matching candidate driver and media source patches.
+TARGET_USES_Z500KL_VENUS_49 := true
 TARGET_KERNEL_CONFIG := z500kl_defconfig
 TARGET_KERNEL_CLANG_COMPILE := false
 TARGET_KERNEL_ARCH := arm64

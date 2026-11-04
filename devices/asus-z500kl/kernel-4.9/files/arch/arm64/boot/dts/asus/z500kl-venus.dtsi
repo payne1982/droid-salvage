@@ -1,0 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* The working ASUS 3.10 driver selects HFI from the powered hardware major
+ * version (<= 2: legacy; >= 3: 3xx), rather than assuming a firmware format
+ * from its filename or the efuse-based sysfs "version" attribute.
+ */
+&msm_vidc {
+	asus,hfi-autodetect;
+};

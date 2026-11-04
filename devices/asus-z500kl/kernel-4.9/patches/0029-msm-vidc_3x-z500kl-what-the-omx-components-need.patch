@@ -1,0 +1,161 @@
+Subject: [PATCH] msm: vidc_3x: Z500KL: what the OMX components of the ROM need
+
+The msm8952 OMX components were written for the 3.10 driver. There, the decoder and
+encoder STOP commands closed the session and sent CLOSE_DONE, which their polling
+thread waits for; here STOP means end of stream. So a private command and event do
+what 3.10 did, in the same order, with the event sent even if the firmware fails:
+files/include/uapi/media/msm_vidc_z500kl.h. V4L2's own commands do not change.
+
+The firmware's HFI format is chosen by the hardware's major version, read once it is
+powered, as on 3.10, with asus,hfi-autodetect in files/.../asus/z500kl-venus.dtsi.
+---
+--- drivers/media/platform/msm/vidc_3x/msm_vidc_common.c
++++ drivers/media/platform/msm/vidc_3x/msm_vidc_common.c
+@@ -19,6 +19,7 @@
+ #include <soc/qcom/subsystem_restart.h>
+ #include <soc/qcom/boot_stats.h>
+ #include <asm/div64.h>
++#include <uapi/media/msm_vidc_z500kl.h>
+ #include "msm_vidc_common.h"
+ #include "vidc_hfi_api.h"
+ #include "msm_vidc_debug.h"
+@@ -3500,6 +3501,36 @@
+ 	return rc;
+ }
+ 
++/* Close the firmware session while keeping the fd/event queue alive until
++ * userspace has joined its polling thread. Final fd release still owns the
++ * instance, mapped user buffers and memory client.
++ */
++static int msm_vidc_z500kl_session_close(struct msm_vidc_inst *inst)
++{
++	int rc = 0, ret;
++	struct v4l2_event event = {0};
++
++	if (inst->state != MSM_VIDC_CORE_INVALID &&
++		inst->core->state != VIDC_CORE_INVALID) {
++		ret = msm_comm_release_scratch_buffers(inst, false);
++		if (ret)
++			rc = ret;
++		ret = msm_comm_release_persist_buffers(inst);
++		if (ret && !rc)
++			rc = ret;
++		ret = msm_comm_try_state(inst, MSM_VIDC_CLOSE_DONE);
++		if (ret && !rc)
++			rc = ret;
++	}
++
++	/* Deliver completion even on firmware failure, as the ASUS ABI did.
++	 * Reporting rc separately preserves the error for the ioctl caller.
++	 */
++	event.type = MSM_VIDC_Z500KL_EVENT_SESSION_CLOSE_DONE;
++	v4l2_event_queue_fh(&inst->event_handler, &event);
++	return rc;
++}
++
+ int msm_vidc_comm_cmd(void *instance, union msm_v4l2_cmd *cmd)
+ {
+ 	struct msm_vidc_inst *inst = instance;
+@@ -3524,6 +3555,9 @@
+ 	}
+ 
+ 	switch (which_cmd) {
++	case MSM_VIDC_Z500KL_CMD_SESSION_CLOSE:
++		rc = msm_vidc_z500kl_session_close(inst);
++		break;
+ 	case V4L2_QCOM_CMD_FLUSH:
+ 		if (core->state != VIDC_CORE_INVALID &&
+ 			inst->state ==  MSM_VIDC_CORE_INVALID) {
+--- drivers/media/platform/msm/vidc_3x/venus_hfi.c
++++ drivers/media/platform/msm/vidc_3x/venus_hfi.c
+@@ -4447,6 +4447,8 @@
+ static int __load_fw(struct venus_hfi_device *device)
+ {
+ 	int rc = 0;
++	bool detect_hfi = of_property_read_bool(device->res->pdev->dev.of_node,
++			"asus,hfi-autodetect");
+ 	/* Initialize resources */
+ 	rc = __init_resources(device, device->res);
+ 	if (rc) {
+@@ -4454,10 +4456,12 @@
+ 		goto fail_init_res;
+ 	}
+ 
+-	rc = __initialize_packetization(device);
+-	if (rc) {
+-		dprintk(VIDC_ERR, "Failed to initialize packetization\n");
+-		goto fail_init_pkt;
++	if (!detect_hfi) {
++		rc = __initialize_packetization(device);
++		if (rc) {
++			dprintk(VIDC_ERR, "Failed to initialize packetization\n");
++			goto fail_init_pkt;
++		}
+ 	}
+ 	trace_msm_v4l2_vidc_fw_load_start("msm_v4l2_vidc venus_fw load start");
+ 
+@@ -4465,6 +4469,13 @@
+ 	if (rc) {
+ 		dprintk(VIDC_ERR, "Failed to power on venus in in load_fw\n");
+ 		goto fail_venus_power_on;
++	}
++
++	/* Register access is valid only after regulators and clocks are up. */
++	if (detect_hfi) {
++		rc = __initialize_packetization(device);
++		if (rc)
++			goto fail_load_fw;
+ 	}
+ 
+ 	if ((!device->res->use_non_secure_pil && !device->res->firmware_base)
+@@ -4605,7 +4616,25 @@
+ 
+ 	hfi_version = device->res->hfi_version;
+ 
+-	if (!hfi_version) {
++	if (of_property_read_bool(device->res->pdev->dev.of_node,
++			"asus,hfi-autodetect")) {
++		u32 version, major;
++
++		if (!device->power_enabled)
++			return -EIO;
++		version = __read_register(device, VIDC_WRAPPER_HW_VERSION);
++		major = (version & VIDC_WRAPPER_HW_VERSION_MAJOR_VERSION_MASK) >>
++			VIDC_WRAPPER_HW_VERSION_MAJOR_VERSION_SHIFT;
++		if (!major || version == ~0U) {
++			dprintk(VIDC_ERR, "Invalid Venus hardware version %#x\n",
++				version);
++			return -ENODEV;
++		}
++		device->packetization_type = major <= 2 ?
++			HFI_PACKETIZATION_LEGACY : HFI_PACKETIZATION_3XX;
++		dprintk(VIDC_INFO, "ASUS Venus hardware %#x: HFI %s\n",
++			version, major <= 2 ? "legacy" : "3xx");
++	} else if (!hfi_version) {
+ 		device->packetization_type = HFI_PACKETIZATION_LEGACY;
+ 	} else if (!strcmp(hfi_version, "3xx")) {
+ 		device->packetization_type = HFI_PACKETIZATION_3XX;
+--- include/uapi/media/Kbuild
++++ include/uapi/media/Kbuild
+@@ -11,6 +11,7 @@
+ header-y += cam_sync.h
+ header-y += msm_media_info.h
+ header-y += msm_vidc.h
++header-y += msm_vidc_z500kl.h
+ header-y += msm_vidc_private.h
+ header-y += msm_sde_rotator.h
+ header-y += radio-iris.h
+--- include/uapi/media/msm_vidc.h
++++ include/uapi/media/msm_vidc.h
+@@ -154,7 +154,10 @@
+ 	unsigned int cancel_flag;
+ 	unsigned int fpa_type;
+ 	unsigned int quin_cunx_flag;
+-	unsigned int content_interprtation_type;
++	union {
++		unsigned int content_interprtation_type;
++		unsigned int content_interpretation_type;
++	};
+ 	unsigned int spatial_flipping_flag;
+ 	unsigned int frame0_flipped_flag;
+ 	unsigned int field_views_flag;
