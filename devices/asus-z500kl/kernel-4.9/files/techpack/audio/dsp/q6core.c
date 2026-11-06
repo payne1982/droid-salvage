@@ -20,6 +20,7 @@
 #include <linux/slab.h>
 #include <linux/sysfs.h>
 #include <linux/kobject.h>
+#include <dsp/z500kl-adsp.h>
 #include <dsp/q6core.h>
 #include <dsp/audio_cal_utils.h>
 #include <dsp/apr_audio-v2.h>
@@ -501,6 +502,9 @@ int q6core_get_service_version(uint32_t service_id,
 	size_t ver_size;
 	int ret;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	if (ver_info == NULL) {
 		pr_err("%s: ver_info is NULL\n", __func__);
 		return -EINVAL;
@@ -543,6 +547,9 @@ EXPORT_SYMBOL(q6core_get_service_version);
 static int q6core_get_avcs_fwk_version(void)
 {
         int ret = 0;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
         mutex_lock(&(q6core_lcl.ver_lock));
         pr_debug("%s: q6core_avcs_ver_info.status(%d)\n", __func__,
@@ -917,6 +924,9 @@ static int q6core_map_memory_regions(phys_addr_t *buf_add, uint32_t mempool_id,
 	int i = 0;
 	int cmd_size = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	cmd_size = sizeof(struct avs_cmd_shared_mem_map_regions)
 			+ sizeof(struct avs_shared_map_region_payload)
 			* bufcnt;
@@ -1030,6 +1040,9 @@ static int q6core_dereg_all_custom_topologies(void)
 	int ret = 0;
 	struct avcs_cmd_deregister_topologies dereg_top;
 
+	if (z500kl_adsp_2016())
+		return 0;
+
 	memset(&dereg_top, 0, sizeof(dereg_top));
 	dereg_top.hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
 		APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
@@ -1078,6 +1091,9 @@ static int q6core_send_custom_topologies(void)
 	int ret2 = 0;
 	struct cal_block_data *cal_block = NULL;
 	struct avcs_cmd_register_topologies reg_top;
+
+	if (z500kl_adsp_2016())
+		return 0;
 
 	if (!q6core_is_adsp_ready()) {
 		pr_err("%s: ADSP is not ready!\n", __func__);

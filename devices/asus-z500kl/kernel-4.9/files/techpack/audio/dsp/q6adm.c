@@ -18,6 +18,7 @@
 #include <linux/atomic.h>
 #include <linux/wait.h>
 #include <sound/asound.h>
+#include <dsp/z500kl-adsp.h>
 #include <dsp/msm-dts-srs-tm-config.h>
 #include <dsp/apr_audio-v2.h>
 #include <dsp/q6adm-v2.h>
@@ -661,6 +662,9 @@ int adm_programable_channel_mixer(int port_id, int copp_idx, int session_id,
 	u16 *adm_pspd_params;
 	u16 *ptr;
 	int index = 0, i;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	pr_debug("%s: port_id = %d\n", __func__, port_id);
 	port_id = afe_convert_virtual_to_portid(port_id);
@@ -3272,7 +3276,8 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 
 			atomic_set(&this_adm.copp.stat[port_idx][copp_idx], -1);
 
-			if ((this_adm.num_ec_ref_rx_chans != 0) &&
+			if (!z500kl_adsp_2016() &&
+				(this_adm.num_ec_ref_rx_chans != 0) &&
 				(path != 1) && (open.endpoint_id_2 != 0xFFFF)) {
 				memset(&open_v6, 0,
 					sizeof(struct adm_cmd_device_open_v6));
@@ -3366,6 +3371,9 @@ void adm_copp_mfc_cfg(int port_id, int copp_idx, int dst_sample_rate)
 	int sz = 0;
 	int rc  = 0;
 	int i  = 0;
+
+	if (z500kl_adsp_2016())
+		return;
 
 	port_id = q6audio_convert_virtual_to_portid(port_id);
 	port_idx = adm_validate_and_get_port_index(port_id);
@@ -4504,6 +4512,9 @@ int adm_set_mic_gain(int port_id, int copp_idx, int volume)
 	int rc = 0;
 	int sz, port_idx;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s:\n", __func__);
 	port_id = afe_convert_virtual_to_portid(port_id);
 	port_idx = adm_validate_and_get_port_index(port_id);
@@ -4593,6 +4604,9 @@ int adm_send_set_multichannel_ec_primary_mic_ch(int port_id, int copp_idx,
 	struct adm_set_sec_primary_ch_params sec_primary_ch_params;
 	int rc = 0;
 	int sz, port_idx;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	pr_debug("%s port_id 0x%x, copp_idx 0x%x, primary_mic_ch %d\n",
 			__func__, port_id,  copp_idx,  primary_mic_ch);
@@ -5297,6 +5311,9 @@ int adm_swap_speaker_channels(int port_id, int copp_idx,
 	uint16_t num_channels;
 	int port_idx;
 	int ret  = 0;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	pr_debug("%s: Enter, port_id %d, copp_idx %d\n",
 		  __func__, port_id, copp_idx);

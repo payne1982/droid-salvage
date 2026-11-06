@@ -26,6 +26,7 @@
 #include <sound/lsm_params.h>
 #include <asm/ioctls.h>
 #include <linux/memory.h>
+#include <dsp/z500kl-adsp.h>
 #include <dsp/msm_audio_ion.h>
 #include <dsp/apr_audio-v2.h>
 #include <dsp/q6core.h>
@@ -922,6 +923,9 @@ static int q6lsm_send_param_polling_enable(struct lsm_client *client,
 	struct lsm_param_poll_enable *poll_enable;
 	u32 data_payload_size, param_size;
 
+	if (z500kl_adsp_2016())
+		return 0;
+
 	msg_hdr = &cmd.msg_hdr;
 	q6lsm_add_hdr(client, msg_hdr,
 		      sizeof(struct lsm_cmd_poll_enable), true);
@@ -969,6 +973,9 @@ int q6lsm_set_fwk_mode_cfg(struct lsm_client *client,
 	struct apr_hdr  *msg_hdr;
 	struct lsm_param_fwk_mode_cfg *fwk_mode_cfg;
 	u32 data_payload_size, param_size, set_param_opcode;
+
+	if (z500kl_adsp_2016())
+		return 0;
 
 	if (client->use_topology) {
 		set_param_opcode = LSM_SESSION_CMD_SET_PARAMS_V2;
@@ -1060,6 +1067,9 @@ int q6lsm_set_media_fmt_params(struct lsm_client *client)
 	struct lsm_param_media_fmt *media_fmt;
 	u32 data_payload_size, param_size, set_param_opcode;
 	struct lsm_hw_params param = client->hw_params;
+
+	if (z500kl_adsp_2016())
+		return 0;
 
 	if (client->use_topology) {
 		set_param_opcode = LSM_SESSION_CMD_SET_PARAMS_V2;

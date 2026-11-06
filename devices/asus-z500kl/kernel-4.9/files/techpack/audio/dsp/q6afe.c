@@ -18,6 +18,7 @@
 #include <linux/jiffies.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
+#include <dsp/z500kl-adsp.h>
 #include <dsp/msm_audio_ion.h>
 #include <dsp/apr_audio-v2.h>
 #include <dsp/audio_cal_utils.h>
@@ -796,9 +797,34 @@ EXPORT_SYMBOL(afe_q6_interface_prepare);
 /*
  * afe_apr_send_pkt : returns 0 on success, negative otherwise.
  */
+/*
+ * The port configuration union grew from 32 bytes in ASUS' 3.10 kernel to 92 here
+ * (TDM, USB, encoder parameters...), and every AFE_PORT_CMD_SET_PARAM_V2 built on
+ * it declares the whole union as its parameter size. The 2016 firmware only ever
+ * saw 32. On this board those packets go out at the 3.10 size.
+ */
+#define Z500KL_AFE_PORT_CONFIG_SIZE 0x20
+
+static void z500kl_afe_trim_port_config(void *data)
+{
+	struct afe_audioif_config_command *config = data;
+	u32 cut = sizeof(config->port) - Z500KL_AFE_PORT_CONFIG_SIZE;
+
+	if (config->hdr.opcode != AFE_PORT_CMD_SET_PARAM_V2 ||
+	    config->hdr.pkt_size != sizeof(*config) ||
+	    config->pdata.param_size != sizeof(config->port))
+		return;
+	config->hdr.pkt_size -= cut;
+	config->param.payload_size -= cut;
+	config->pdata.param_size = Z500KL_AFE_PORT_CONFIG_SIZE;
+}
+
 static int afe_apr_send_pkt(void *data, wait_queue_head_t *wait)
 {
 	int ret;
+
+	if (z500kl_adsp_2016())
+		z500kl_afe_trim_port_config(data);
 
 	if (wait)
 		atomic_set(&this_afe.state, 1);
@@ -1356,6 +1382,7 @@ static int afe_send_hw_delay(u16 port_id, u32 rate)
 		goto fail_cmd;
 	}
 
+	memset(&config, 0, sizeof(config));
 	config.hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
 				APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
 	config.hdr.pkt_size = sizeof(config);
@@ -1516,6 +1543,7 @@ static int afe_send_port_topology_id(u16 port_id)
 		goto done;
 	}
 
+	memset(&config, 0, sizeof(config));
 	config.hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
 				APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
 	config.hdr.pkt_size = sizeof(config);
@@ -2640,6 +2668,9 @@ int afe_send_slot_mapping_cfg(
 	int ret = 0;
 	int index = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	if (!slot_mapping_cfg) {
 		pr_err("%s: Error, no configuration data\n", __func__);
 		return -EINVAL;
@@ -2719,6 +2750,9 @@ int afe_send_custom_tdm_header_cfg(
 	int ret = 0;
 	int index = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	if (!custom_tdm_header_cfg) {
 		pr_err("%s: Error, no configuration data\n", __func__);
 		return -EINVAL;
@@ -2797,6 +2831,9 @@ int afe_send_slot_mapping_cfg_v2(
 	struct afe_slot_mapping_config_command_v2 config;
 	int ret = 0;
 	int index = 0;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (!slot_mapping_cfg) {
 		pr_err("%s: Error, no configuration data\n", __func__);
@@ -2888,6 +2925,9 @@ int afe_tdm_port_start(u16 port_id, struct afe_tdm_port_config *tdm_port,
 	int index = 0;
 	uint16_t port_index = 0;
 	enum afe_mad_type mad_type = MAD_HW_NONE;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (!tdm_port) {
 		pr_err("%s: Error, no configuration data\n", __func__);
@@ -3051,6 +3091,9 @@ int afe_port_send_usb_dev_param(u16 port_id, union afe_port_config *afe_config)
 	struct afe_usb_audio_dev_param_command config;
 	int ret = 0, index = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	if (!afe_config) {
 		pr_err("%s: Error, no configuration data\n", __func__);
 		ret = -EINVAL;
@@ -3138,6 +3181,9 @@ static int q6afe_send_dec_config(u16 port_id,
 	int ret = 0;
 	size_t payload_size = sizeof(config) - sizeof(struct apr_hdr) -
 				sizeof(config.param) - sizeof(config.port);
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	index = q6audio_get_port_index(port_id);
 	if (index < 0) {
@@ -3227,6 +3273,9 @@ static int q6afe_send_enc_config(u16 port_id,
 	int ret;
 	int payload_size = sizeof(config) - sizeof(struct apr_hdr) -
 				sizeof(config.param) - sizeof(config.port);
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	pr_debug("%s:update DSP for enc format = %d\n", __func__, format);
 	if (format != ASM_MEDIA_FMT_SBC && format != ASM_MEDIA_FMT_AAC_V2 &&
@@ -3472,6 +3521,9 @@ int afe_set_tws_channel_mode(u16 port_id, u32 channel_mode)
 	int ret = 0;
 	int index = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s: enter\n", __func__);
 	index = q6audio_get_port_index(port_id);
 	if (index < 0 || index >= AFE_MAX_PORTS) {
@@ -3650,6 +3702,7 @@ static int __afe_port_start(u16 port_id, union afe_port_config *afe_config,
 		}
 	}
 
+	memset(&config, 0, sizeof(config));
 	config.hdr.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
 				APR_HDR_LEN(APR_HDR_SIZE), APR_PKT_VER);
 	config.hdr.pkt_size = sizeof(config);
@@ -6648,6 +6701,9 @@ int afe_set_lpass_clk_cfg(int index, struct afe_clk_set *cfg)
 	struct afe_lpass_clk_config_command_v2 clk_cfg;
 	int ret = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	if (!cfg) {
 		pr_err("%s: clock cfg is NULL\n", __func__);
 		ret = -EINVAL;
@@ -6733,10 +6789,57 @@ EXPORT_SYMBOL(afe_set_lpass_clk_cfg);
  *
  * Returns 0 on success, appropriate error code otherwise
  */
+/*
+ * The Z500KL's ADSP firmware of 2016 answers AFE_MODULE_CLOCK_SET, then its
+ * watchdog bites seconds later. It gets the clock commands of its own time, as
+ * under ASUS' 3.10 kernel.
+ */
+static int z500kl_afe_legacy_clock(u16 port_id, struct afe_clk_set *cfg)
+{
+	struct afe_digital_clk_cfg core = {
+		.i2s_cfg_minor_version = AFE_API_VERSION_I2S_CONFIG,
+		.clk_root = 5,
+	};
+	struct afe_clk_cfg mi2s = {
+		.i2s_cfg_minor_version = AFE_API_VERSION_I2S_CONFIG,
+		.clk_val2 = Q6AFE_LPASS_OSR_CLK_12_P288_MHZ,
+		.clk_src = Q6AFE_LPASS_CLK_SRC_INTERNAL,
+		.clk_root = Q6AFE_LPASS_CLK_ROOT_DEFAULT,
+		.clk_set_mode = Q6AFE_LPASS_MODE_CLK1_VALID,
+	};
+
+	int ret;
+
+	switch (cfg->clk_id) {
+	case Q6AFE_LPASS_CLK_ID_INTERNAL_DIGITAL_CODEC_CORE:
+		core.clk_val = cfg->enable ? cfg->clk_freq_in_hz : 0;
+		ret = afe_set_digital_codec_core_clock(port_id, &core);
+		break;
+	case Q6AFE_LPASS_CLK_ID_PRI_MI2S_IBIT:
+	case Q6AFE_LPASS_CLK_ID_SEC_MI2S_IBIT:
+	case Q6AFE_LPASS_CLK_ID_TER_MI2S_IBIT:
+	case Q6AFE_LPASS_CLK_ID_QUAD_MI2S_IBIT:
+	case Q6AFE_LPASS_CLK_ID_QUI_MI2S_IBIT:
+		mi2s.clk_val1 = cfg->enable ? cfg->clk_freq_in_hz :
+					      Q6AFE_LPASS_IBIT_CLK_DISABLE;
+		ret = afe_set_lpass_clock(port_id, &mi2s);
+		break;
+	default:
+		pr_err("%s: no legacy command for clock 0x%x\n", __func__,
+		       cfg->clk_id);
+		return -EINVAL;
+	}
+	/* These return what's left of their wait on success. */
+	return ret < 0 ? ret : 0;
+}
+
 int afe_set_lpass_clock_v2(u16 port_id, struct afe_clk_set *cfg)
 {
 	int index = 0;
 	int ret = 0;
+
+	if (z500kl_adsp_2016())
+		return z500kl_afe_legacy_clock(port_id, cfg);
 
 	index = q6audio_get_port_index(port_id);
 	if (index < 0 || index >= AFE_MAX_PORTS) {
@@ -7000,6 +7103,9 @@ int afe_get_sp_th_vi_ftm_data(struct afe_sp_th_vi_get_param *th_vi)
 	int ret = -EINVAL;
 	int index = 0, port = SLIMBUS_4_TX;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	if (!th_vi) {
 		pr_err("%s: Invalid params\n", __func__);
 		goto done;
@@ -7078,6 +7184,9 @@ int afe_get_sp_ex_vi_ftm_data(struct afe_sp_ex_vi_get_param *ex_vi)
 {
 	int ret = -EINVAL;
 	int index = 0, port = SLIMBUS_4_TX;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (!ex_vi) {
 		pr_err("%s: Invalid params\n", __func__);
@@ -7172,6 +7281,9 @@ int afe_get_av_dev_drift(struct afe_param_id_dev_timing_stats *timing_stats,
 	int ret = -EINVAL;
 	int index = 0;
 	struct afe_av_dev_drift_get_param av_dev_drift;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (!timing_stats) {
 		pr_err("%s: Invalid params\n", __func__);

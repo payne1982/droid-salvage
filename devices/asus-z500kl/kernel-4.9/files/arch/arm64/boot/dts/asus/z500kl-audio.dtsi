@@ -9,6 +9,44 @@
 	qcom,smmu-sid = <1>;
 };
 
+/* The 3.10 cdc-pdm-lines group muxes gpio66/67 to function 1 together with
+ * gpio120/121; the 4.9 pinctrl table names that function dmic0_clk/dmic0_data.
+ */
+&cdc_pdm_lines_act {
+	mux-gpio66 {
+		pins = "gpio66";
+		function = "dmic0_clk";
+	};
+
+	mux-gpio67 {
+		pins = "gpio67";
+		function = "dmic0_data";
+	};
+
+	config-gpio66-67 {
+		pins = "gpio66", "gpio67";
+		drive-strength = <8>;
+	};
+};
+
+&cdc_pdm_lines_sus {
+	mux-gpio66 {
+		pins = "gpio66";
+		function = "dmic0_clk";
+	};
+
+	mux-gpio67 {
+		pins = "gpio67";
+		function = "dmic0_data";
+	};
+
+	config-gpio66-67 {
+		pins = "gpio66", "gpio67";
+		drive-strength = <2>;
+		bias-disable;
+	};
+};
+
 &soc {
 	z500kl_cdc_pins: z500kl-cdc-pinctrl {
 		compatible = "qcom,msm-cdc-pinctrl";

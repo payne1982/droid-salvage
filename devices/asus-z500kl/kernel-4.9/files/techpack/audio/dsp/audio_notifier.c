@@ -598,6 +598,11 @@ static int __init audio_notifier_subsys_init(void)
 
 	return 0;
 }
+/*
+ * Built in, APR's probe registers its clients before this file's module_init,
+ * so the list and the lock must be ready by then.
+ */
+subsys_initcall(audio_notifier_subsys_init);
 
 static int __init audio_notifier_late_init(void)
 {
@@ -612,12 +617,11 @@ static int __init audio_notifier_late_init(void)
 	mutex_unlock(&notifier_mutex);
 	return 0;
 }
+late_initcall(audio_notifier_late_init);
 
 static int __init audio_notifier_init(void)
 {
 	int ret;
-
-	audio_notifier_subsys_init();
 
 	ret = audio_pdr_register(&pdr_nb);
 	if (ret < 0) {
@@ -627,8 +631,6 @@ static int __init audio_notifier_init(void)
 	}
 
 	/* Do not return error since PDR enablement is not critical */
-	audio_notifier_late_init();
-
 	return 0;
 }
 module_init(audio_notifier_init);

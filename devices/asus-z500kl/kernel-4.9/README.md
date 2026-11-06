@@ -9,6 +9,10 @@ It is an experiment. Nothing here is in a release, and the tablet is only ever
 started on it for a test, from the boot partition, with the LineageOS boot image put
 back afterwards.
 
+This branch, `asus-z500kl-los20-k49`, keeps the 4.9 work as it stood on 6 November
+2026; the releases go on from the 3.10 kernel. The table below says what works, and
+the sections after it what is open.
+
 ## The base
 
 The MSM8956 never had a 4.9 kernel from Qualcomm. Sony's Open Devices program had one
@@ -32,9 +36,10 @@ matters for the display bridge this tablet has.
     (`dsi-panel-*.dtsi`); GPIO 126 says which one is fitted (`patches/0006`);
   - `include/uapi/linux/android_pmem.h`, from ASUS' 3.10: the video HAL of the ROM
     still includes it, though nothing in it is used any more;
-  - `techpack/audio/include/uapi/`: the userspace headers of Qualcomm's audio
-    techpack, from the kenzo's 4.9 kernel, which the ROM's audio HAL includes
-    (`sound/voice_params.h` and the rest); the audio drivers are not here yet;
+  - `techpack/audio/`: Qualcomm's audio techpack from the kenzo's 4.9 kernel, with
+    ASUS' values and the ADSP commands of the 2016 firmware
+    (`techpack/audio/include/dsp/z500kl-adsp.h`), and its userspace headers, which
+    the ROM's audio HAL includes (`sound/voice_params.h` and the rest);
   - `drivers/video/fbdev/msm/`: from ASUS' 3.10, the light-up driver of the
     Pixelworks iris2 bridge, the bridge's power driver and the LP8557 backlight
     driver, with what was particular to ASUS' other tablets taken out.
@@ -96,10 +101,10 @@ without the `android_usb` gadget needs adb set up through ConfigFS, which
 | composition: HWC1 on this MDSS | yes, with `patches/0019` and `0020`: 59 fps, 1428 commits with their fences, in a 25-second trace |
 | first frame after the bootloader's splash | **open, see below.** Times out, and only a panel reset gets it going |
 | LineageOS 20 | boots to the lock screen by itself, in 52 s, and stays up; the screen sleeps and wakes. `patches/0026` was what let SurfaceFlinger go on after the failed first frame |
-| ADSP and sensors | yes on the tablet with a minimal loader: the ADSP online, 25 sensors. That loader has since given way to the audio techpack's, not tried yet |
+| ADSP and sensors | yes, with the audio techpack's loader: the ADSP online, 25 sensors |
 | QSEE: qseecomd's version query | refused on 4.9 (`Invalid IOCTL: 0xc0049725`); `patches/0017` brings it back; not tried yet |
-| audio | builds, not tried: Qualcomm's techpack from the kenzo's 4.9 with ASUS' values (`files/techpack/audio`, `z500kl-audio.dtsi`, `patches/0028`). The device tree, amplifier and calibration IDs match ASUS' 3.10. To see on the tablet: this driver sends the ADSP's 2016 firmware the PCM V4 format and `AFE_MODULE_CLOCK_SET`, which 3.10 did not use. Voice calls may lack some mixer controls |
-| video: Venus, with the ROM's OMX components | builds, not tried: `patches/0029` and `rom/patches/hardware-qcom-caf-msm8952-media`. The session close follows 3.10's order; whether the 2016 firmware accepts everything these components ask of it remains to be seen |
+| audio | **open, see below.** The sound card registers and streams run, but the speakers give only clicks and the microphone records silence |
+| video: Venus, with the ROM's OMX components | **no.** Venus starts and sessions open and close, but at stream-on the firmware answers `HFI_EVENT_SESSION_ERROR` and the core goes bad (`patches/0029`, `rom/patches/hardware-qcom-caf-msm8952-media`) |
 | cameras, modem | not yet |
 
 ## Open: the first frame
@@ -113,6 +118,54 @@ What has been measured:
 - `mdss_dsi_timeout_status: status=1` is there already during the firmware download, before the first frame.
 
 So neither the choice of driver nor the firmware is the cause. The iris2 chip itself is not ruled out, and the DSI side of the handoff from the bootloader has not been looked at yet. To compare: the DSI and MDP registers on 3.10, where the first frame goes through, against 4.9 at the same point.
+
+## Open: audio
+
+What is in place: Qualcomm's audio techpack from the kenzo's 4.9 (`files/techpack/audio`),
+with ASUS' values in `z500kl-audio.dtsi`, and the ADSP side brought in line with the
+2016 firmware this tablet carries (`techpack/audio/include/dsp/z500kl-adsp.h`): PCM V3 instead of V4,
+the old clock commands instead of `AFE_MODULE_CLOCK_SET`, 80-byte AFE packets, no AVCS
+version query, the 3.10 topology and ASM limits. With that the card registers at boot,
+the ADSP takes every command, and the commands match what 3.10 sends, value for value.
+
+What the tablet does: every stream, even silence, gives clicks from the speakers for as
+long as the output path is on (about 3 s after a short sound), and no sound at all. The
+microphone records zeros.
+
+What has been ruled out, each by measurement against 3.10 on the same tablet:
+
+- the codec driver: ASUS' 3.10 codec and machine drivers, ported to 4.9 for the test,
+  click the same way;
+- the configuration of the hardware: the digital codec's registers (read from the
+  hardware on both kernels), the PMIC codec's registers, and the LPAIF block
+  (`0xc0c0000`) are the same during playback;
+- the data from the ADSP: with the speaker fed from inside the codec (`RX1/RX3 MIX1` from
+  `IIR1`, no ADSP data at all) it still clicks;
+- the codec supplies, the charger (clicks with no cable), the CPU sleep states.
+
+What differs:
+
+1. **A clock in the LPASS clock controller**, at `0xc012000` (source 1, divided by 5,
+   two branches at `0xc012014` and `0xc012018`). On 4.9 the ADSP turns it on during
+   playback; on 3.10 it stays off. No kernel driver writes there. Turning the two
+   branches off by hand during playback changes the dense clicks into a single click
+   about every 3 s, for system sounds too; the tone is still not heard. On 4.9 the
+   PMIC codec also flags speaker clipping during silence (`0xf010` bit 1), never on 3.10.
+2. **The microphone is never switched on**: the techpack's analog codec has an
+   `ADC1_INP1 Switch` that ASUS' mixer paths, written for the 3.10 driver, never set,
+   so `ADC1` and the mic bias stay off when recording.
+
+To do, in this order:
+
+- find why the ADSP turns that clock on under 4.9: a full trace of the commands to
+  the ADSP during playback, against the 3.10 trace, and what the clock is;
+- then the click every 3 s and the missing tone, compared the same way;
+- the microphone: set `ADC1_INP1 Switch` with the capture path (kernel default or
+  mixer paths), and check a recording;
+- not tried: voice calls, the listen (LSM) service, headphones.
+
+`gpio66`/`gpio67` are in the PDM pin states as in ASUS' 3.10 tree (function 1, which
+this pin table calls `dmic0_clk`/`dmic0_data`); this did not change the clicks.
 
 ## The 3.10 patches
 
@@ -140,5 +193,5 @@ Of the patches in [../kernel/patches](../kernel/patches):
 - **for ASUS' charger driver, which this kernel does without** (Qualcomm's own,
   which neither holds a cable back for Quick Charge 3 nor reports a status of
   ASUS' own): 0018, 0019;
-- nothing is left to bring over; what is left is new work: audio, the cameras,
-  the modem, and whether the Nougat GPU blobs take this kernel's KGSL.
+- nothing is left to bring over; what is left is new work: audio and video (above),
+  the cameras, the modem, and whether the Nougat GPU blobs take this kernel's KGSL.

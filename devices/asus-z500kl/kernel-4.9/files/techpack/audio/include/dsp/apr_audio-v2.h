@@ -4242,7 +4242,7 @@ struct afe_lpass_core_shared_clk_config_command {
 
 #define NULL_POPP_TOPOLOGY				0x00010C68
 #define NULL_COPP_TOPOLOGY				0x00010312
-#define DEFAULT_COPP_TOPOLOGY				0x00010314
+#define DEFAULT_COPP_TOPOLOGY				0x00010BE3
 #define DEFAULT_POPP_TOPOLOGY				0x00010BE4
 #define COMPRESSED_PASSTHROUGH_DEFAULT_TOPOLOGY         0x0001076B
 #define COMPRESSED_PASSTHROUGH_NONE_TOPOLOGY            0x00010774
@@ -6324,7 +6324,7 @@ struct asm_data_cmd_iec_60958_frame_rate {
 
 /* adsp_asm_service_commands.h */
 
-#define ASM_MAX_SESSION_ID  (15)
+#define ASM_MAX_SESSION_ID  (8)
 
 /* Maximum number of sessions.*/
 #define ASM_MAX_NUM_SESSIONS                ASM_MAX_SESSION_ID

@@ -34,6 +34,7 @@
 
 #include <sound/compress_params.h>
 
+#include <dsp/z500kl-adsp.h>
 #include <dsp/msm_audio_ion.h>
 #include <dsp/apr_audio-v2.h>
 #include <dsp/audio_cal_utils.h>
@@ -2985,6 +2986,7 @@ int q6asm_open_read_v4(struct audio_client *ac, uint32_t format,
 			uint16_t bits_per_sample, bool ts_mode)
 {
 	return __q6asm_open_read(ac, format, bits_per_sample,
+				 z500kl_adsp_2016() ? PCM_MEDIA_FORMAT_V3 :
 				 PCM_MEDIA_FORMAT_V4 /*media fmt block ver*/,
 				 ts_mode);
 }
@@ -3325,6 +3327,7 @@ int q6asm_open_write_v4(struct audio_client *ac, uint32_t format,
 {
 	return __q6asm_open_write(ac, format, bits_per_sample,
 				  ac->stream_id, false /*gapless*/,
+				  z500kl_adsp_2016() ? PCM_MEDIA_FORMAT_V3 :
 				  PCM_MEDIA_FORMAT_V4 /*pcm_format_block_ver*/);
 }
 EXPORT_SYMBOL(q6asm_open_write_v4);
@@ -3389,6 +3392,7 @@ int q6asm_stream_open_write_v4(struct audio_client *ac, uint32_t format,
 {
 	return __q6asm_open_write(ac, format, bits_per_sample,
 				  stream_id, is_gapless_mode,
+				  z500kl_adsp_2016() ? PCM_MEDIA_FORMAT_V3 :
 				  PCM_MEDIA_FORMAT_V4 /*pcm_format_block_ver*/);
 }
 EXPORT_SYMBOL(q6asm_stream_open_write_v4);
@@ -3653,7 +3657,7 @@ int q6asm_open_loopback_v2(struct audio_client *ac, uint16_t bits_per_sample)
 	}
 	pr_debug("%s: session[%d]\n", __func__, ac->session);
 
-	if (ac->perf_mode == LOW_LATENCY_PCM_MODE) {
+	if (!z500kl_adsp_2016() && ac->perf_mode == LOW_LATENCY_PCM_MODE) {
 		struct asm_stream_cmd_open_transcode_loopback_t open;
 
 		q6asm_add_hdr(ac, &open.hdr, sizeof(open), TRUE);
@@ -3757,6 +3761,9 @@ int q6asm_open_transcode_loopback(struct audio_client *ac,
 	int rc = 0x00;
 	struct asm_stream_cmd_open_transcode_loopback_t open;
 	struct q6asm_cal_info cal_info;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (ac == NULL) {
 		pr_err("%s: APR handle NULL\n", __func__);
@@ -4447,6 +4454,9 @@ int q6asm_enc_cfg_blk_g711(struct audio_client *ac,
 	struct asm_g711_enc_cfg_v2 enc_cfg;
 	int rc = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s: session[%d]frames[%d]SR[%d]\n",
 		 __func__, ac->session, frames_per_buf,
 		sample_rate);
@@ -5082,6 +5092,11 @@ int q6asm_enc_cfg_blk_pcm_format_support_v4(struct audio_client *ac,
 					    uint16_t endianness,
 					    uint16_t mode)
 {
+	if (z500kl_adsp_2016())
+		return __q6asm_enc_cfg_blk_pcm_v3(ac, rate, channels,
+						  bits_per_sample,
+						  sample_word_size);
+
 	return __q6asm_enc_cfg_blk_pcm_v4(ac, rate, channels,
 					   bits_per_sample, sample_word_size,
 					   endianness, mode);
@@ -6230,6 +6245,12 @@ int q6asm_media_format_block_pcm_format_support_v4(struct audio_client *ac,
 			__func__);
 		return -EINVAL;
 	}
+	if (z500kl_adsp_2016())
+		return __q6asm_media_format_block_pcm_v3(ac, rate,
+				channels, bits_per_sample, stream_id,
+				use_default_chmap, channel_map,
+				sample_word_size);
+
 	return __q6asm_media_format_block_pcm_v4(ac, rate,
 				channels, bits_per_sample, stream_id,
 				use_default_chmap, channel_map,
@@ -6649,6 +6670,14 @@ int q6asm_media_format_block_multi_ch_pcm_v4(struct audio_client *ac,
 					     uint16_t endianness,
 					     uint16_t mode)
 {
+	if (z500kl_adsp_2016())
+		return __q6asm_media_format_block_multi_ch_pcm_v3(ac, rate,
+							  channels,
+							  use_default_chmap,
+							  channel_map,
+							  bits_per_sample,
+							  sample_word_size);
+
 	return __q6asm_media_format_block_multi_ch_pcm_v4(ac, rate, channels,
 							  use_default_chmap,
 							  channel_map,
@@ -6791,6 +6820,9 @@ int q6asm_media_format_block_iec(struct audio_client *ac,
 {
 	struct asm_iec_compressed_fmt_blk_t fmt;
 	int rc = 0;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	pr_debug("%s: session[%d]rate[%d]ch[%d]\n",
 		 __func__, ac->session, rate,
@@ -7288,6 +7320,9 @@ int q6asm_media_format_block_g711(struct audio_client *ac,
 	struct asm_g711_dec_fmt_blk_v2 fmt;
 	int rc = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	if (!ac) {
 		pr_err("%s: audio client is null\n", __func__);
 		return -EINVAL;
@@ -7481,6 +7516,9 @@ int q6asm_media_format_block_dsd(struct audio_client *ac,
 	struct asm_dsd_fmt_blk_v2 fmt;
 	int rc;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s: session[%d] data_rate[%d] ch[%d]\n", __func__,
 		 ac->session, cfg->dsd_data_rate, cfg->num_channels);
 
@@ -7540,6 +7578,9 @@ int q6asm_stream_media_format_block_aptx_dec(struct audio_client *ac,
 {
 	struct asm_aptx_dec_fmt_blk_v2 aptx_fmt;
 	int rc = 0;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (!ac->session) {
 		pr_err("%s: ac session invalid\n", __func__);
@@ -8165,6 +8206,31 @@ int q6asm_set_lrgain(struct audio_client *ac, int left_gain, int right_gain)
 		goto fail_cmd;
 	}
 
+	if (z500kl_adsp_2016()) {
+		struct asm_volume_ctrl_lr_chan_gain lrgain;
+
+		sz = sizeof(lrgain);
+		q6asm_add_hdr_async(ac, &lrgain.hdr, sz, TRUE);
+		atomic_set(&ac->cmd_state_pp, -1);
+		lrgain.hdr.opcode = ASM_STREAM_CMD_SET_PP_PARAMS_V2;
+		lrgain.param.data_payload_addr_lsw = 0;
+		lrgain.param.data_payload_addr_msw = 0;
+		lrgain.param.mem_map_handle = 0;
+		lrgain.param.data_payload_size = sizeof(lrgain) -
+			sizeof(lrgain.hdr) - sizeof(lrgain.param);
+		lrgain.data.module_id = ASM_MODULE_ID_VOL_CTRL;
+		lrgain.data.param_id = ASM_PARAM_ID_VOL_CTRL_LR_CHANNEL_GAIN;
+		lrgain.data.param_size = lrgain.param.data_payload_size -
+			sizeof(lrgain.data);
+		lrgain.data.reserved = 0;
+		lrgain.l_chan_gain = left_gain;
+		lrgain.r_chan_gain = right_gain;
+		multi_ch_gain.data.param_id =
+			ASM_PARAM_ID_VOL_CTRL_LR_CHANNEL_GAIN;
+		rc = apr_send_pkt(ac->apr, (uint32_t *) &lrgain);
+		goto sent;
+	}
+
 	memset(&multi_ch_gain, 0, sizeof(multi_ch_gain));
 	sz = sizeof(struct asm_volume_ctrl_multichannel_gain);
 	q6asm_add_hdr_async(ac, &multi_ch_gain.hdr, sz, TRUE);
@@ -8186,6 +8252,7 @@ int q6asm_set_lrgain(struct audio_client *ac, int left_gain, int right_gain)
 	multi_ch_gain.gain_data[1].gain = right_gain << 15;
 	multi_ch_gain.num_channels = 2;
 	rc = apr_send_pkt(ac->apr, (uint32_t *) &multi_ch_gain);
+sent:
 	if (rc < 0) {
 		pr_err("%s: set-params send failed paramid[0x%x] rc %d\n",
 				__func__, multi_ch_gain.data.param_id, rc);
@@ -8233,6 +8300,9 @@ int q6asm_set_multich_gain(struct audio_client *ac, uint32_t channels,
 	int rc  = 0;
 	int i, session_id = 0;
 	u8 default_chmap[VOLUME_CONTROL_MAX_CHANNELS];
+
+	if (z500kl_adsp_2016())
+		return q6asm_set_lrgain(ac, gains[0], gains[1]);
 
 	if (ac == NULL) {
 		pr_err("%s: ac is NULL\n", __func__);
@@ -8551,6 +8621,9 @@ int q6asm_set_aptx_dec_bt_addr(struct audio_client *ac,
 	int sz = 0;
 	int rc = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s: BT addr nap %d, uap %d, lap %d\n", __func__, cfg->nap,
 			cfg->uap, cfg->lap);
 
@@ -8627,6 +8700,9 @@ int q6asm_send_ion_fd(struct audio_client *ac, int fd)
 	int ret;
 	int sz = 0;
 	struct avs_rtic_shared_mem_addr shm;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (ac == NULL) {
 		pr_err("%s: APR handle NULL\n", __func__);
@@ -8720,6 +8796,9 @@ int q6asm_send_rtic_event_ack(struct audio_client *ac,
 	char *asm_params = NULL;
 	int sz, rc;
 	struct avs_param_rtic_event_ack ack;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	if (!param || !ac) {
 		pr_err("%s: %s is NULL\n", __func__,
@@ -9688,6 +9767,9 @@ int q6asm_get_session_time(struct audio_client *ac, uint64_t *tstamp)
 	struct asm_mtmx_strtr_get_params mtmx_params;
 	int rc;
 
+	if (z500kl_adsp_2016())
+		return q6asm_get_session_time_legacy(ac, tstamp);
+
 	if (ac == NULL) {
 		pr_err("%s: APR handle NULL\n", __func__);
 		return -EINVAL;
@@ -9996,6 +10078,9 @@ int q6asm_send_mtmx_strtr_render_mode(struct audio_client *ac,
 	int sz = 0;
 	int rc  = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s: render mode is %d\n", __func__, render_mode);
 
 	if (!ac) {
@@ -10091,6 +10176,9 @@ int q6asm_send_mtmx_strtr_clk_rec_mode(struct audio_client *ac,
 	int sz = 0;
 	int rc  = 0;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s: clk rec mode is %d\n", __func__, clk_rec_mode);
 
 	if (!ac) {
@@ -10185,6 +10273,9 @@ int q6asm_send_mtmx_strtr_enable_adjust_session_clock(struct audio_client *ac,
 	struct asm_session_mtmx_param_adjust_session_time_ctl_t adjust_time;
 	int sz = 0;
 	int rc  = 0;
+
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
 
 	pr_debug("%s: adjust session enable %d\n", __func__, enable);
 
@@ -10735,6 +10826,9 @@ int q6asm_adjust_session_clock(struct audio_client *ac,
 	int sz = 0;
 	struct asm_session_cmd_adjust_session_clock_v2 adjust_clock;
 
+	if (z500kl_adsp_2016())
+		return -EOPNOTSUPP;
+
 	pr_debug("%s: adjust_time_lsw is %x, adjust_time_msw is %x\n", __func__,
 		  adjust_time_lsw, adjust_time_msw);
 
@@ -10938,6 +11032,9 @@ int q6asm_send_cal(struct audio_client *ac)
 	char *asm_params = NULL;
 	struct asm_stream_cmd_set_pp_params_v2 payload_params;
 	int sz, rc = -EINVAL, session_id = 0;
+
+	if (z500kl_adsp_2016())
+		return 0;
 
 	pr_debug("%s:\n", __func__);
 

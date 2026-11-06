@@ -25,6 +25,7 @@
 #include <linux/platform_device.h>
 #include <ipc/apr.h>
 #include <linux/of_device.h>
+#include <linux/of_iommu.h>
 #include <linux/export.h>
 #include <asm/dma-iommu.h>
 #include <dsp/msm_audio_ion.h>
@@ -737,6 +738,22 @@ static int msm_audio_smmu_init(struct device *dev)
 {
 	struct dma_iommu_mapping *mapping;
 	int ret;
+
+	/*
+	 * This device is created with the SoC's, before the IOMMU's contexts
+	 * exist, so translating its "iommus" failed then. They are there by the
+	 * time the ADSP is up.
+	 */
+	if (!dev->iommu_group) {
+		struct iommu_group *group;
+
+		if (!of_iommu_configure(dev, dev->of_node))
+			return -ENODEV;
+		group = iommu_group_get_for_dev(dev);
+		if (IS_ERR(group))
+			return PTR_ERR(group);
+		iommu_group_put(group);
+	}
 
 	mapping = arm_iommu_create_mapping(&platform_bus_type,
 					   MSM_AUDIO_ION_VA_START,

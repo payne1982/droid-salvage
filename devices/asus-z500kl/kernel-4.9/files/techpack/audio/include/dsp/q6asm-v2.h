@@ -103,7 +103,7 @@
 
 #define ASM_ACTIVE_STREAMS_ALLOWED	0x8
 /* Control session is used for mapping calibration memory */
-#define ASM_CONTROL_SESSION	(ASM_ACTIVE_STREAMS_ALLOWED + 1)
+#define ASM_CONTROL_SESSION	0x0F
 
 #define ASM_SHIFT_GAPLESS_MODE_FLAG	31
 #define ASM_SHIFT_LAST_BUFFER_FLAG	30

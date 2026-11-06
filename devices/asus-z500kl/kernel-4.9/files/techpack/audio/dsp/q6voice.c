@@ -19,6 +19,7 @@
 
 #include <soc/qcom/socinfo.h>
 
+#include <dsp/z500kl-adsp.h>
 #include <dsp/msm_audio_ion.h>
 #include <dsp/q6audio-v2.h>
 #include <dsp/apr_audio-v2.h>
@@ -691,6 +692,14 @@ static int voice_send_mvm_cvd_version_cmd(struct voice_data *v)
 		pr_err("%s: v is NULL\n", __func__);
 
 		ret = -EINVAL;
+		goto done;
+	}
+
+	if (z500kl_adsp_2016()) {
+		/* ASUS' 3.10 never asks; 0.0 keeps to the older commands. */
+		strlcpy(common.cvd_version, CVD_VERSION_0_0,
+			sizeof(common.cvd_version));
+		ret = 0;
 		goto done;
 	}
 
@@ -4976,7 +4985,8 @@ static int voice_send_netid_timing_cmd(struct voice_data *v)
 				voice_get_idx_for_session(v->session_id);
 	mvm_set_network.hdr.dest_port = mvm_handle;
 	mvm_set_network.hdr.token = 0;
-	mvm_set_network.hdr.opcode = VSS_IMVM_CMD_SET_CAL_NETWORK;
+	mvm_set_network.hdr.opcode = z500kl_adsp_2016() ?
+		VSS_ICOMMON_CMD_SET_NETWORK : VSS_IMVM_CMD_SET_CAL_NETWORK;
 	mvm_set_network.network.network_id = common.mvs_info.network_type;
 
 	v->mvm_state = CMD_STATUS_FAIL;
@@ -6994,6 +7004,49 @@ fail:
 }
 EXPORT_SYMBOL(voc_standby_voice_call);
 
+/* What ASUS' 3.10 kernel sends to take the vocproc down, instead of pausing. */
+static int z500kl_voice_disable_vocproc(struct voice_data *v)
+{
+	struct apr_hdr cvp_disable_cmd;
+	int ret;
+	void *apr_cvp;
+	u16 cvp_handle;
+
+	apr_cvp = common.apr_q6_cvp;
+	if (!apr_cvp) {
+		pr_err("%s: apr_cvp is NULL.\n", __func__);
+		return -EINVAL;
+	}
+	cvp_handle = voice_get_cvp_handle(v);
+
+	cvp_disable_cmd.hdr_field = APR_HDR_FIELD(APR_MSG_TYPE_SEQ_CMD,
+						APR_HDR_LEN(APR_HDR_SIZE),
+						APR_PKT_VER);
+	cvp_disable_cmd.pkt_size = APR_PKT_SIZE(APR_HDR_SIZE,
+				sizeof(cvp_disable_cmd) - APR_HDR_SIZE);
+	cvp_disable_cmd.src_port = voice_get_idx_for_session(v->session_id);
+	cvp_disable_cmd.dest_port = cvp_handle;
+	cvp_disable_cmd.token = 0;
+	cvp_disable_cmd.opcode = VSS_IVOCPROC_CMD_DISABLE;
+
+	v->cvp_state = CMD_STATUS_FAIL;
+	v->async_err = 0;
+	ret = apr_send_pkt(apr_cvp, (uint32_t *) &cvp_disable_cmd);
+	if (ret < 0) {
+		pr_err("%s: Fail in sending VSS_IVOCPROC_CMD_DISABLE\n",
+		       __func__);
+		return -EINVAL;
+	}
+	ret = wait_event_timeout(v->cvp_wait,
+				 (v->cvp_state == CMD_STATUS_SUCCESS),
+				 msecs_to_jiffies(TIMEOUT_MS));
+	if (!ret) {
+		pr_err("%s: wait_event timeout\n", __func__);
+		return -EINVAL;
+	}
+	return 0;
+}
+
 /**
  * voc_disable_device -
  *       command to pause call and disable voice path
@@ -7016,7 +7069,8 @@ int voc_disable_device(uint32_t session_id)
 
 	mutex_lock(&v->lock);
 	if (v->voc_state == VOC_RUN) {
-		ret = voice_pause_voice_call(v);
+		ret = z500kl_adsp_2016() ? z500kl_voice_disable_vocproc(v) :
+					   voice_pause_voice_call(v);
 		if (ret < 0) {
 			pr_err("%s: Pause Voice Call failed for session 0x%x, err %d!\n",
 			       __func__, v->session_id, ret);
